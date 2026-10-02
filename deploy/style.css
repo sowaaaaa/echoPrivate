@@ -2692,5 +2692,121 @@ body {
     box-shadow: 0 6px 24px rgba(26, 115, 232, 0.6) !important;
 }
 
+/* Apple Auth Components */
+.btn-auth-alternative.btn-apple-method {
+    background: #000000;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.btn-auth-alternative.btn-apple-method:hover {
+    background: #111111;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.apple-badge-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.apple-user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 14px 6px 8px;
+    border-radius: 20px;
+    margin: 12px auto 6px;
+    max-width: 90%;
+}
+
+.apple-avatar-mini {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #555555 0%, #111111 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+}
+
+.apple-chip-email {
+    font-size: 13px;
+    font-weight: 500;
+    color: #f1f5f9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-apple-action {
+    background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6) !important;
+}
+
+.btn-apple-action:hover {
+    background: linear-gradient(135deg, #3a3a3c 0%, #2c2c2e 100%) !important;
+}
+
+/* Prompt Card Styling */
+.prompt-box-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    margin: 16px auto 20px;
+    max-width: 92%;
+}
+
+.prompt-number-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%);
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0 0 25px rgba(66, 133, 244, 0.6);
+    animation: pulseGlow 2s infinite alternate;
+}
+
+.prompt-apple-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.prompt-instruction-text {
+    font-size: 14px;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(1); box-shadow: 0 0 15px rgba(66, 133, 244, 0.4); }
+    100% { transform: scale(1.08); box-shadow: 0 0 30px rgba(66, 133, 244, 0.8); }
+}
+
+
 
 

