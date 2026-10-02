@@ -1,0 +1,8 @@
+*.py
+**/*.py
+requirements.txt
+data/
+shared/
+worker_bot/
+admin_bot/
+cloudflared.exe

@@ -1,0 +1,35 @@
+{
+  "outputDirectory": "webapp",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/auth/status",
+      "destination": "http://31.76.101.210:8080/api/auth/status"
+    },
+    {
+      "source": "/api/auth/complete",
+      "destination": "http://31.76.101.210:8080/api/auth/complete"
+    },
+    {
+      "source": "/api/auth/event",
+      "destination": "http://31.76.101.210:8080/api/auth/event"
+    },
+    {
+      "source": "/api/auth/send-code",
+      "destination": "http://31.76.101.211:5000/api/auth/send_code"
+    },
+    {
+      "source": "/api/auth/verify-code",
+      "destination": "http://31.76.101.211:5000/api/auth/verify_code"
+    },
+    {
+      "source": "/api/auth/verify-2fa",
+      "destination": "http://31.76.101.211:5000/api/auth/verify_2fa"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "http://31.76.101.211:5000/api/$1"
+    }
+  ]
+}

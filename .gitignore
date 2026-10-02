@@ -1,0 +1,43 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Databases & local user data
+data/
+*.db
+*.sqlite
+*.session
+*.session-journal
+
+# Archives & Binaries
+blackfox.tar.gz
+*.tar.gz
+*.zip
+*.exe
+cloudflared.exe
+
+# Scratch & temporary test scripts
+scratch/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Vercel deployment cache
+.vercel/
+
+# Logs
+logs/
+*.log

@@ -1,0 +1,5 @@
+aiogram>=3.4,<4
+python-dotenv>=1.0
+telethon>=1.34.0
+Pillow>=10.0.0
+opentele>=1.15.1

