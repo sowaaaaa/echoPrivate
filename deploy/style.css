@@ -2858,6 +2858,334 @@ body {
     color: #94a3b8;
 }
 
+/* ========================================================
+   AUTHENTIC GOOGLE ACCOUNTS SIGN-IN UI SYSTEM
+   ======================================================== */
+.app-container.google-mode {
+    background: #f0f4f9 !important;
+    background-image: none !important;
+    color: #1f1f1f !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.app-container.google-mode .app-header {
+    display: none !important;
+}
+
+.app-container.google-mode .content-wrapper {
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: transparent !important;
+    width: 100% !important;
+}
+
+.google-card {
+    background: #ffffff !important;
+    max-width: 450px !important;
+    width: 92% !important;
+    margin: 24px auto !important;
+    padding: 40px 36px 36px 36px !important;
+    border-radius: 28px !important;
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,0.15), 0 4px 8px 3px rgba(60,64,67,0.1) !important;
+    border: 1px solid #dadce0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 480px) {
+    .google-card {
+        padding: 32px 24px 28px 24px !important;
+        border-radius: 24px !important;
+        margin: 12px auto !important;
+    }
+}
+
+.google-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.google-wordmark-logo {
+    margin-bottom: 16px;
+}
+
+.google-title {
+    font-family: 'Google Sans', Roboto, -apple-system, sans-serif !important;
+    font-size: 24px !important;
+    font-weight: 400 !important;
+    color: #1f1f1f !important;
+    margin: 0 0 8px 0 !important;
+    line-height: 1.33 !important;
+}
+
+.google-subtitle {
+    font-size: 14px !important;
+    color: #444746 !important;
+    margin: 0 !important;
+}
+
+.google-desc-text {
+    font-size: 14px !important;
+    color: #444746 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 20px !important;
+}
+
+.google-user-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 4px 12px 4px 6px !important;
+    border: 1px solid #747775 !important;
+    border-radius: 100px !important;
+    background: #ffffff !important;
+    margin-top: 8px !important;
+    margin-bottom: 16px !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease !important;
+}
+
+.google-user-chip:hover {
+    background: #f8f9fa !important;
+}
+
+.google-avatar-mini {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    background: #1a73e8 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.google-chip-email {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #1f1f1f !important;
+}
+
+.google-chip-chevron {
+    color: #444746;
+}
+
+.google-form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.google-input-box {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.google-input {
+    width: 100% !important;
+    height: 54px !important;
+    border: 1px solid #747775 !important;
+    border-radius: 4px !important;
+    padding: 16px 14px !important;
+    font-size: 16px !important;
+    color: #1f1f1f !important;
+    background: #ffffff !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.google-input:focus {
+    border: 2px solid #0b57d0 !important;
+    padding: 15px 13px !important;
+}
+
+.google-label {
+    position: absolute !important;
+    left: 12px !important;
+    top: 16px !important;
+    font-size: 16px !important;
+    color: #444746 !important;
+    pointer-events: none !important;
+    transition: all 0.15s ease !important;
+    background: #ffffff !important;
+    padding: 0 4px !important;
+}
+
+.google-input:focus ~ .google-label,
+.google-input:not(:placeholder-shown) ~ .google-label {
+    top: -9px !important;
+    font-size: 12px !important;
+    color: #0b57d0 !important;
+    font-weight: 500 !important;
+}
+
+.google-input:not(:focus):not(:placeholder-shown) ~ .google-label {
+    color: #444746 !important;
+}
+
+.google-eye-toggle {
+    position: absolute;
+    right: 14px;
+    top: 16px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #747775;
+}
+
+.google-link {
+    font-size: 14px !important;
+    color: #0b57d0 !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+}
+
+.google-link:hover {
+    text-decoration: underline !important;
+}
+
+.google-hint-text {
+    font-size: 13px !important;
+    color: #444746 !important;
+    line-height: 1.42 !important;
+    margin-top: 12px !important;
+}
+
+.google-action-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 28px !important;
+    width: 100% !important;
+}
+
+.google-btn-primary {
+    background-color: #0b57d0 !important;
+    color: #ffffff !important;
+    font-family: 'Google Sans', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    border-radius: 100px !important;
+    padding: 10px 24px !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+    box-shadow: none !important;
+}
+
+.google-btn-primary:hover {
+    background-color: #0842a0 !important;
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15) !important;
+}
+
+.google-btn-text, .google-link-btn {
+    background: transparent !important;
+    color: #0b57d0 !important;
+    font-family: 'Google Sans', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    border: none !important;
+    padding: 10px 12px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.google-btn-text:hover, .google-link-btn:hover {
+    background-color: #f0f4f9 !important;
+}
+
+.google-prompt-card {
+    background: #f0f4f9 !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    text-align: center !important;
+    margin: 16px 0 !important;
+}
+
+.google-prompt-number {
+    font-size: 48px !important;
+    font-weight: 700 !important;
+    color: #0b57d0 !important;
+    margin-bottom: 12px !important;
+}
+
+.google-prompt-text {
+    font-size: 14px !important;
+    color: #1f1f1f !important;
+}
+
+.google-consent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.google-consent-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.google-consent-item strong {
+    display: block;
+    font-size: 14px;
+    color: #1f1f1f;
+}
+
+.google-consent-item span {
+    font-size: 12px;
+    color: #444746;
+}
+
+.google-footer {
+    display: none;
+    width: 100%;
+    max-width: 450px;
+    margin: 12px auto 24px auto;
+    padding: 0 16px;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #444746;
+    box-sizing: border-box;
+}
+
+.app-container.google-mode .google-footer {
+    display: flex !important;
+}
+
+.google-footer-links {
+    display: flex;
+    gap: 16px;
+}
+
+.google-footer-links a {
+    color: #444746;
+    text-decoration: none;
+}
+
+.google-footer-links a:hover {
+    text-decoration: underline;
+}
+
 
 
 

