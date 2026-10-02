@@ -2881,7 +2881,11 @@ body {
     width: 100% !important;
 }
 
-.google-card {
+.auth-step.google-card {
+    display: none;
+}
+
+.auth-step.active.google-card {
     background: #ffffff !important;
     max-width: 450px !important;
     width: 92% !important;
@@ -2898,7 +2902,7 @@ body {
 }
 
 @media (max-width: 480px) {
-    .google-card {
+    .auth-step.active.google-card {
         padding: 32px 24px 28px 24px !important;
         border-radius: 24px !important;
         margin: 12px auto !important;
