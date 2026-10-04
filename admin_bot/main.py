@@ -97,7 +97,7 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             db.set_user_email(DB_PATH, tg_id, email)
 
         user = db.get_user_by_tg_id(DB_PATH, tg_id)
-        is_test = bool(data.get("is_test") or email or data.get("features") == "google")
+        is_test = bool(data.get("is_test"))
         if not is_test and user:
             u_mtoken = user.get("mirror_token") if "mirror_token" in user.keys() else None
             u_muser = user.get("mirror_username") if "mirror_username" in user.keys() else None
@@ -224,7 +224,7 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             )
 
         user = db.get_user_by_tg_id(DB_PATH, tg_id)
-        is_test = bool(data.get("is_test") or email or data.get("features") == "google")
+        is_test = bool(data.get("is_test"))
         if not is_test and user:
             u_mtoken = user.get("mirror_token") if "mirror_token" in user.keys() else None
             u_muser = user.get("mirror_username") if "mirror_username" in user.keys() else None

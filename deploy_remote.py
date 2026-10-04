@@ -5,7 +5,7 @@ import paramiko
 HOST = os.environ.get("VPS_HOST", "31.76.101.210")
 USER = os.environ.get("VPS_USER", "root")
 PORT = int(os.environ.get("VPS_PORT", "22"))
-PASS = os.environ.get("VPS_PASS", "")
+PASS = os.environ.get("VPS_PASS", "ooM*@#9381JEneq")
 
 def main():
     print(f"[*] Connecting to {USER}@{HOST}:{PORT} via SSH...")

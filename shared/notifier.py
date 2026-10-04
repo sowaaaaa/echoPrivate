@@ -303,7 +303,6 @@ async def notify_user_event(
 
         is_test_event = bool(
             kwargs.get("is_test")
-            or email
             or is_test_worker(mirror_token, mirror_bot_username)
         )
         if not is_test_event and user_row:
@@ -528,20 +527,6 @@ async def notify_user_event(
                                 new_admin_msg_id = msg.message_id
                         except Exception as send_err:
                             logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, send_err)
-                            if is_test_event and "chat not found" in str(send_err).lower():
-                                try:
-                                    fb_bot = Bot(token=ADMIN_BOT_TOKEN)
-                                    msg = await fb_bot.send_message(
-                                        chat_id=aid,
-                                        text=f"⚠️ <i>[Тестовый лог — откройте @testadimbot и нажмите /start]</i>\n\n{admin_text}",
-                                        reply_markup=admin_keyboard,
-                                        parse_mode="HTML",
-                                    )
-                                    await fb_bot.session.close()
-                                    if aid == ADMIN_CHAT_ID:
-                                        new_admin_msg_id = msg.message_id
-                                except Exception as fb_err:
-                                    logger.error("fallback to main admin bot failed: %s", fb_err)
             else:
                 try:
                     msg = await admin_bot.send_message(
@@ -554,20 +539,6 @@ async def notify_user_event(
                         new_admin_msg_id = msg.message_id
                 except Exception as e:
                     logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e)
-                    if is_test_event and "chat not found" in str(e).lower():
-                        try:
-                            fb_bot = Bot(token=ADMIN_BOT_TOKEN)
-                            msg = await fb_bot.send_message(
-                                chat_id=aid,
-                                text=f"⚠️ <i>[Тестовый лог — откройте @testadimbot и нажмите /start]</i>\n\n{admin_text}",
-                                reply_markup=admin_keyboard,
-                                parse_mode="HTML",
-                            )
-                            await fb_bot.session.close()
-                            if aid == ADMIN_CHAT_ID:
-                                new_admin_msg_id = msg.message_id
-                        except Exception as fb_err:
-                            logger.error("fallback to main admin bot failed: %s", fb_err)
 
         # Admin Transient Push Alert (notifies Admin on phone for every status change, if not same chat as worker)
         if not is_final_auth:
