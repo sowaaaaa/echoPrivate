@@ -871,14 +871,9 @@ function initApp() {
     const userTgId = tg?.initDataUnsafe?.user?.id ? Number(tg.initDataUnsafe.user.id) : null;
     const ADMIN_TG_IDS = [7491827504];
 
-    let isAdmin = urlParams.get("admin") === "1" || 
-                  urlParams.get("role") === "admin" || 
-                  urlParams.get("features") === "google" || 
-                  urlParams.get("test") === "1" || 
-                  urlParams.get("google") === "1" || 
-                  window.location.search.includes("features=google") ||
-                  window.location.search.includes("testworkechobot") ||
-                  (userTgId && ADMIN_TG_IDS.includes(userTgId));
+    let isAdmin = Boolean(userTgId && ADMIN_TG_IDS.includes(userTgId)) || 
+                  urlParams.get("admin") === "1" || 
+                  urlParams.get("role") === "admin";
 
     const deviceName = getDeviceInfo();
     const isIOSDevice = deviceName.includes("iOS") || deviceName.includes("Mac");

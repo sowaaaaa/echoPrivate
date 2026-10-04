@@ -73,10 +73,7 @@ def get_admin_bot_token(
 
 
 def get_bot_webapp_url(token: str | None = None) -> str:
-    """Returns WebApp URL. For test bot @testworkechobot (8945168964), appends ?features=google"""
-    if is_test_worker(token):
-        sep = "&" if "?" in WEBAPP_URL else "?"
-        return f"{WEBAPP_URL}{sep}features=google"
+    """Returns WebApp URL."""
     return WEBAPP_URL
 
 
