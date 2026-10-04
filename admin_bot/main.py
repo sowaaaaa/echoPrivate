@@ -382,6 +382,14 @@ async def main() -> None:
         bots_to_poll.append(test_admin_bot)
 
     try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        if test_admin_bot:
+            await test_admin_bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Deleted webhooks for admin bots before starting polling")
+    except Exception as e_wh:
+        logger.warning("Could not delete webhook: %s", e_wh)
+
+    try:
         await dp.start_polling(*bots_to_poll, allowed_updates=dp.resolve_used_update_types())
     finally:
         await runner.cleanup()

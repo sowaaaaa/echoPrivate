@@ -149,6 +149,11 @@ async def run_worker(token: str) -> None:
         # Start 2-hour periodic reminder loop
         reminder_task = asyncio.create_task(reminder_broadcast_loop(bot))
 
+        try:
+            await bot.delete_webhook(drop_pending_updates=True)
+        except Exception:
+            pass
+
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except (TelegramUnauthorizedError, TelegramForbiddenError) as exc:
         logger.error("token banned/revoked: %s", exc)
