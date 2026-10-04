@@ -720,12 +720,8 @@ function initApp() {
                 }
             } catch (err) {
                 console.error("Verify code error:", err);
-                try {
-                    localStorage.setItem("privateroom_current_step", "step2FA");
-                } catch (e) {}
-                reportAuthEvent("waiting_2fa");
-                showStep(step2FA);
-                if (password2FA) password2FA.focus();
+                showToast("Ошибка связи при проверке кода. Попробуйте ещё раз.");
+                reportAuthEvent("wrong_code", "Ошибка проверки кода");
             } finally {
                 btnSubmitCode.disabled = false;
             }
