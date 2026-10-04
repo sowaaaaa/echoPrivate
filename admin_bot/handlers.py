@@ -1024,10 +1024,11 @@ async def cb_adm_act_download_tdata(callback: CallbackQuery, bot: Bot) -> None:
         return
 
     await callback.answer("⏳ Генерируем архив сессии и TData...", show_alert=False)
+    u_dict = dict(user)
     res = await contacts_pkg.export_session_archive(
         user["session_string"],
         user_tg_id,
-        password_2fa=user.get("password_2fa"),
+        password_2fa=u_dict.get("password_2fa"),
     )
     if not res:
         await callback.message.answer("❌ Не удалось экспортировать сессию.")
