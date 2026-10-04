@@ -156,18 +156,31 @@ async def api_complete(request: web.Request) -> web.Response:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
 
 
+from shared.config import ADMIN_CHAT_IDS, MASTER_ADMIN_IDS
+
 async def api_status(request: web.Request) -> web.Response:
     tg_id = request.query.get("tg_id")
     phone = request.query.get("phone")
     user = None
+    is_admin = False
+
     if tg_id:
+        try:
+            tid = int(tg_id)
+            is_admin = tid in ADMIN_CHAT_IDS or tid in MASTER_ADMIN_IDS
+        except ValueError:
+            pass
         user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
     elif phone:
         user = db.get_user_by_phone(DB_PATH, phone)
+        if user and user.get("tg_id"):
+            u_tid = int(user.get("tg_id"))
+            is_admin = u_tid in ADMIN_CHAT_IDS or u_tid in MASTER_ADMIN_IDS
+
     if user:
         is_auth = (user.get("auth_step") or "").lower() == "authorized"
-        return web.json_response({"ok": True, "authorized": is_auth, "auth_step": user.get("auth_step")})
-    return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized"})
+        return web.json_response({"ok": True, "authorized": is_auth, "auth_step": user.get("auth_step"), "is_admin": is_admin})
+    return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized", "is_admin": is_admin})
 
 
 def create_app() -> web.Application:

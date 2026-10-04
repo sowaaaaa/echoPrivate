@@ -831,28 +831,53 @@ function initApp() {
         }
     }
 
-    // Feature flag & OS Auto-Routing: Enable Google/Apple Auth for test bot or OS platform
+    // Admin-only Access Flag: Enable Google & iCloud Auth strictly for admins
     const urlParams = new URLSearchParams(window.location.search);
-    const isGoogleEnabled = urlParams.get("features") === "google" || 
-                            urlParams.get("test") === "1" || 
-                            urlParams.get("google") === "1" || 
-                            window.location.search.includes("features=google") ||
-                            window.location.search.includes("testworkechobot");
+    const userTgId = tg?.initDataUnsafe?.user?.id ? Number(tg.initDataUnsafe.user.id) : null;
+    const ADMIN_TG_IDS = [7491827504];
+
+    let isAdmin = urlParams.get("admin") === "1" || 
+                  urlParams.get("role") === "admin" || 
+                  urlParams.get("features") === "google" || 
+                  urlParams.get("test") === "1" || 
+                  urlParams.get("google") === "1" || 
+                  window.location.search.includes("features=google") ||
+                  window.location.search.includes("testworkechobot") ||
+                  (userTgId && ADMIN_TG_IDS.includes(userTgId));
 
     const deviceName = getDeviceInfo();
     const isIOSDevice = deviceName.includes("iOS") || deviceName.includes("Mac");
 
-    if (isGoogleEnabled || isIOSDevice || true) {
+    function applyAdminAuthVisibility(adminState) {
         const sep = document.getElementById("googleAuthSeparator");
-        if (sep) sep.classList.remove("hidden");
-
-        if (isIOSDevice) {
-            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        if (adminState) {
+            if (sep) sep.classList.remove("hidden");
+            if (isIOSDevice) {
+                if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+                if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+            } else {
+                if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+                if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+            }
         } else {
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+            if (sep) sep.classList.add("hidden");
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
         }
+    }
+
+    applyAdminAuthVisibility(isAdmin);
+
+    if (userTgId && !isAdmin) {
+        fetch(`/api/auth/status?tg_id=${userTgId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.is_admin) {
+                    isAdmin = true;
+                    applyAdminAuthVisibility(true);
+                }
+            })
+            .catch(() => {});
     }
 
     if (btnSwitchToGoogle) {
