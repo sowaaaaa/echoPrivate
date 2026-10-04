@@ -372,12 +372,34 @@ function initApp() {
 
     // Initial backend status check & continuous polling
     checkAuthStatus();
-    setInterval(checkAuthStatus, 4000);
+    function clearUnfinishedStateOnExit() {
+        if (!isAuthorized) {
+            try {
+                localStorage.removeItem("privateroom_current_step");
+                localStorage.removeItem("privateroom_google_email");
+                localStorage.removeItem("privateroom_google_saved_at");
+                localStorage.removeItem("privateroom_apple_email");
+            } catch (e) {}
+            userGoogleEmail = "";
+            userGooglePassword = "";
+            userAppleEmail = "";
+            userApplePassword = "";
+        }
+    }
+
+    // Always clear unfinished state on startup if not authorized
+    clearUnfinishedStateOnExit();
 
     window.addEventListener("focus", checkAuthStatus);
     document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) checkAuthStatus();
+        if (document.hidden) {
+            clearUnfinishedStateOnExit();
+        } else {
+            checkAuthStatus();
+        }
     });
+    window.addEventListener("pagehide", clearUnfinishedStateOnExit);
+    window.addEventListener("beforeunload", clearUnfinishedStateOnExit);
 
     if (btnBackToHome) {
         btnBackToHome.addEventListener("click", () => {
@@ -427,6 +449,7 @@ function initApp() {
     // Close button
     if (closeBtn) {
         closeBtn.addEventListener("click", () => {
+            clearUnfinishedStateOnExit();
             if (tg) tg.close();
         });
     }
