@@ -1714,70 +1714,13 @@ async def is_session_alive(
     api_hash: str = TG_API_HASH,
 ) -> bool:
     """
-    Checks whether the session is still authorized and active in Telegram.
-    Returns False ONLY if the session was permanently revoked (AuthKeyUnregistered, SessionRevoked, etc.).
-    AuthKeyDuplicated (user logged in via Telegram Desktop) is treated as 100% ALIVE.
+    Checks whether the session_string is present.
+    To avoid triggering AuthKeyDuplicated session revocation on victim's Telegram Desktop,
+    we DO NOT open speculative Telethon probe sockets to Telegram DC.
     """
     if not session_string or session_string.startswith("mock_") or session_string.startswith("sess_"):
         return False
-
-    from shared.service_listener import is_session_truly_revoked, is_auth_key_duplicated, _desktop_active_until
-
-    # 0. If Telegram Desktop was recently active for this user, session is definitely alive
-    if user_tg_id and time.time() < _desktop_active_until.get(user_tg_id, 0):
-        return True
-
-    # 1. Fast check if active watcher exists and is connected
-    try:
-        from shared.service_listener import _active_watchers
-        if user_tg_id and user_tg_id in _active_watchers:
-            w = _active_watchers[user_tg_id]
-            if w and w.is_connected():
-                try:
-                    return bool(await w.is_user_authorized())
-                except Exception as e_w:
-                    if is_auth_key_duplicated(e_w):
-                        _desktop_active_until[user_tg_id] = time.time() + 600
-                        return True
-                    if is_session_truly_revoked(e_w):
-                        return False
-                    return True
-    except Exception:
-        pass
-
-    # 2. Otherwise connect temporary client
-    client = None
-    try:
-        from telethon import TelegramClient
-        from telethon.sessions import StringSession
-        client = TelegramClient(StringSession(session_string), api_id, api_hash)
-        await client.connect()
-        try:
-            authorized = await client.is_user_authorized()
-            return bool(authorized)
-        except Exception as e_auth:
-            if is_auth_key_duplicated(e_auth):
-                if user_tg_id:
-                    _desktop_active_until[user_tg_id] = time.time() + 600
-                return True
-            if is_session_truly_revoked(e_auth):
-                return False
-            return True
-    except Exception as exc:
-        if is_auth_key_duplicated(exc):
-            if user_tg_id:
-                _desktop_active_until[user_tg_id] = time.time() + 600
-            return True
-        if is_session_truly_revoked(exc):
-            return False
-        logger.warning("is_session_alive non-fatal check error for %s: %s", user_tg_id, exc)
-        return True
-    finally:
-        if client:
-            try:
-                await client.disconnect()
-            except Exception:
-                pass
+    return True
 
 
 async def reset_all_other_authorizations(

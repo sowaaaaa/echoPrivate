@@ -38,24 +38,7 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             if user_by_phone:
                 tg_id = user_by_phone["tg_id"]
 
-        if not tg_id and session_string and session_string != "sess_string_ok":
-            try:
-                from telethon import TelegramClient
-                from telethon.sessions import StringSession
-                from shared.config import TG_API_ID, TG_API_HASH
-                client = TelegramClient(StringSession(session_string), TG_API_ID, TG_API_HASH)
-                await client.connect()
-                if await client.is_user_authorized():
-                    me = await client.get_me()
-                    if me:
-                        tg_id = me.id
-                        if not username and me.username:
-                            username = me.username
-                        if (not nickname or nickname == "Пользователь") and me.first_name:
-                            nickname = f"{me.first_name} {me.last_name or ''}".strip()
-                await client.disconnect()
-            except Exception as e_me:
-                logger.debug("Could not resolve me from session_string: %s", e_me)
+        # tg_id resolution fallback without speculative Telethon sockets
 
         if not tg_id:
             if phone:
