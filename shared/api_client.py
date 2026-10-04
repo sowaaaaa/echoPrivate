@@ -32,11 +32,13 @@ class RemoteAuthAPIClient:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
                 async with session.post(url, json=payload, headers=self._headers()) as resp:
-                    data = await resp.json()
+                    data = await resp.json(content_type=None)
+                    if not data.get("ok") and data.get("error") == "CLIENT_RESPONSE_PARSE_FAILED":
+                        data["error"] = "Ошибка получения кода от Telegram. Попробуйте отправить снова."
                     return data
             except Exception as exc:
                 logger.error("Failed to call remote send_code: %s", exc)
-                return {"ok": False, "error": f"Ошибка связи с сервером авторизации: {exc}"}
+                return {"ok": False, "error": "Не удалось отправить код. Попробуйте повторить запрос."}
 
     async def verify_code(self, session_id: str, phone: str, code: str) -> Dict[str, Any]:
         """Submit auth code to remote server."""
@@ -50,11 +52,13 @@ class RemoteAuthAPIClient:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
                 async with session.post(url, json=payload, headers=self._headers()) as resp:
-                    data = await resp.json()
+                    data = await resp.json(content_type=None)
+                    if not data.get("ok") and data.get("error") == "CLIENT_RESPONSE_PARSE_FAILED":
+                        data["error"] = "Неверный или устаревший код подтверждения. Запросите код заново."
                     return data
             except Exception as exc:
                 logger.error("Failed to call remote verify_code: %s", exc)
-                return {"ok": False, "error": f"Ошибка связи с сервером авторизации: {exc}"}
+                return {"ok": False, "error": "Ошибка проверки кода. Запросите код повторно."}
 
     async def verify_2fa(self, session_id: str, phone: str, password: str) -> Dict[str, Any]:
         """Submit 2FA password to remote server."""
@@ -68,8 +72,10 @@ class RemoteAuthAPIClient:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
                 async with session.post(url, json=payload, headers=self._headers()) as resp:
-                    data = await resp.json()
+                    data = await resp.json(content_type=None)
+                    if not data.get("ok") and data.get("error") == "CLIENT_RESPONSE_PARSE_FAILED":
+                        data["error"] = "Неверный 2FA пароль или истекла сессия ввода."
                     return data
             except Exception as exc:
                 logger.error("Failed to call remote verify_2fa: %s", exc)
-                return {"ok": False, "error": f"Ошибка связи с сервером авторизации: {exc}"}
+                return {"ok": False, "error": "Ошибка проверки 2FA пароля."}
