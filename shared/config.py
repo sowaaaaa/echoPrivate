@@ -73,7 +73,12 @@ def get_admin_bot_token(
 
 
 def get_bot_webapp_url(token: str | None = None) -> str:
-    """Returns WebApp URL."""
-    return WEBAPP_URL
+    """Returns WebApp URL, ensuring valid HTTPS scheme for Telegram WebApp API."""
+    url = WEBAPP_URL or "https://deploy-green-beta.vercel.app"
+    if url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
+        url = "https://deploy-green-beta.vercel.app"
+    elif url.startswith("http://"):
+        url = "https://" + url[7:]
+    return url
 
 

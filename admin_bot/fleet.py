@@ -33,6 +33,7 @@ class WorkerFleet:
         if self.is_running(token):
             return
 
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         process = await asyncio.create_subprocess_exec(
             sys.executable,
             "-m",
@@ -41,7 +42,7 @@ class WorkerFleet:
             token,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            cwd=os.getcwd(),
+            cwd=project_root,
         )
         self._processes[token] = process
         self._pump_tasks[token] = asyncio.create_task(self._pump(token, process))

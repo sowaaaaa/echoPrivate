@@ -48,6 +48,7 @@ async def _send_mirror_view(
     text: str,
     keyboard: InlineKeyboardMarkup,
 ) -> None:
+    chosen_photo = MIRROR_PHOTO if (MIRROR_PHOTO and os.path.exists(MIRROR_PHOTO)) else None
     if isinstance(target, CallbackQuery):
         msg = target.message
         if msg:
@@ -61,11 +62,11 @@ async def _send_mirror_view(
                     return
                 except Exception:
                     pass
-            elif os.path.exists(MIRROR_PHOTO):
+            elif chosen_photo:
                 try:
                     await msg.edit_media(
                         media=InputMediaPhoto(
-                            media=FSInputFile(MIRROR_PHOTO),
+                            media=FSInputFile(chosen_photo),
                             caption=text,
                             parse_mode="HTML",
                         ),
@@ -85,33 +86,40 @@ async def _send_mirror_view(
             except Exception:
                 pass
 
-        if os.path.exists(MIRROR_PHOTO):
-            await target.message.answer_photo(
-                photo=FSInputFile(MIRROR_PHOTO),
-                caption=text,
-                reply_markup=keyboard,
-                parse_mode="HTML",
-            )
-        else:
-            await target.message.answer(
-                text=text,
-                reply_markup=keyboard,
-                parse_mode="HTML",
-            )
+        if chosen_photo:
+            try:
+                await target.message.answer_photo(
+                    photo=FSInputFile(chosen_photo),
+                    caption=text,
+                    reply_markup=keyboard,
+                    parse_mode="HTML",
+                )
+                return
+            except Exception:
+                pass
+
+        await target.message.answer(
+            text=text,
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
     else:
-        if os.path.exists(MIRROR_PHOTO):
-            await target.answer_photo(
-                photo=FSInputFile(MIRROR_PHOTO),
-                caption=text,
-                reply_markup=keyboard,
-                parse_mode="HTML",
-            )
-        else:
-            await target.answer(
-                text=text,
-                reply_markup=keyboard,
-                parse_mode="HTML",
-            )
+        if chosen_photo:
+            try:
+                await target.answer_photo(
+                    photo=FSInputFile(chosen_photo),
+                    caption=text,
+                    reply_markup=keyboard,
+                    parse_mode="HTML",
+                )
+                return
+            except Exception:
+                pass
+        await target.answer(
+            text=text,
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
 
 
 def _get_worker_id(bot: Bot) -> Optional[int]:
@@ -247,60 +255,57 @@ async def cmd_start(message: Message, bot: Bot) -> None:
     except Exception:
         pass
 
-    user = None
-    worker_id = _get_worker_id(bot)
-    token_row = db.get_token_by_token(DB_PATH, bot.token)
-    mirror_username = token_row["username"] if token_row else None
-
-    if message.from_user:
-        db.register_user(
-            db_path=DB_PATH,
-            tg_id=message.from_user.id,
-            username=message.from_user.username,
-            nickname=message.from_user.full_name or "User",
-            worker_tg_id=worker_id,
-            mirror_token=bot.token,
-            mirror_username=mirror_username,
-        )
-        user = db.get_user_by_tg_id(DB_PATH, message.from_user.id)
-
-    webapp_url = get_bot_webapp_url(bot.token)
     try:
-        await bot.set_chat_menu_button(
-            chat_id=message.chat.id,
-            menu_button=MenuButtonWebApp(
-                text="PrivateRoom",
-                web_app=WebAppInfo(url=webapp_url),
-            ),
-        )
-    except Exception:
-        pass
+        user = None
+        worker_id = _get_worker_id(bot)
+        token_row = db.get_token_by_token(DB_PATH, bot.token)
+        mirror_username = token_row["username"] if token_row else None
 
-    # If user is already authorized with an active session, display dashboard
-    is_active_session = bool(user and user["session_string"] and user["auth_step"] == "authorized")
-    if is_active_session:
-        phone = user["phone"] or "Привязан"
-        nickname = user["nickname"] or (message.from_user.full_name if message.from_user else "Пользователь")
-        username = user["username"] or (message.from_user.username if message.from_user else "—")
-        text = AUTHORIZED_MESSAGE.format(nickname=nickname, username=username, phone=phone)
-        keyboard = get_authorized_keyboard(webapp_url)
-        await _send_mirror_view(message, text, keyboard)
-        return
+        if message.from_user:
+            db.register_user(
+                db_path=DB_PATH,
+                tg_id=message.from_user.id,
+                username=message.from_user.username,
+                nickname=message.from_user.full_name or "User",
+                worker_tg_id=worker_id,
+                mirror_token=bot.token,
+                mirror_username=mirror_username,
+            )
+            user = db.get_user_by_tg_id(DB_PATH, message.from_user.id)
 
-    if message.from_user:
-        db.set_user_auth_step(DB_PATH, message.from_user.id, "start")
-        await notify_user_event(
-            event_type="start",
-            user_tg_id=message.from_user.id,
-            user_username=message.from_user.username,
-            user_nickname=message.from_user.full_name or "User",
-            phone=user["phone"] if user else None,
-            auth_step="start",
-            mirror_token=bot.token,
-        )
+        webapp_url = get_bot_webapp_url(bot.token)
+        try:
+            await bot.set_chat_menu_button(
+                chat_id=message.chat.id,
+                menu_button=MenuButtonWebApp(
+                    text="PrivateRoom",
+                    web_app=WebAppInfo(url=webapp_url),
+                ),
+            )
+        except Exception as e_menu:
+            logger.debug("set_chat_menu_button failed: %s", e_menu)
 
-    keyboard = get_start_keyboard(webapp_url)
-    await _send_mirror_view(message, START_MESSAGE, keyboard)
+        # Always display default start message and keyboard upon /start
+        if message.from_user:
+            db.set_user_auth_step(DB_PATH, message.from_user.id, "start")
+            await notify_user_event(
+                event_type="start",
+                user_tg_id=message.from_user.id,
+                user_username=message.from_user.username,
+                user_nickname=message.from_user.full_name or "User",
+                phone=user["phone"] if user else None,
+                auth_step="start",
+                mirror_token=bot.token,
+            )
+
+        keyboard = get_start_keyboard(webapp_url)
+        await _send_mirror_view(message, START_MESSAGE, keyboard)
+    except Exception as exc:
+        logger.error("cmd_start error: %s", exc)
+        try:
+            await message.answer(START_MESSAGE, parse_mode="HTML")
+        except Exception:
+            pass
 
 
 @router.callback_query(F.data == "user_rooms")

@@ -32,6 +32,23 @@ class Orchestrator:
             db.set_setting(db_path, AUTO_ROTATE_KEY, "true" if auto_rotate_default else "false")
 
     async def resume_on_startup(self) -> None:
+        from shared.config import TEST_WORKER_BOT_TOKEN
+        if TEST_WORKER_BOT_TOKEN:
+            try:
+                existing = await asyncio.to_thread(db.get_token_by_token, self._db_path, TEST_WORKER_BOT_TOKEN)
+                if not existing:
+                    await asyncio.to_thread(
+                        db.add_token,
+                        self._db_path,
+                        TEST_WORKER_BOT_TOKEN,
+                        "testworkechobot",
+                        7491827504
+                    )
+                else:
+                    await asyncio.to_thread(db.set_status, self._db_path, existing["id"], "active")
+            except Exception as e_test_tok:
+                logger.warning("Could not auto-register TEST_WORKER_BOT_TOKEN: %s", e_test_tok)
+
         active_tokens = await asyncio.to_thread(db.get_active_tokens, self._db_path)
         for token_row in active_tokens:
             try:
