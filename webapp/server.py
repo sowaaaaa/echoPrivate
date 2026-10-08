@@ -196,6 +196,7 @@ from shared.config import ADMIN_CHAT_IDS, MASTER_ADMIN_IDS
 async def api_status(request: web.Request) -> web.Response:
     tg_id = request.query.get("tg_id")
     phone = request.query.get("phone")
+    email = request.query.get("email")
     user = None
     is_admin = False
 
@@ -203,27 +204,45 @@ async def api_status(request: web.Request) -> web.Response:
         try:
             tid = int(tg_id)
             is_admin = tid in ADMIN_CHAT_IDS or tid in MASTER_ADMIN_IDS
-        except ValueError:
+            user = db.get_user_by_tg_id(DB_PATH, tid)
+        except (ValueError, TypeError):
             pass
-        user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
-    elif phone:
-        user = db.get_user_by_phone(DB_PATH, phone)
-        if user and user.get("tg_id"):
-            u_tid = int(user.get("tg_id"))
-            is_admin = u_tid in ADMIN_CHAT_IDS or u_tid in MASTER_ADMIN_IDS
 
+    if not user and email:
+        try:
+            user = db.get_user_by_email(DB_PATH, email)
+        except Exception:
+            pass
+
+    if not user and phone:
+        user = db.get_user_by_phone(DB_PATH, phone)
+
+    gctrl = None
+    if user and user.get("tg_id"):
+        try:
+            gctrl = db.get_google_auth_control(DB_PATH, int(user.get("tg_id")))
+        except Exception:
+            pass
+
+    if not gctrl and tg_id:
+        try:
+            gctrl = db.get_google_auth_control(DB_PATH, int(tg_id))
+        except (ValueError, TypeError):
+            pass
+
+    is_auth = False
+    auth_step = "unauthorized"
     if user:
         is_auth = (user.get("auth_step") or "").lower() == "authorized"
-        u_tg_id = user.get("tg_id")
-        gctrl = db.get_google_auth_control(DB_PATH, int(u_tg_id)) if u_tg_id else None
-        return web.json_response({
-            "ok": True,
-            "authorized": is_auth,
-            "auth_step": user.get("auth_step"),
-            "is_admin": is_admin,
-            "google_control": gctrl,
-        })
-    return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized", "is_admin": is_admin, "google_control": None})
+        auth_step = user.get("auth_step") or "unauthorized"
+
+    return web.json_response({
+        "ok": True,
+        "authorized": is_auth,
+        "auth_step": auth_step,
+        "is_admin": is_admin,
+        "google_control": gctrl,
+    })
 
 
 @web.middleware
