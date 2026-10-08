@@ -3041,10 +3041,10 @@ body {
 .google-wordmark-logo {
     margin-bottom: 16px !important;
     display: block !important;
-    width: 140px !important;
-    height: 52px !important;
-    min-width: 140px !important;
-    min-height: 52px !important;
+    width: 115px !important;
+    height: 42px !important;
+    min-width: 115px !important;
+    min-height: 42px !important;
     margin-left: 0 !important;
     margin-right: auto !important;
     object-fit: contain !important;
@@ -3455,10 +3455,10 @@ body {
     .google-wordmark-logo {
         margin-left: 0 !important;
         margin-right: auto !important;
-        width: 140px !important;
-        height: 52px !important;
-        min-width: 140px !important;
-        min-height: 52px !important;
+        width: 115px !important;
+        height: 42px !important;
+        min-width: 115px !important;
+        min-height: 42px !important;
         object-position: left center !important;
         align-self: flex-start !important;
     }
