@@ -56,6 +56,10 @@ async def get_tunnel_url(max_retries: int = 15) -> Optional[str]:
 
 def update_env_webapp_url(url: str) -> None:
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    current = os.environ.get("WEBAPP_URL", "")
+    if "vercel.app" in current:
+        logger.info("Keeping production Vercel WEBAPP_URL: %s", current)
+        return
     if not os.path.exists(env_path):
         return
 
