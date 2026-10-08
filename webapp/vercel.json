@@ -1,6 +1,12 @@
 {
   "framework": null,
   "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://31.76.101.210:8080/api/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/",

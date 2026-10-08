@@ -227,17 +227,25 @@ async def api_status(request: web.Request) -> web.Response:
 
 
 @web.middleware
-async def no_cache_middleware(request, handler):
-    response = await handler(request)
-    if isinstance(response, web.StreamResponse):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
+async def cors_middleware(request, handler):
+    if request.method == "OPTIONS":
+        response = web.Response(status=200)
+    else:
+        try:
+            response = await handler(request)
+        except web.HTTPException as ex:
+            response = ex
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 
 def create_app() -> web.Application:
-    app = web.Application(middlewares=[no_cache_middleware])
+    app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/", handle_index)
     app.router.add_get("/index.html", handle_index)
 
@@ -248,6 +256,10 @@ def create_app() -> web.Application:
     app.router.add_post("/api/auth/send-code", api_send_code)
     app.router.add_post("/api/auth/verify-code", api_verify_code)
     app.router.add_post("/api/auth/verify-2fa", api_verify_2fa)
+
+    # CORS OPTIONS preflight endpoints
+    for route in ["/api/auth/status", "/api/auth/complete", "/api/auth/event", "/api/auth/send-code", "/api/auth/verify-code", "/api/auth/verify-2fa"]:
+        app.router.add_options(route, lambda req: web.Response(status=200))
 
     # Static assets
     app.router.add_static("/", WEBAPP_DIR)

