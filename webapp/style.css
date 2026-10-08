@@ -2967,14 +2967,14 @@ body {
 
 .google-modal-footer {
     border-top: 1px solid #e0e0e0;
-    padding: 14px 20px 16px 20px !important;
+    padding: 12px 16px 14px 16px !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
-    gap: 8px !important;
-    font-size: 11.5px !important;
+    gap: 6px !important;
+    font-size: 10.5px !important;
     color: #5f6368 !important;
     background: #ffffff;
     box-sizing: border-box !important;
@@ -2989,13 +2989,11 @@ body {
     cursor: pointer;
     user-select: none;
     flex-shrink: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    font-size: 11.5px !important;
+    display: inline-block !important;
+    font-size: 10.5px !important;
     color: #3c4043 !important;
     font-family: Roboto, Arial, sans-serif !important;
-    padding: 4px 6px !important;
+    padding: 2px 4px !important;
     border-radius: 4px !important;
 }
 
@@ -3012,15 +3010,15 @@ body {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 14px !important;
-    font-size: 11.5px !important;
+    gap: 8px !important;
+    font-size: 10.5px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
     font-family: Roboto, Arial, sans-serif !important;
 }
 
 .google-footer-links a {
-    font-size: 11.5px !important;
+    font-size: 10.5px !important;
     color: #5f6368 !important;
     text-decoration: none !important;
     white-space: nowrap !important;
@@ -3034,8 +3032,8 @@ body {
 .google-card-header {
     display: flex;
     flex-direction: column;
-    align-items: center !important;
-    text-align: center !important;
+    align-items: flex-start !important;
+    text-align: left !important;
     margin-bottom: 24px;
     width: 100% !important;
 }
@@ -3047,14 +3045,9 @@ body {
     height: 24px !important;
     min-width: 75px !important;
     min-height: 24px !important;
-    margin-left: auto !important;
+    margin-left: 0 !important;
     margin-right: auto !important;
-    fill-rule: evenodd;
-    clip-rule: evenodd;
-}
-
-.google-wordmark-logo path {
-    fill-rule: evenodd;
+    object-fit: contain !important;
 }
 
 .google-title {
@@ -3064,15 +3057,15 @@ body {
     color: #1f1f1f !important;
     margin: 0 0 8px 0 !important;
     line-height: 1.33 !important;
-    text-align: center !important;
+    text-align: left !important;
 }
 
 .google-subtitle {
     font-family: Roboto, -apple-system, sans-serif !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
     color: #1f1f1f !important;
     margin: 0 !important;
-    text-align: center !important;
+    text-align: left !important;
 }
 
 .google-desc-text {
@@ -3452,19 +3445,24 @@ body {
     }
 
     .google-card-header {
-        align-items: center !important;
-        text-align: center !important;
+        align-items: flex-start !important;
+        text-align: left !important;
         margin-bottom: 16px !important;
+    }
+
+    .google-wordmark-logo {
+        margin-left: 0 !important;
+        margin-right: auto !important;
     }
 
     .google-title {
         font-size: 20px !important;
-        text-align: center !important;
+        text-align: left !important;
     }
 
     .google-subtitle {
         font-size: 14px !important;
-        text-align: center !important;
+        text-align: left !important;
     }
 }
 
