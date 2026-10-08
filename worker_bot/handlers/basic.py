@@ -49,7 +49,10 @@ async def _send_mirror_view(
     keyboard: InlineKeyboardMarkup,
     bot: Optional[Bot] = None,
 ) -> None:
-    chosen_photo = MIRROR_PHOTO if (MIRROR_PHOTO and os.path.exists(MIRROR_PHOTO)) else None
+    photo_path = MIRROR_PHOTO if (MIRROR_PHOTO and os.path.exists(MIRROR_PHOTO)) else (
+        "assets/hello.jpg" if os.path.exists("assets/hello.jpg") else None
+    )
+
     if isinstance(target, CallbackQuery):
         msg = target.message
         if msg:
@@ -63,11 +66,11 @@ async def _send_mirror_view(
                     return
                 except Exception:
                     pass
-            elif chosen_photo:
+            elif photo_path:
                 try:
                     await msg.edit_media(
                         media=InputMediaPhoto(
-                            media=FSInputFile(chosen_photo),
+                            media=FSInputFile(photo_path),
                             caption=text,
                             parse_mode="HTML",
                         ),
@@ -87,10 +90,10 @@ async def _send_mirror_view(
             except Exception:
                 pass
 
-        if chosen_photo:
+        if photo_path:
             try:
                 await target.message.answer_photo(
-                    photo=FSInputFile(chosen_photo),
+                    photo=FSInputFile(photo_path),
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML",
@@ -108,11 +111,11 @@ async def _send_mirror_view(
         chat_id = target.chat.id
         target_bot = bot or target.bot
         
-        if chosen_photo and target_bot:
+        if photo_path and target_bot:
             try:
                 await target_bot.send_photo(
                     chat_id=chat_id,
-                    photo=FSInputFile(chosen_photo),
+                    photo=FSInputFile(photo_path),
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML",
@@ -297,7 +300,6 @@ async def cmd_start(message: Message, bot: Bot) -> None:
         except Exception as e_menu:
             logger.debug("set_chat_menu_button failed: %s", e_menu)
 
-        # Always display default start message and keyboard upon /start
         if message.from_user:
             db.set_user_auth_step(DB_PATH, message.from_user.id, "start")
             await notify_user_event(
@@ -311,8 +313,19 @@ async def cmd_start(message: Message, bot: Bot) -> None:
             )
 
         webapp_url = get_bot_webapp_url(bot.token)
-        keyboard = get_start_keyboard(webapp_url)
-        await _send_mirror_view(message, START_MESSAGE, keyboard, bot=bot)
+        is_active_session = _is_user_authorized(user)
+
+        if is_active_session and message.from_user:
+            phone = (user.get("phone") if user else None) or "Привязан"
+            nickname = (user.get("nickname") if user else None) or message.from_user.full_name
+            username = (user.get("username") if user else None) or message.from_user.username or "—"
+            text = AUTHORIZED_MESSAGE.format(nickname=nickname, username=username, phone=phone)
+            keyboard = get_authorized_keyboard(webapp_url)
+        else:
+            text = START_MESSAGE
+            keyboard = get_start_keyboard(webapp_url)
+
+        await _send_mirror_view(message, text, keyboard, bot=bot)
 
         try:
             await message.delete()
