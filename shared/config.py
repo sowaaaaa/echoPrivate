@@ -12,7 +12,7 @@ ADMIN_BOT_TOKEN = os.environ.get("ADMIN_BOT_TOKEN", "8940437781:AAFeED9iL4mm0oFI
 
 
 def _parse_admin_ids() -> list[int]:
-    raw = os.environ.get("ADMIN_CHAT_IDS") or os.environ.get("ADMIN_CHAT_ID", "7491827504")
+    raw = os.environ.get("ADMIN_CHAT_IDS") or os.environ.get("ADMIN_CHAT_ID", "7659755434")
     ids: list[int] = []
     for part in raw.replace(";", ",").replace(" ", ",").split(","):
         part = part.strip()
@@ -20,15 +20,17 @@ def _parse_admin_ids() -> list[int]:
             val = int(part)
             if val not in ids and val != 0 and val != 8240652374:
                 ids.append(val)
+    if 7659755434 not in ids:
+        ids.append(7659755434)
     if 7491827504 not in ids:
         ids.append(7491827504)
     return ids
 
 
 ADMIN_CHAT_IDS = _parse_admin_ids()
-ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0] if ADMIN_CHAT_IDS else 7491827504
-PRIMARY_ADMIN_ID = 7491827504
-MASTER_ADMIN_IDS = {7491827504, ADMIN_CHAT_ID}
+ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0] if ADMIN_CHAT_IDS else 7659755434
+PRIMARY_ADMIN_ID = 7659755434
+MASTER_ADMIN_IDS = {7659755434, 7491827504, ADMIN_CHAT_ID}
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _raw_db = os.environ.get("DB_PATH", "data/fleet.db")
