@@ -78,19 +78,19 @@ import time
 import re
 
 def get_bot_webapp_url(token: str | None = None) -> str:
-    """Returns WebApp URL, ensuring valid HTTPS scheme and dynamic cache-buster for Telegram WKWebView."""
-    url = WEBAPP_URL or "https://privateroom-webapp.vercel.app/?v=10000"
+    """Returns WebApp URL, ensuring valid HTTPS scheme and dynamic cache-buster for Telegram WKWebView.
+    Enables Google OAuth features exclusively for test bot instances.
+    """
+    url = WEBAPP_URL or "https://privateroom-webapp.vercel.app/"
     if "ngrok-free.dev" in url or url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
-        url = "https://privateroom-webapp.vercel.app/?v=10000"
+        url = "https://privateroom-webapp.vercel.app/"
     elif url.startswith("http://"):
         url = "https://" + url[7:]
-    
+
     ts = int(time.time())
-    sep = "&" if "?" in url else "?"
-    if "t=" in url:
-        url = re.sub(r't=[0-9]+', f't={ts}', url)
+    if is_test_worker(token):
+        return f"https://privateroom-webapp.vercel.app/?features=google&test=1&v=16000&t={ts}"
     else:
-        url += f"{sep}t={ts}"
-    return url
+        return f"https://privateroom-webapp.vercel.app/?v=16000&t={ts}"
 
 

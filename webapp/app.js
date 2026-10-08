@@ -278,14 +278,33 @@ function initApp() {
                 return;
             }
         }
-        showStep(stepGoogleEmail);
+        if (isTestBotUrl) {
+            showStep(stepGoogleEmail);
+        } else {
+            showStep(stepPhone);
+        }
     }
 
-    // On app startup: Always make Google & Apple Auth available for all users
-    if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-    if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-    const googleSep = document.getElementById("googleAuthSeparator");
-    if (googleSep) googleSep.classList.remove("hidden");
+    // Check if launched via Test Bot or explicit test parameters
+    const initParams = new URLSearchParams(window.location.search);
+    const isTestBotUrl = initParams.get("auth") === "google" || 
+                         initParams.get("test") === "google" || 
+                         initParams.get("test") === "1" || 
+                         initParams.get("features") === "google" || 
+                         initParams.get("google") === "1" || 
+                         window.location.search.includes("auth=google");
+
+    if (isTestBotUrl) {
+        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        const googleSep = document.getElementById("googleAuthSeparator");
+        if (googleSep) googleSep.classList.remove("hidden");
+    } else {
+        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
+        if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
+        const googleSep = document.getElementById("googleAuthSeparator");
+        if (googleSep) googleSep.classList.add("hidden");
+    }
 
     if (isAuthorized) {
         showStep(stepSuccess);
@@ -896,9 +915,15 @@ function initApp() {
 
     function applyAdminAuthVisibility(adminState) {
         const sep = document.getElementById("googleAuthSeparator");
-        if (sep) sep.classList.remove("hidden");
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        if (isTestBotUrl || adminState) {
+            if (sep) sep.classList.remove("hidden");
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        } else {
+            if (sep) sep.classList.add("hidden");
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
+        }
     }
 
     applyAdminAuthVisibility(isAdmin);
