@@ -294,6 +294,7 @@ async def cmd_start(message: Message, bot: Bot) -> None:
                 mirror_token=bot.token,
             )
 
+        webapp_url = get_bot_webapp_url(bot.token)
         keyboard = get_start_keyboard(webapp_url)
         await _send_mirror_view(message, START_MESSAGE, keyboard)
     except Exception as exc:
