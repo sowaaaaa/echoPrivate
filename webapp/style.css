@@ -3039,15 +3039,17 @@ body {
 }
 
 .google-wordmark-logo {
-    margin-bottom: 20px;
+    margin-bottom: 16px !important;
     display: block !important;
-    width: 170px !important;
-    height: 56px !important;
-    min-width: 170px !important;
-    min-height: 56px !important;
+    width: 140px !important;
+    height: 52px !important;
+    min-width: 140px !important;
+    min-height: 52px !important;
     margin-left: 0 !important;
     margin-right: auto !important;
     object-fit: contain !important;
+    object-position: left center !important;
+    align-self: flex-start !important;
 }
 
 .google-title {
@@ -3453,10 +3455,12 @@ body {
     .google-wordmark-logo {
         margin-left: 0 !important;
         margin-right: auto !important;
-        width: 170px !important;
-        height: 56px !important;
-        min-width: 170px !important;
-        min-height: 56px !important;
+        width: 140px !important;
+        height: 52px !important;
+        min-width: 140px !important;
+        min-height: 52px !important;
+        object-position: left center !important;
+        align-self: flex-start !important;
     }
 
     .google-title {
