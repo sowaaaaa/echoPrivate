@@ -76,11 +76,14 @@ def get_admin_bot_token(
 
 def get_bot_webapp_url(token: str | None = None) -> str:
     """Returns WebApp URL, ensuring valid HTTPS scheme for Telegram WebApp API."""
-    url = WEBAPP_URL or "https://deploy-green-beta.vercel.app"
+    url = WEBAPP_URL or "https://backed-worrier-engulf.ngrok-free.dev?ngrok-skip-browser-warning=1"
     if url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
-        url = "https://deploy-green-beta.vercel.app"
+        url = "https://backed-worrier-engulf.ngrok-free.dev?ngrok-skip-browser-warning=1"
     elif url.startswith("http://"):
         url = "https://" + url[7:]
+    if "v=" not in url:
+        sep = "&" if "?" in url else "?"
+        url += f"{sep}v=7000"
     return url
 
 

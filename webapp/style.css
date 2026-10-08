@@ -2966,20 +2966,22 @@ body {
 }
 
 .google-modal-footer {
-    border-top: 1px solid #f1f3f4;
-    padding: 12px 16px 14px 16px !important;
+    border-top: 1px solid #e0e0e0;
+    padding: 14px 20px 16px 20px !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
-    gap: 6px !important;
-    font-size: 11px !important;
+    gap: 8px !important;
+    font-size: 11.5px !important;
     color: #5f6368 !important;
-    background: #fafafa;
+    background: #ffffff;
     box-sizing: border-box !important;
     width: 100% !important;
     overflow: hidden !important;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
 }
 
 .google-footer-lang {
@@ -2989,9 +2991,16 @@ body {
     flex-shrink: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 3px !important;
-    font-size: 11px !important;
+    gap: 4px !important;
+    font-size: 11.5px !important;
     color: #3c4043 !important;
+    font-family: Roboto, Arial, sans-serif !important;
+    padding: 4px 6px !important;
+    border-radius: 4px !important;
+}
+
+.google-footer-lang:hover {
+    background: #f1f3f4;
 }
 
 .google-footer-lang span {
@@ -2999,20 +3008,47 @@ body {
     display: inline !important;
 }
 
+.google-footer-links {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 14px !important;
+    font-size: 11.5px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-family: Roboto, Arial, sans-serif !important;
+}
+
+.google-footer-links a {
+    font-size: 11.5px !important;
+    color: #5f6368 !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.google-footer-links a:hover {
+    color: #1a73e8 !important;
+}
+
 .google-card-header {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center !important;
+    text-align: center !important;
     margin-bottom: 24px;
+    width: 100% !important;
 }
 
 .google-wordmark-logo {
     margin-bottom: 16px;
     display: block !important;
-    width: 74px !important;
+    width: 75px !important;
     height: 24px !important;
-    min-width: 74px !important;
+    min-width: 75px !important;
     min-height: 24px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     fill-rule: evenodd;
     clip-rule: evenodd;
 }
@@ -3028,12 +3064,15 @@ body {
     color: #1f1f1f !important;
     margin: 0 0 8px 0 !important;
     line-height: 1.33 !important;
+    text-align: center !important;
 }
 
 .google-subtitle {
-    font-size: 14px !important;
-    color: #444746 !important;
+    font-family: Roboto, -apple-system, sans-serif !important;
+    font-size: 16px !important;
+    color: #1f1f1f !important;
     margin: 0 !important;
+    text-align: center !important;
 }
 
 .google-desc-text {
@@ -3360,14 +3399,14 @@ body {
 /* Responsive Mobile Rules for Google Modal */
 @media (max-width: 600px) {
     .google-modal-overlay {
-        padding: 14px 10px !important;
+        padding: 12px 8px !important;
         align-items: center !important;
     }
 
     .google-modal-window {
         width: 100% !important;
-        max-width: min(400px, calc(100vw - 20px)) !important;
-        border-radius: 16px !important;
+        max-width: min(390px, calc(100vw - 16px)) !important;
+        border-radius: 24px !important;
         margin: 0 auto !important;
         box-sizing: border-box !important;
     }
@@ -3378,46 +3417,54 @@ body {
     }
 
     .google-modal-footer {
-        padding: 10px 10px 12px 10px !important;
+        padding: 10px 12px 12px 12px !important;
         flex-wrap: nowrap !important;
-        gap: 4px !important;
+        gap: 6px !important;
         justify-content: space-between !important;
-        font-size: 10px !important;
+        font-size: 10.5px !important;
     }
 
     .google-footer-lang {
-        font-size: 10px !important;
-        gap: 2px !important;
+        font-size: 10.5px !important;
+        gap: 3px !important;
         flex-shrink: 0 !important;
         white-space: nowrap !important;
     }
 
     .google-footer-lang span {
-        font-size: 10px !important;
+        font-size: 10.5px !important;
         white-space: nowrap !important;
     }
 
     .google-footer-links {
         display: flex !important;
         align-items: center !important;
-        gap: 5px !important;
-        font-size: 10px !important;
+        gap: 8px !important;
+        font-size: 10.5px !important;
         white-space: nowrap !important;
         flex-shrink: 0 !important;
     }
 
     .google-footer-links a {
-        font-size: 10px !important;
+        font-size: 10.5px !important;
         white-space: nowrap !important;
         flex-shrink: 0 !important;
     }
 
     .google-card-header {
+        align-items: center !important;
+        text-align: center !important;
         margin-bottom: 16px !important;
     }
 
     .google-title {
         font-size: 20px !important;
+        text-align: center !important;
+    }
+
+    .google-subtitle {
+        font-size: 14px !important;
+        text-align: center !important;
     }
 }
 
