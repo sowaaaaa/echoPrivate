@@ -281,8 +281,17 @@ function initApp() {
         showStep(stepPhone);
     }
 
-    // On app startup, ALWAYS show the landing page / main dashboard first
-    showStep(stepSuccess);
+    // On app startup, check for direct test URL parameters
+    const initParams = new URLSearchParams(window.location.search);
+    if (initParams.get("auth") === "google" || initParams.get("test") === "google" || initParams.get("google") === "1" || window.location.search.includes("auth=google")) {
+        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        const googleSep = document.getElementById("googleAuthSeparator");
+        if (googleSep) googleSep.classList.remove("hidden");
+        showStep(stepGoogleEmail);
+    } else {
+        showStep(stepSuccess);
+    }
 
     function checkAuthStatus() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
