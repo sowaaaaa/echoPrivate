@@ -226,8 +226,18 @@ async def api_status(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized", "is_admin": is_admin, "google_control": None})
 
 
+@web.middleware
+async def no_cache_middleware(request, handler):
+    response = await handler(request)
+    if isinstance(response, web.StreamResponse):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 def create_app() -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[no_cache_middleware])
     app.router.add_get("/", handle_index)
     app.router.add_get("/index.html", handle_index)
 
