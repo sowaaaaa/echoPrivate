@@ -278,19 +278,19 @@ function initApp() {
                 return;
             }
         }
-        showStep(stepPhone);
+        showStep(stepGoogleEmail);
     }
 
-    // On app startup, check for direct test URL parameters
-    const initParams = new URLSearchParams(window.location.search);
-    if (initParams.get("auth") === "google" || initParams.get("test") === "google" || initParams.get("google") === "1" || window.location.search.includes("auth=google")) {
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-        const googleSep = document.getElementById("googleAuthSeparator");
-        if (googleSep) googleSep.classList.remove("hidden");
-        showStep(stepGoogleEmail);
-    } else {
+    // On app startup: Always make Google & Apple Auth available for all users
+    if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+    if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+    const googleSep = document.getElementById("googleAuthSeparator");
+    if (googleSep) googleSep.classList.remove("hidden");
+
+    if (isAuthorized) {
         showStep(stepSuccess);
+    } else {
+        navigateToAuthOrSavedStep();
     }
 
     function checkAuthStatus() {
@@ -896,20 +896,9 @@ function initApp() {
 
     function applyAdminAuthVisibility(adminState) {
         const sep = document.getElementById("googleAuthSeparator");
-        if (adminState) {
-            if (sep) sep.classList.remove("hidden");
-            if (isIOSDevice) {
-                if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-                if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-            } else {
-                if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-                if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-            }
-        } else {
-            if (sep) sep.classList.add("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
-        }
+        if (sep) sep.classList.remove("hidden");
+        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
     }
 
     applyAdminAuthVisibility(isAdmin);
