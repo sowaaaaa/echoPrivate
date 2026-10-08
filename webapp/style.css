@@ -3041,10 +3041,10 @@ body {
 .google-wordmark-logo {
     margin-bottom: 16px;
     display: block !important;
-    width: 75px !important;
-    height: 24px !important;
-    min-width: 75px !important;
-    min-height: 24px !important;
+    width: 96px !important;
+    height: 32px !important;
+    min-width: 96px !important;
+    min-height: 32px !important;
     margin-left: 0 !important;
     margin-right: auto !important;
     object-fit: contain !important;
