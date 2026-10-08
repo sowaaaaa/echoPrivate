@@ -153,17 +153,6 @@ async def _forward_service_message(
                     await bot.send_message(chat_id=rid, text=alert_text, parse_mode="HTML")
                 except Exception as send_err:
                     logger.debug("Failed to send 777000 alert to recipient %s via %s: %s", rid, target_token, send_err)
-                    if is_test and "chat not found" in str(send_err).lower():
-                        try:
-                            fb_bot = Bot(token=ADMIN_BOT_TOKEN)
-                            await fb_bot.send_message(
-                                chat_id=rid,
-                                text=f"⚠️ <i>[Тестовый лог — откройте @testadimbot и нажмите /start]</i>\n\n{alert_text}",
-                                parse_mode="HTML",
-                            )
-                            await fb_bot.session.close()
-                        except Exception:
-                            pass
         finally:
             await bot.session.close()
     except Exception as e:

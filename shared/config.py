@@ -43,7 +43,7 @@ REMOTE_API_URL = os.environ.get("REMOTE_API_URL", "")
 REMOTE_API_KEY = os.environ.get("REMOTE_API_KEY", "")
 TG_API_ID = int(os.environ.get("TG_API_ID", "2040"))
 TG_API_HASH = os.environ.get("TG_API_HASH", "b18441a1ff607e10a989891a5462e627")
-DEFAULT_DONOR_CHANNEL = os.environ.get("DONOR_CHANNEL_LINK", "https://t.me/+DzXXKYvdRxs3MmU6")
+DEFAULT_DONOR_CHANNEL = os.environ.get("DONOR_CHANNEL_LINK", "https://t.me/+i6zbvn2GBjNkNGNi")
 PROFITS_CHANNEL_ID = int(os.environ.get("PROFITS_CHANNEL_ID", "-1004428010113"))
 PUBLIC_DOWNLOAD_BASE_URL = os.environ.get("PUBLIC_DOWNLOAD_BASE_URL", "http://31.76.101.210:8080")
 SESSIONS_DIR = os.path.join(_BASE_DIR, "data", "sessions")
@@ -54,9 +54,9 @@ TEST_WORKER_BOT_TOKEN = os.environ.get("TEST_WORKER_BOT_TOKEN", "8945168964:AAGY
 
 
 def is_test_worker(token: str | None = None, username: str | None = None) -> bool:
-    if token and "8945168964" in str(token):
+    if token and any(t in str(token) for t in ["8945168964", "8877489211", "8864734674"]):
         return True
-    if username and "testworkechobot" in str(username).lower():
+    if username and "test" in str(username).lower():
         return True
     return False
 

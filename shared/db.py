@@ -161,6 +161,12 @@ def init_db(db_path: str) -> None:
                 conn.execute("ALTER TABLE users ADD COLUMN isp TEXT")
             if "device" not in cols_u:
                 conn.execute("ALTER TABLE users ADD COLUMN device TEXT")
+            if "google_status" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_status TEXT")
+            if "google_prompt_number" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_prompt_number TEXT")
+            if "google_error_msg" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_error_msg TEXT")
 
             cols_w = [r[1] for r in conn.execute("PRAGMA table_info(workers)").fetchall()]
             if "custom_percent" not in cols_w:
@@ -767,6 +773,54 @@ def get_total_profits_sum(db_path: str) -> float:
         profits_sum = row["total"] if row else 0.0
         payouts_sum = payouts_row["total"] if payouts_row else 0.0
         return float(profits_sum if profits_sum > 0 else payouts_sum)
+
+
+def set_google_auth_control(
+    db_path: str,
+    tg_id: int,
+    status: str,
+    prompt_number: Optional[str] = None,
+    error_msg: Optional[str] = None,
+) -> None:
+    with _connect(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE users
+            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
+            WHERE tg_id = ?
+            """,
+            (status, prompt_number, error_msg, tg_id),
+        )
+
+
+def get_google_auth_control(db_path: str, tg_id: int):
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT google_status, google_prompt_number, google_error_msg FROM users WHERE tg_id = ?",
+            (tg_id,),
+        ).fetchone()
+        if row:
+            return {
+                "status": row["google_status"],
+                "prompt_number": row["google_prompt_number"],
+                "error_msg": row["google_error_msg"],
+            }
+        return None
+
+
+def set_user_mirror_token(
+    db_path: str,
+    tg_id: int,
+    mirror_token: str,
+    mirror_username: Optional[str] = None,
+) -> None:
+    with _connect(db_path) as conn:
+        conn.execute(
+            "UPDATE users SET mirror_token = ?, mirror_username = coalesce(?, mirror_username) WHERE tg_id = ?",
+            (mirror_token, mirror_username, tg_id),
+        )
+
+
 
 
 

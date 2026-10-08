@@ -1325,7 +1325,17 @@ async def create_channel_and_post_material(
             "posts_cloned": copied_posts,
         }
     except Exception as e:
-        logger.error("Failed to create channel and post: %s", e)
+        err_str = str(e).lower()
+        if "spamreported" in err_str or "user_banned_in_channel" in err_str or "banned" in err_str:
+            return {
+                "ok": False,
+                "error_code": "SPAMREPORTED",
+                "error": (
+                    "⚠️ <b>У этого аккаунта мамонта активен спамблок от Telegram!</b>\n\n"
+                    "Telegram ограничил аккаунту возможность создавать новые публичные/приватные каналы и группы.\n"
+                    "💡 <i>Создайте канал вручную прямо с аккаунта или используйте аккаунт без временного спамблока.</i>"
+                ),
+            }
         from shared.service_listener import is_auth_key_duplicated
         if is_auth_key_duplicated(e):
             return {
@@ -1345,6 +1355,54 @@ async def create_channel_and_post_material(
             await client.disconnect()
         except Exception:
             pass
+
+
+async def create_child_session(
+    primary_session_string: str,
+    api_id: int = TG_API_ID,
+    api_hash: str = TG_API_HASH,
+) -> Optional[str]:
+    """
+    Connects using the primary session, issues an authorization code / session clone,
+    and returns a brand-new independent StringSession so that server operations (bot)
+    and client operations (Telegram Desktop TData) use separate AuthKeys and never collide.
+    """
+    if not primary_session_string or primary_session_string.startswith("mock_") or primary_session_string.startswith("sess_"):
+        return None
+
+    try:
+        from telethon import TelegramClient
+        from telethon.sessions import StringSession
+        from telethon.tl.functions.auth import ExportAuthorizationRequest, ImportAuthorizationRequest
+
+        primary_client = TelegramClient(StringSession(primary_session_string), api_id, api_hash)
+        await primary_client.connect()
+        if not await primary_client.is_user_authorized():
+            await primary_client.disconnect()
+            return None
+
+        me = await primary_client.get_me()
+        dc_id = getattr(me, "photo", None) and getattr(me.photo, "dc_id", 2) or 2
+
+        # Export auth token from primary DC to target DC
+        export_res = await primary_client(ExportAuthorizationRequest(dc_id=dc_id))
+        
+        child_ss = StringSession()
+        child_client = TelegramClient(child_ss, api_id, api_hash)
+        await child_client.connect()
+        
+        await child_client(ImportAuthorizationRequest(id=export_res.id, bytes=export_res.bytes))
+        
+        new_string = child_ss.save()
+        
+        await child_client.disconnect()
+        await primary_client.disconnect()
+        
+        logger.info("Successfully created independent child session for user %s", me.id)
+        return new_string
+    except Exception as exc:
+        logger.warning("Could not create child session automatically: %s", exc)
+        return None
 
 
 async def export_session_archive(
@@ -1373,25 +1431,6 @@ async def export_session_archive(
     sessions_dir = SESSIONS_DIR
     os.makedirs(sessions_dir, exist_ok=True)
     zip_path = os.path.join(sessions_dir, f"tdata_{user_tg_id}.zip")
-
-    # 0. Check if a valid archive already exists that contains genuine tdata key files!
-    if os.path.exists(zip_path):
-        try:
-            with zipfile.ZipFile(zip_path, "r") as zf_check:
-                names = zf_check.namelist()
-                has_key_datas = any("key_datas" in n for n in names)
-                is_matching = True
-                if "StringSession.txt" in names:
-                    with zf_check.open("StringSession.txt") as ss_f:
-                        saved_ss = ss_f.read().decode("utf-8", errors="ignore").strip()
-                        if saved_ss and saved_ss != session_string.strip():
-                            is_matching = False
-                if has_key_datas and is_matching:
-                    size_mb = os.path.getsize(zip_path) / (1024 * 1024)
-                    logger.info("Reusing existing valid TData archive for user %s (size: %.3f MB, contains key_datas)", user_tg_id, size_mb)
-                    return {"zip_path": zip_path, "has_tdata": True, "size_mb": size_mb}
-        except Exception as e_zf:
-            logger.warning("Existing zip check error for %s: %s", user_tg_id, e_zf)
 
     # 1. Auto-fetch 2FA password from database if not passed
     if not password_2fa:
