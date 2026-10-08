@@ -1,8 +1,12 @@
 *.py
 **/*.py
 requirements.txt
+pyproject.toml
+Pipfile
+setup.py
 data/
 shared/
 worker_bot/
 admin_bot/
-cloudflared.exe
+scratch/
+.env*
