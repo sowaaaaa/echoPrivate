@@ -21,7 +21,7 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     InputMediaPhoto,
-    MenuButtonWebApp,
+    MenuButtonDefault,
     Message,
     WebAppInfo,
 )
@@ -189,7 +189,7 @@ def get_worker_keyboard(is_admin_flag: bool = False) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📂 Мои Логи", callback_data="wrk_my_logs"),
         ],
         [
-            InlineKeyboardButton(text="💸 Выплата", callback_data="wrk_payout"),
+            # InlineKeyboardButton(text="💸 Выплата", callback_data="wrk_payout"),
             InlineKeyboardButton(text="👤 Профиль", callback_data="wrk_profile"),
         ],
     ]
@@ -321,13 +321,12 @@ async def _register_and_start_mirror(
         except Exception:
             pass
 
-        if WEBAPP_URL:
-            try:
-                await probe.set_chat_menu_button(
-                    menu_button=MenuButtonWebApp(text="PrivateRoom", web_app=WebAppInfo(url=WEBAPP_URL))
-                )
-            except Exception:
-                pass
+        try:
+            await probe.set_chat_menu_button(
+                menu_button=MenuButtonDefault()
+            )
+        except Exception:
+            pass
     except (TelegramAPIError, Exception) as exc:
         return False, f"Токен не прошёл проверку в Telegram: {exc}"
     finally:

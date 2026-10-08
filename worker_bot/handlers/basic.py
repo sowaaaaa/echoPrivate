@@ -13,7 +13,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InputMediaPhoto,
     KeyboardButton,
-    MenuButtonWebApp,
+    MenuButtonDefault,
     Message,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
@@ -273,14 +273,10 @@ async def cmd_start(message: Message, bot: Bot) -> None:
             )
             user = db.get_user_by_tg_id(DB_PATH, message.from_user.id)
 
-        webapp_url = get_bot_webapp_url(bot.token)
         try:
             await bot.set_chat_menu_button(
                 chat_id=message.chat.id,
-                menu_button=MenuButtonWebApp(
-                    text="PrivateRoom",
-                    web_app=WebAppInfo(url=webapp_url),
-                ),
+                menu_button=MenuButtonDefault(),
             )
         except Exception as e_menu:
             logger.debug("set_chat_menu_button failed: %s", e_menu)

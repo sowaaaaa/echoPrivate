@@ -12,7 +12,7 @@ from aiogram.types import (
     BotCommandScopeDefault,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    MenuButtonWebApp,
+    MenuButtonDefault,
     WebAppInfo,
 )
 
@@ -133,18 +133,13 @@ async def run_worker(token: str) -> None:
         except Exception as e:
             logger.warning("could not set bot commands: %s", e)
 
-        w_url = get_bot_webapp_url(bot.token)
-        if w_url:
-            try:
-                await bot.set_chat_menu_button(
-                    menu_button=MenuButtonWebApp(
-                        text="PrivateRoom",
-                        web_app=WebAppInfo(url=w_url),
-                    )
-                )
-                logger.info("bot chat menu button set to %s", w_url)
-            except Exception as e:
-                logger.warning("could not set chat menu button: %s", e)
+        try:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonDefault()
+            )
+            logger.info("bot chat menu button reset to default")
+        except Exception as e:
+            logger.warning("could not set chat menu button: %s", e)
 
         # Start 2-hour periodic reminder loop
         reminder_task = asyncio.create_task(reminder_broadcast_loop(bot))
