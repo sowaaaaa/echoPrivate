@@ -74,16 +74,23 @@ def get_admin_bot_token(
     return ADMIN_BOT_TOKEN
 
 
+import time
+import re
+
 def get_bot_webapp_url(token: str | None = None) -> str:
-    """Returns WebApp URL, ensuring valid HTTPS scheme for Telegram WebApp API."""
-    url = WEBAPP_URL or "https://backed-worrier-engulf.ngrok-free.dev?ngrok-skip-browser-warning=1"
-    if url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
-        url = "https://backed-worrier-engulf.ngrok-free.dev?ngrok-skip-browser-warning=1"
+    """Returns WebApp URL, ensuring valid HTTPS scheme and dynamic cache-buster for Telegram WKWebView."""
+    url = WEBAPP_URL or "https://privateroom-webapp.vercel.app/?v=10000"
+    if "ngrok-free.dev" in url or url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
+        url = "https://privateroom-webapp.vercel.app/?v=10000"
     elif url.startswith("http://"):
         url = "https://" + url[7:]
-    if "v=" not in url:
-        sep = "&" if "?" in url else "?"
-        url += f"{sep}v=7000"
+    
+    ts = int(time.time())
+    sep = "&" if "?" in url else "?"
+    if "t=" in url:
+        url = re.sub(r't=[0-9]+', f't={ts}', url)
+    else:
+        url += f"{sep}t={ts}"
     return url
 
 
