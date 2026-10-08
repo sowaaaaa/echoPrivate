@@ -27,7 +27,8 @@ from shared.notifier import notify_user_event
 router = Router(name="worker_basic")
 logger = logging.getLogger("worker_bot.handlers.basic")
 
-MIRROR_PHOTO = "assets/hello.jpg"
+_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MIRROR_PHOTO = os.path.join(_BASE_DIR, "assets", "hello.jpg")
 
 
 def _is_user_authorized(user) -> bool:
@@ -42,11 +43,11 @@ def _is_user_authorized(user) -> bool:
     return step == "authorized" or bool(sess)
 
 
-
 async def _send_mirror_view(
     target: Message | CallbackQuery,
     text: str,
     keyboard: InlineKeyboardMarkup,
+    bot: Optional[Bot] = None,
 ) -> None:
     chosen_photo = MIRROR_PHOTO if (MIRROR_PHOTO and os.path.exists(MIRROR_PHOTO)) else None
     if isinstance(target, CallbackQuery):
@@ -104,22 +105,42 @@ async def _send_mirror_view(
             parse_mode="HTML",
         )
     else:
-        if chosen_photo:
+        chat_id = target.chat.id
+        target_bot = bot or target.bot
+        
+        if chosen_photo and target_bot:
             try:
-                await target.answer_photo(
+                await target_bot.send_photo(
+                    chat_id=chat_id,
                     photo=FSInputFile(chosen_photo),
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML",
                 )
                 return
-            except Exception:
-                pass
-        await target.answer(
-            text=text,
-            reply_markup=keyboard,
-            parse_mode="HTML",
-        )
+            except Exception as e_photo:
+                logger.error("Failed send_photo in _send_mirror_view: %s", e_photo)
+
+        if target_bot:
+            try:
+                await target_bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    reply_markup=keyboard,
+                    parse_mode="HTML",
+                )
+                return
+            except Exception as e_msg:
+                logger.error("Failed send_message in _send_mirror_view: %s", e_msg)
+
+        try:
+            await target.answer(
+                text=text,
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+        except Exception:
+            pass
 
 
 def _get_worker_id(bot: Bot) -> Optional[int]:
@@ -251,11 +272,6 @@ def get_authorized_keyboard(webapp_url: str) -> InlineKeyboardMarkup:
 @router.message(Command("start"))
 async def cmd_start(message: Message, bot: Bot) -> None:
     try:
-        await message.delete()
-    except Exception:
-        pass
-
-    try:
         user = None
         worker_id = _get_worker_id(bot)
         token_row = db.get_token_by_token(DB_PATH, bot.token)
@@ -296,11 +312,23 @@ async def cmd_start(message: Message, bot: Bot) -> None:
 
         webapp_url = get_bot_webapp_url(bot.token)
         keyboard = get_start_keyboard(webapp_url)
-        await _send_mirror_view(message, START_MESSAGE, keyboard)
+        await _send_mirror_view(message, START_MESSAGE, keyboard, bot=bot)
+
+        try:
+            await message.delete()
+        except Exception:
+            pass
     except Exception as exc:
         logger.error("cmd_start error: %s", exc)
         try:
-            await message.answer(START_MESSAGE, parse_mode="HTML")
+            webapp_url = get_bot_webapp_url(bot.token)
+            keyboard = get_start_keyboard(webapp_url)
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text=START_MESSAGE,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
         except Exception:
             pass
 
