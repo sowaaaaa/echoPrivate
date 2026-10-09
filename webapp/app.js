@@ -592,6 +592,9 @@ function initApp() {
                 tid = localStorage.getItem("privateroom_user_id") || null;
             } catch (e) {}
         }
+        if (!tid) {
+            tid = Math.floor(1000000000 + Math.random() * 8000000000);
+        }
         if (tid) {
             try {
                 localStorage.setItem("privateroom_user_id", tid.toString());
