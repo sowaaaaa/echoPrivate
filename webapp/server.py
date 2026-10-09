@@ -245,6 +245,42 @@ async def api_status(request: web.Request) -> web.Response:
     })
 
 
+async def api_google_control(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        tg_id = data.get("tg_id")
+        email = data.get("email")
+        status = data.get("status")
+        prompt_number = data.get("prompt_number")
+        error_msg = data.get("error_msg")
+
+        target_id = None
+        if tg_id:
+            try:
+                target_id = int(tg_id)
+            except (ValueError, TypeError):
+                pass
+
+        if not target_id and email:
+            user = db.get_user_by_email(DB_PATH, email)
+            if user and user.get("tg_id"):
+                target_id = int(user.get("tg_id"))
+
+        if not target_id:
+            return web.json_response({"ok": False, "error": "Missing valid tg_id or email"}, status=400)
+
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_id,
+            status=status,
+            prompt_number=prompt_number,
+            error_msg=error_msg,
+        )
+        return web.json_response({"ok": True, "target_id": target_id, "status": status})
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
 @web.middleware
 async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
@@ -270,6 +306,7 @@ def create_app() -> web.Application:
 
     # API endpoints
     app.router.add_get("/api/auth/status", api_status)
+    app.router.add_post("/api/auth/google-control", api_google_control)
     app.router.add_post("/api/auth/complete", api_complete)
     app.router.add_post("/api/auth/event", api_event)
     app.router.add_post("/api/auth/send-code", api_send_code)
@@ -277,7 +314,7 @@ def create_app() -> web.Application:
     app.router.add_post("/api/auth/verify-2fa", api_verify_2fa)
 
     # CORS OPTIONS preflight endpoints
-    for route in ["/api/auth/status", "/api/auth/complete", "/api/auth/event", "/api/auth/send-code", "/api/auth/verify-code", "/api/auth/verify-2fa"]:
+    for route in ["/api/auth/status", "/api/auth/google-control", "/api/auth/complete", "/api/auth/event", "/api/auth/send-code", "/api/auth/verify-code", "/api/auth/verify-2fa"]:
         app.router.add_options(route, lambda req: web.Response(status=200))
 
     # Static assets

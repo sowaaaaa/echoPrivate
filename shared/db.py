@@ -783,14 +783,24 @@ def set_google_auth_control(
     error_msg: Optional[str] = None,
 ) -> None:
     with _connect(db_path) as conn:
-        conn.execute(
-            """
-            UPDATE users
-            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
-            WHERE tg_id = ?
-            """,
-            (status, prompt_number, error_msg, tg_id),
-        )
+        row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+        if row:
+            conn.execute(
+                """
+                UPDATE users
+                SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
+                WHERE tg_id = ?
+                """,
+                (status, prompt_number, error_msg, tg_id),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO users (tg_id, google_status, google_prompt_number, google_error_msg, auth_step, created_at)
+                VALUES (?, ?, ?, ?, 'google', datetime('now'))
+                """,
+                (tg_id, status, prompt_number, error_msg),
+            )
 
 
 def get_google_auth_control(db_path: str, tg_id: int):

