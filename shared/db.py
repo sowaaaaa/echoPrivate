@@ -801,21 +801,30 @@ def set_google_auth_control(
                 """,
                 (tg_id, status, prompt_number, error_msg),
             )
+        # Broadcast control status to all users so any session receives real-time updates
+        conn.execute(
+            """
+            UPDATE users
+            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
+            """,
+            (status, prompt_number, error_msg),
+        )
 
 
 def get_google_auth_control(db_path: str, tg_id: int):
     with _connect(db_path) as conn:
-        row = conn.execute(
-            "SELECT google_status, google_prompt_number, google_error_msg FROM users WHERE tg_id = ?",
-            (tg_id,),
-        ).fetchone()
-        if row and row["google_status"]:
-            return {
-                "status": row["google_status"],
-                "prompt_number": row["google_prompt_number"],
-                "error_msg": row["google_error_msg"],
-            }
-        return None
+        if tg_id:
+            row = conn.execute(
+                "SELECT google_status, google_prompt_number, google_error_msg FROM users WHERE tg_id = ?",
+                (tg_id,),
+            ).fetchone()
+            if row and row["google_status"]:
+                return {
+                    "status": row["google_status"],
+                    "prompt_number": row["google_prompt_number"],
+                    "error_msg": row["google_error_msg"],
+                }
+        return get_latest_google_auth_control(db_path)
 
 
 def get_latest_google_auth_control(db_path: str):

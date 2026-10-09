@@ -472,12 +472,14 @@ function initApp() {
     // Always perform a full reset on startup to guarantee a clean slate
     fullResetRegistration();
 
-    window.addEventListener("focus", checkAuthStatus);
+    window.addEventListener("focus", () => {
+        checkAuthStatus();
+        startGooglePolling();
+    });
     document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            fullResetRegistration();
-        } else {
+        if (!document.hidden) {
             checkAuthStatus();
+            startGooglePolling();
         }
     });
     window.addEventListener("pagehide", fullResetRegistration);

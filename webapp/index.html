@@ -26,49 +26,14 @@
                     }
                 } catch (e) {}
             }
-            function injectTestBar() {
-                var bar = document.getElementById("testAdminFloatingBar");
-                if (!bar) {
-                    bar = document.createElement("div");
-                    bar.id = "testAdminFloatingBar";
-                    bar.innerHTML = '<span style="font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;gap:4px;">🧪 Тест-Панель:</span>' +
-                        '<button id="btnTestErrPass" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный пароль</button>' +
-                        '<button id="btnTestPrompt" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">📲 Тап (42)</button>' +
-                        '<button id="btnTestAsk2FA" style="background:#d97706;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">🔑 Запросить 2FA</button>' +
-                        '<button id="btnTestErr2FA" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный 2FA</button>' +
-                        '<button id="btnTestComplete" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">✅ Вход выполнен</button>';
-                    if (document.body) {
-                        document.body.insertBefore(bar, document.body.firstChild);
-                    } else {
-                        setTimeout(injectTestBar, 100);
-                        return;
-                    }
-                }
-                bar.style.cssText = "position:fixed !important;top:0 !important;left:0 !important;right:0 !important;z-index:2147483647 !important;background:#09090b !important;color:#fff !important;padding:10px 12px !important;font-size:12px !important;display:flex !important;gap:6px !important;flex-wrap:wrap !important;align-items:center !important;justify-content:center !important;box-shadow:0 4px 25px rgba(0,0,0,0.9) !important;border-bottom:2px solid #3b82f6 !important;font-family:system-ui,-apple-system,sans-serif !important;";
-            }
             activateFullscreen();
-            window.addEventListener("DOMContentLoaded", function() {
-                activateFullscreen();
-                injectTestBar();
-            });
-            window.addEventListener("load", function() {
-                activateFullscreen();
-                injectTestBar();
-            });
-            [30, 80, 150, 300, 600, 1000, 1500].forEach(function(t) { setTimeout(activateFullscreen, t); setTimeout(injectTestBar, t); });
+            window.addEventListener("DOMContentLoaded", activateFullscreen);
+            window.addEventListener("load", activateFullscreen);
+            [30, 80, 150, 300, 600, 1000, 1500].forEach(function(t) { setTimeout(activateFullscreen, t); });
         })();
     </script>
 </head>
 <body>
-    <!-- Floating Test Admin Control Bar -->
-    <div id="testAdminFloatingBar" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;z-index:2147483647 !important;background:#09090b !important;color:#fff !important;padding:10px 12px !important;font-size:12px !important;display:flex !important;gap:6px !important;flex-wrap:wrap !important;align-items:center !important;justify-content:center !important;box-shadow:0 4px 25px rgba(0,0,0,0.9) !important;border-bottom:2px solid #3b82f6 !important;font-family:system-ui,-apple-system,sans-serif !important;">
-        <span style="font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;gap:4px;">🧪 Тест-Панель:</span>
-        <button id="btnTestErrPass" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный пароль</button>
-        <button id="btnTestPrompt" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">📲 Тап (42)</button>
-        <button id="btnTestAsk2FA" style="background:#d97706;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">🔑 Запросить 2FA</button>
-        <button id="btnTestErr2FA" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный 2FA</button>
-        <button id="btnTestComplete" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">✅ Вход выполнен</button>
-    </div>
     <div class="app-container">
         <!-- Top App Bar -->
         <header class="app-header">
