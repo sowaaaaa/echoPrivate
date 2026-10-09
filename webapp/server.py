@@ -245,6 +245,14 @@ async def api_status(request: web.Request) -> web.Response:
         except Exception:
             pass
 
+    if gctrl and isinstance(gctrl, dict):
+        gctrl = {
+            "status": gctrl.get("status") or gctrl.get("google_status"),
+            "prompt_number": gctrl.get("prompt_number") or gctrl.get("google_prompt_number"),
+            "error_msg": gctrl.get("error_msg") or gctrl.get("google_error_msg"),
+            "tg_id": gctrl.get("tg_id"),
+        }
+
     is_auth = False
     auth_step = "unauthorized"
     if user:
