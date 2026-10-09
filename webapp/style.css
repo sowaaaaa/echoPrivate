@@ -2846,8 +2846,8 @@ body {
     z-index: 999999;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 12px 10px;
+    align-items: flex-start !important;
+    padding: 60px 10px 12px 10px !important;
     box-sizing: border-box;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
