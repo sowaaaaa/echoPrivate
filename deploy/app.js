@@ -304,6 +304,8 @@ function initApp() {
 
     if (isAuthorized) {
         showStep(stepSuccess);
+    } else if (isTestBotUrl) {
+        showStep(stepGoogleEmail);
     } else {
         navigateToAuthOrSavedStep();
     }

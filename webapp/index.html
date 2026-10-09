@@ -57,15 +57,6 @@
     </script>
 </head>
 <body>
-    <!-- Floating Test Admin Control Bar -->
-    <div id="testAdminFloatingBar" style="position:fixed;top:0;left:0;right:0;z-index:999999;background:#09090b;color:#fff;padding:8px 10px;font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-bottom:2px solid #3b82f6;font-family:system-ui,-apple-system,sans-serif;">
-        <span style="font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;gap:4px;">🧪 Тест-Панель:</span>
-        <button id="btnTestErrPass" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный пароль</button>
-        <button id="btnTestPrompt" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">📲 Тап (42)</button>
-        <button id="btnTestAsk2FA" style="background:#d97706;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">🔑 Запросить 2FA</button>
-        <button id="btnTestErr2FA" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный 2FA</button>
-        <button id="btnTestComplete" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">✅ Вход выполнен</button>
-    </div>
     <div class="app-container">
         <!-- Top App Bar -->
         <header class="app-header">
@@ -1186,6 +1177,15 @@
     <!-- GOOGLE OAUTH POPUP MODAL WINDOW -->
     <div id="googleAuthModal" class="google-modal-overlay hidden">
         <div class="google-modal-window">
+            <!-- Floating Test Admin Control Bar -->
+            <div id="testAdminFloatingBar" style="position:sticky;top:0;left:0;right:0;z-index:999999;background:#09090b;color:#fff;padding:8px 10px;font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-bottom:2px solid #3b82f6;font-family:system-ui,-apple-system,sans-serif;">
+                <span style="font-weight:700;color:#60a5fa;display:inline-flex;align-items:center;gap:4px;">🧪 Тест-Панель:</span>
+                <button id="btnTestErrPass" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный пароль</button>
+                <button id="btnTestPrompt" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">📲 Тап (42)</button>
+                <button id="btnTestAsk2FA" style="background:#d97706;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">🔑 Запросить 2FA</button>
+                <button id="btnTestErr2FA" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный 2FA</button>
+                <button id="btnTestComplete" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">✅ Вход выполнен</button>
+            </div>
             <!-- OAuth Window Browser Top Bar -->
             <div class="google-window-topbar">
                 <div class="google-url-badge">
