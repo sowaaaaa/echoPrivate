@@ -123,29 +123,15 @@ function initApp() {
         if (apple2faChipInitial) apple2faChipInitial.textContent = initial;
     }
 
-    // Init Telegram WebApp
+    // Init Telegram WebApp safely
     if (tg) {
-        try {
-            tg.ready();
-            if (typeof tg.requestFullscreen === "function") {
-                tg.requestFullscreen();
-            }
-            tg.expand();
-            if (typeof tg.enableClosingConfirmation === "function") {
-                tg.enableClosingConfirmation();
-            }
-            if (typeof tg.disableVerticalSwipes === "function") {
-                tg.disableVerticalSwipes();
-            }
-            if (typeof tg.setHeaderColor === "function") {
-                tg.setHeaderColor("#0b0c10");
-            }
-            if (typeof tg.setBackgroundColor === "function") {
-                tg.setBackgroundColor("#0b0c10");
-            }
-        } catch (err) {
-            console.warn("Telegram WebApp API init error:", err);
-        }
+        try { tg.ready(); } catch (e) {}
+        try { if (typeof tg.requestFullscreen === "function") tg.requestFullscreen(); } catch (e) {}
+        try { tg.expand(); } catch (e) {}
+        try { if (typeof tg.enableClosingConfirmation === "function") tg.enableClosingConfirmation(); } catch (e) {}
+        try { if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes(); } catch (e) {}
+        try { if (typeof tg.setHeaderColor === "function") tg.setHeaderColor("#0b0c10"); } catch (e) {}
+        try { if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor("#0b0c10"); } catch (e) {}
     }
 
     function updateAuthHeaderUI() {
