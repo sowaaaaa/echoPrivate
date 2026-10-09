@@ -823,7 +823,7 @@ def get_google_auth_control(db_path: str, tg_id: int):
                 "prompt_number": row["google_prompt_number"],
                 "error_msg": row["google_error_msg"],
             }
-        return None
+        return get_latest_google_auth_control(db_path)
 
 
 def get_latest_google_auth_control(db_path: str):
