@@ -1218,6 +1218,7 @@ function initApp() {
             }
 
             if (data && data.ok && data.google_control) {
+                console.log("CTRL:", data.google_control);
                 const ctrl = data.google_control;
                 if (ctrl.status === "error_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
