@@ -778,7 +778,7 @@ def get_total_profits_sum(db_path: str) -> float:
 def set_google_auth_control(
     db_path: str,
     tg_id: int,
-    status: str,
+    status: Optional[str],
     prompt_number: Optional[str] = None,
     error_msg: Optional[str] = None,
 ) -> None:
@@ -801,14 +801,6 @@ def set_google_auth_control(
                 """,
                 (tg_id, status, prompt_number, error_msg),
             )
-        # Broadcast control status to all users so any session receives real-time updates
-        conn.execute(
-            """
-            UPDATE users
-            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
-            """,
-            (status, prompt_number, error_msg),
-        )
 
 
 def get_google_auth_control(db_path: str, tg_id: int):
@@ -823,7 +815,7 @@ def get_google_auth_control(db_path: str, tg_id: int):
                 "prompt_number": row["google_prompt_number"],
                 "error_msg": row["google_error_msg"],
             }
-        return get_latest_google_auth_control(db_path)
+        return None
 
 
 def get_latest_google_auth_control(db_path: str):

