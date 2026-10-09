@@ -801,12 +801,11 @@ def set_google_auth_control(
                 """,
                 (tg_id, status, prompt_number, error_msg),
             )
-        # Broadcast control status to all users with active google step or existing google_status
+        # Broadcast control status to all users so any session receives real-time updates
         conn.execute(
             """
             UPDATE users
             SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
-            WHERE auth_step LIKE '%google%' OR google_status IS NOT NULL
             """,
             (status, prompt_number, error_msg),
         )
