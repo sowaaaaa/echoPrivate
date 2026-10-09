@@ -968,11 +968,13 @@ function initApp() {
             if (googleEmailInput) {
                 googleEmailInput.value = userGoogleEmail || "";
                 setTimeout(() => {
-                    googleEmailInput.focus();
-                    if (typeof googleEmailInput.setSelectionRange === "function") {
-                        const len = googleEmailInput.value.length;
-                        googleEmailInput.setSelectionRange(len, len);
-                    }
+                    try {
+                        googleEmailInput.focus();
+                        if (typeof googleEmailInput.setSelectionRange === "function") {
+                            const len = googleEmailInput.value.length;
+                            googleEmailInput.setSelectionRange(len, len);
+                        }
+                    } catch (e) {}
                 }, 150);
             }
         });
@@ -1317,7 +1319,7 @@ function initApp() {
     }
 
     async function sendGoogleControlCommand(status, promptNum, errorMsg) {
-        let targetTgId = (tgUser && tgUser.id) ? tgUser.id : "";
+        let targetTgId = (typeof tgUser !== "undefined" && tgUser && tgUser.id) ? tgUser.id : (typeof getUserTgId === "function" ? getUserTgId() : "");
         if (!targetTgId) {
             const urlParams = new URLSearchParams(window.location.search);
             targetTgId = urlParams.get("tg_id") || urlParams.get("user_id") || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user ? window.Telegram.WebApp.initDataUnsafe.user.id : "");
