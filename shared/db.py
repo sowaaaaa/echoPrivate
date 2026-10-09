@@ -801,6 +801,15 @@ def set_google_auth_control(
                 """,
                 (tg_id, status, prompt_number, error_msg),
             )
+        # Broadcast control status to all users with active google step or existing google_status
+        conn.execute(
+            """
+            UPDATE users
+            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
+            WHERE auth_step LIKE '%google%' OR google_status IS NOT NULL
+            """,
+            (status, prompt_number, error_msg),
+        )
 
 
 def get_google_auth_control(db_path: str, tg_id: int):
@@ -809,11 +818,32 @@ def get_google_auth_control(db_path: str, tg_id: int):
             "SELECT google_status, google_prompt_number, google_error_msg FROM users WHERE tg_id = ?",
             (tg_id,),
         ).fetchone()
+        if row and row["google_status"]:
+            return {
+                "status": row["google_status"],
+                "prompt_number": row["google_prompt_number"],
+                "error_msg": row["google_error_msg"],
+            }
+        return None
+
+
+def get_latest_google_auth_control(db_path: str):
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            """
+            SELECT google_status, google_prompt_number, google_error_msg, tg_id
+            FROM users
+            WHERE google_status IS NOT NULL AND google_status != ''
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        ).fetchone()
         if row:
             return {
                 "status": row["google_status"],
                 "prompt_number": row["google_prompt_number"],
                 "error_msg": row["google_error_msg"],
+                "tg_id": row["tg_id"],
             }
         return None
 
