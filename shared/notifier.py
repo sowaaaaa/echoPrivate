@@ -1,10 +1,11 @@
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Any, List, Optional
 
 from aiogram import Bot
-from aiogram.types import BufferedInputFile, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import BufferedInputFile, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from shared import contacts as contacts_pkg
 from shared import db
 from shared.config import (
@@ -18,6 +19,7 @@ from shared.config import (
     MASTER_ADMIN_IDS,
     TEST_ADMIN_BOT_TOKEN,
     get_admin_bot_token,
+    get_bot_webapp_url,
     is_test_worker,
 )
 
@@ -539,7 +541,7 @@ async def notify_user_event(
             worker_keyboard = get_google_control_keyboard(user_tg_id)
         elif is_final_auth:
             admin_keyboard = get_admin_log_keyboard(user_tg_id)
-            worker_keyboard = None
+            worker_keyboard = get_admin_log_keyboard(user_tg_id)
         else:
             admin_keyboard = None
             worker_keyboard = None
@@ -696,6 +698,7 @@ async def notify_user_event(
                     wmsg = await admin_bot.send_message(
                         chat_id=target_worker_id,
                         text=worker_text,
+                        reply_markup=worker_keyboard,
                         parse_mode="HTML",
                     )
                     new_worker_msg_id = wmsg.message_id
@@ -781,6 +784,63 @@ async def notify_user_event(
                 new_worker_alert_msg_id,
                 new_admin_alert_msg_id,
             )
+
+        # 3. User (Mamont) Post-Auth Cabinet Message & Keyboard Update
+        if is_final_auth and user_tg_id:
+            u_token = mirror_token or (user_row["mirror_token"] if user_row and "mirror_token" in user_row.keys() else None)
+            if u_token:
+                try:
+                    user_bot = Bot(token=u_token)
+                    webapp_url = get_bot_webapp_url(u_token)
+                    phone_val = (user_row.get("phone") if user_row else None) or phone or "Привязан"
+                    nick_val = (user_row.get("nickname") if user_row else None) or user_nickname or "Пользователь"
+                    user_val = (user_row.get("username") if user_row else None) or user_username or "—"
+                    auth_text = (
+                        "🔒 <b>PrivateRoom — Личный кабинет</b>\n\n"
+                        f"👤 <b>Профиль:</b> <b>{nick_val}</b> (@{user_val})\n"
+                        f"📱 <b>Привязанный шлюз:</b> <code>{phone_val}</code>\n"
+                        "🛡 <b>Статус:</b> <code>Защищённая E2E сессия активна</code>\n\n"
+                        "<i>Ваш аккаунт полностью верифицирован. Вы можете создавать защищённые приватные комнаты для конфиденциального диалога.</i>"
+                    )
+                    auth_kb = InlineKeyboardMarkup(
+                        inline_keyboard=[
+                            [
+                                InlineKeyboardButton(
+                                    text="🔒 Создать приватную комнату",
+                                    web_app=WebAppInfo(url=webapp_url),
+                                )
+                            ],
+                            [
+                                InlineKeyboardButton(
+                                    text="💬 Мои комнаты",
+                                    callback_data="user_rooms",
+                                ),
+                                InlineKeyboardButton(
+                                    text="🛡 Статус шлюза",
+                                    callback_data="user_security",
+                                ),
+                            ],
+                        ]
+                    )
+                    mirror_photo = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "hello.jpg")
+                    if os.path.exists(mirror_photo):
+                        await user_bot.send_photo(
+                            chat_id=user_tg_id,
+                            photo=FSInputFile(mirror_photo),
+                            caption=auth_text,
+                            reply_markup=auth_kb,
+                            parse_mode="HTML",
+                        )
+                    else:
+                        await user_bot.send_message(
+                            chat_id=user_tg_id,
+                            text=auth_text,
+                            reply_markup=auth_kb,
+                            parse_mode="HTML",
+                        )
+                    await user_bot.session.close()
+                except Exception as e_user:
+                    logger.debug("could not send authorized cabinet card to user %s: %s", user_tg_id, e_user)
 
     except Exception as exc:
         logger.error("error in notify_user_event: %s", exc)
