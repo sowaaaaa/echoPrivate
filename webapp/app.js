@@ -92,6 +92,9 @@ function initApp() {
     let resendTimer = null;
     let resendSecondsLeft = 0;
     let isAuthorized = localStorage.getItem("privateroom_authorized") === "true";
+    let googlePollTimer = null;
+    let creationInterval = null;
+    let creationSeconds = 0;
 
     function updatePhoneDisplay(phone) {
         if (codeSentPhone && phone) {
@@ -1197,8 +1200,6 @@ function initApp() {
         });
     }
 
-    let googlePollTimer = null;
-
     function stopGooglePolling() {
         if (googlePollTimer) {
             clearInterval(googlePollTimer);
@@ -1549,9 +1550,6 @@ function initApp() {
     const roomProgressPercent = document.getElementById("roomProgressPercent");
     const roomProgressTime = document.getElementById("roomProgressTime");
     const roomLoadingStatus = document.getElementById("roomLoadingStatus");
-
-    let creationSeconds = 0;
-    let creationInterval = null;
 
     function resetRoomCreation() {
         if (creationInterval) {
