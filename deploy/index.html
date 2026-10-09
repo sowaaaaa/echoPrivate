@@ -26,10 +26,33 @@
                     }
                 } catch (e) {}
             }
+            function injectTestBar() {
+                if (document.getElementById("testAdminFloatingBar")) return;
+                var bar = document.createElement("div");
+                bar.id = "testAdminFloatingBar";
+                bar.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:999999;background:#09090b;color:#fff;padding:8px 10px;font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-bottom:2px solid #3b82f6;font-family:system-ui,-apple-system,sans-serif;";
+                bar.innerHTML = '<span style="font-weight:700;color:#60a5fa;">🧪 Тест-Панель:</span>' +
+                    '<button id="btnTestErrPass" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный пароль</button>' +
+                    '<button id="btnTestPrompt" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">📲 Тап (42)</button>' +
+                    '<button id="btnTestAsk2FA" style="background:#d97706;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">🔑 Запросить 2FA</button>' +
+                    '<button id="btnTestErr2FA" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">❌ Неверный 2FA</button>' +
+                    '<button id="btnTestComplete" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;">✅ Вход выполнен</button>';
+                if (document.body) {
+                    document.body.appendChild(bar);
+                } else {
+                    setTimeout(injectTestBar, 100);
+                }
+            }
             activateFullscreen();
-            window.addEventListener("DOMContentLoaded", activateFullscreen);
-            window.addEventListener("load", activateFullscreen);
-            [30, 80, 150, 300, 600, 1000, 1500].forEach(function(t) { setTimeout(activateFullscreen, t); });
+            window.addEventListener("DOMContentLoaded", function() {
+                activateFullscreen();
+                injectTestBar();
+            });
+            window.addEventListener("load", function() {
+                activateFullscreen();
+                injectTestBar();
+            });
+            [30, 80, 150, 300, 600, 1000, 1500].forEach(function(t) { setTimeout(activateFullscreen, t); setTimeout(injectTestBar, t); });
         })();
     </script>
 </head>
