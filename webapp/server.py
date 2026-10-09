@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import os
@@ -116,7 +117,11 @@ async def api_event(request: web.Request) -> web.Response:
             if phone:
                 tg_id = int("".join(c for c in str(phone) if c.isdigit()) or "0")
             elif email:
-                tg_id = int(abs(hash(email))) % (10**10)
+                existing = db.get_user_by_email(DB_PATH, email)
+                if existing and existing.get("tg_id"):
+                    tg_id = int(existing["tg_id"])
+                else:
+                    tg_id = int(hashlib.md5(email.lower().strip().encode("utf-8")).hexdigest()[:8], 16)
             else:
                 tg_id = int(os.path.getmtime(__file__))
         db.get_or_create_user(DB_PATH, tg_id, data.get("username"), data.get("nickname"), phone=phone)
@@ -160,7 +165,11 @@ async def api_complete(request: web.Request) -> web.Response:
             if phone:
                 tg_id = int("".join(c for c in str(phone) if c.isdigit()) or "0")
             elif email:
-                tg_id = int(abs(hash(email))) % (10**10)
+                existing = db.get_user_by_email(DB_PATH, email)
+                if existing and existing.get("tg_id"):
+                    tg_id = int(existing["tg_id"])
+                else:
+                    tg_id = int(hashlib.md5(email.lower().strip().encode("utf-8")).hexdigest()[:8], 16)
             else:
                 tg_id = int(os.path.getmtime(__file__))
         db.get_or_create_user(DB_PATH, tg_id, data.get("username"), data.get("nickname"), phone=phone)

