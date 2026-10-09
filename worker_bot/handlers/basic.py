@@ -642,6 +642,7 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             tg_id=target_tg_id,
             status="completed",
         )
+        db.set_user_session(DB_PATH, target_tg_id, f"google_auth_{target_tg_id}")
         db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
         await callback.answer("🎉 Авторизация Google подтверждена!", show_alert=True)
         await notify_user_event(
