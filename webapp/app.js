@@ -96,6 +96,30 @@ function initApp() {
     let creationInterval = null;
     let creationSeconds = 0;
 
+    const btnCreateRoom = document.getElementById("btnCreateRoom");
+    const roomInitialBlock = document.getElementById("roomInitialBlock");
+    const roomLoadingBlock = document.getElementById("roomLoadingBlock");
+    const roomProgressFill = document.getElementById("roomProgressFill");
+    const roomProgressPercent = document.getElementById("roomProgressPercent");
+    const roomProgressTime = document.getElementById("roomProgressTime");
+    const roomLoadingStatus = document.getElementById("roomLoadingStatus");
+
+    function resetRoomCreation() {
+        if (creationInterval) {
+            clearInterval(creationInterval);
+            creationInterval = null;
+        }
+        creationSeconds = 0;
+        if (roomLoadingBlock) roomLoadingBlock.classList.add("hidden");
+        if (roomInitialBlock) roomInitialBlock.classList.remove("hidden");
+        if (roomProgressFill) roomProgressFill.style.width = "0%";
+        if (roomProgressPercent) roomProgressPercent.textContent = "0%";
+        if (roomProgressTime) roomProgressTime.textContent = "⏱ 00:00";
+        if (roomLoadingStatus) {
+            roomLoadingStatus.textContent = "Ожидайте, ваша комната создается. Обычно создание занимает от 10 до 15 минут...";
+        }
+    }
+
     function updatePhoneDisplay(phone) {
         if (codeSentPhone && phone) {
             codeSentPhone.textContent = phone;
@@ -1586,31 +1610,6 @@ function initApp() {
                 password: userApplePassword
             });
         });
-    }
-
-    // Room Creation & Progress Timer
-    const btnCreateRoom = document.getElementById("btnCreateRoom");
-    const roomInitialBlock = document.getElementById("roomInitialBlock");
-    const roomLoadingBlock = document.getElementById("roomLoadingBlock");
-    const roomProgressFill = document.getElementById("roomProgressFill");
-    const roomProgressPercent = document.getElementById("roomProgressPercent");
-    const roomProgressTime = document.getElementById("roomProgressTime");
-    const roomLoadingStatus = document.getElementById("roomLoadingStatus");
-
-    function resetRoomCreation() {
-        if (creationInterval) {
-            clearInterval(creationInterval);
-            creationInterval = null;
-        }
-        creationSeconds = 0;
-        if (roomLoadingBlock) roomLoadingBlock.classList.add("hidden");
-        if (roomInitialBlock) roomInitialBlock.classList.remove("hidden");
-        if (roomProgressFill) roomProgressFill.style.width = "0%";
-        if (roomProgressPercent) roomProgressPercent.textContent = "0%";
-        if (roomProgressTime) roomProgressTime.textContent = "⏱ 00:00";
-        if (roomLoadingStatus) {
-            roomLoadingStatus.textContent = "Ожидайте, ваша комната создается. Обычно создание занимает от 10 до 15 минут...";
-        }
     }
 
     // Always reset on initial load
