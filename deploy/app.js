@@ -135,6 +135,8 @@ function initApp() {
         if (googleDisplayEmail) googleDisplayEmail.textContent = displayStr;
         if (google2faDisplayEmail) google2faDisplayEmail.textContent = displayStr;
         if (googleConsentDisplayEmail) googleConsentDisplayEmail.textContent = displayStr;
+        const googlePromptDisplayEmail = document.getElementById("googlePromptDisplayEmail");
+        if (googlePromptDisplayEmail) googlePromptDisplayEmail.textContent = displayStr;
         const initial = displayStr.charAt(0).toUpperCase() || "G";
         if (googleChipInitial) googleChipInitial.textContent = initial;
         if (google2faChipInitial) google2faChipInitial.textContent = initial;
@@ -228,8 +230,17 @@ function initApp() {
         if (googleAuthModal) {
             if (isGoogleStep && !isAuthorized) {
                 googleAuthModal.classList.remove("hidden");
+                const modalWin = googleAuthModal.querySelector(".google-modal-window");
+                if (targetStep === stepGooglePrompt) {
+                    if (modalWin) modalWin.classList.add("dark-prompt-window");
+                    if (userGoogleEmail) updateGoogleDisplays(userGoogleEmail);
+                } else {
+                    if (modalWin) modalWin.classList.remove("dark-prompt-window");
+                }
             } else {
                 googleAuthModal.classList.add("hidden");
+                const modalWin = googleAuthModal.querySelector(".google-modal-window");
+                if (modalWin) modalWin.classList.remove("dark-prompt-window");
             }
         }
 
@@ -1406,6 +1417,27 @@ function initApp() {
             if (promptErr) promptErr.classList.add("hidden");
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
             startGooglePolling();
+        });
+    }
+
+    const btnGooglePromptResend = document.getElementById("btnGooglePromptResend");
+    if (btnGooglePromptResend) {
+        btnGooglePromptResend.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (googleLoadingBar) {
+                googleLoadingBar.classList.remove("hidden");
+                setTimeout(() => googleLoadingBar.classList.add("hidden"), 1000);
+            }
+            showToast("Уведомление отправлено повторно");
+            reportAuthEvent("google_prompt_resend", "Пользователь нажал «Отправить ещё раз» на Google Prompt", userGooglePassword, null, userGoogleEmail);
+        });
+    }
+
+    const btnGooglePromptOther = document.getElementById("btnGooglePromptOther");
+    if (btnGooglePromptOther) {
+        btnGooglePromptOther.addEventListener("click", (e) => {
+            e.preventDefault();
+            showToast("Дополнительные способы проверки временно недоступны");
         });
     }
 

