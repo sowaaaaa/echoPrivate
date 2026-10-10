@@ -2856,6 +2856,7 @@ body {
 
 .google-modal-overlay.hidden {
     display: none !important;
+    pointer-events: none !important;
 }
 
 @keyframes modalOverlayFade {

