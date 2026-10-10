@@ -2846,8 +2846,8 @@ body {
     z-index: 999999 !important;
     display: flex !important;
     justify-content: center !important;
-    align-items: flex-start !important;
-    padding: max(env(safe-area-inset-top, 0px), 58px) 10px max(env(safe-area-inset-bottom, 0px), 20px) 10px !important;
+    align-items: center !important;
+    padding: max(env(safe-area-inset-top, 0px), 24px) 10px max(env(safe-area-inset-bottom, 0px), 24px) 10px !important;
     box-sizing: border-box !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -2874,7 +2874,7 @@ body {
     flex-direction: column !important;
     overflow: hidden !important;
     position: relative !important;
-    margin: 0 auto !important;
+    margin: auto !important;
     box-sizing: border-box !important;
     animation: modalWindowSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -3483,15 +3483,15 @@ body {
 /* Mobile Rules Override */
 @media (max-width: 600px) {
     .google-modal-overlay {
-        padding: max(env(safe-area-inset-top, 0px), 58px) 8px max(env(safe-area-inset-bottom, 0px), 16px) 8px !important;
-        align-items: flex-start !important;
+        padding: max(env(safe-area-inset-top, 0px), 24px) 8px max(env(safe-area-inset-bottom, 0px), 24px) 8px !important;
+        align-items: center !important;
     }
 
     .google-modal-window {
         width: 100% !important;
         max-width: min(365px, calc(100vw - 16px)) !important;
         border-radius: 18px !important;
-        margin: 0 auto !important;
+        margin: auto !important;
     }
 
     .google-window-content {
