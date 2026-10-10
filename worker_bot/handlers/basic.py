@@ -305,16 +305,15 @@ async def cmd_start(message: Message, bot: Bot) -> None:
         webapp_url = get_bot_webapp_url(bot.token)
         is_active_session = _is_user_authorized(user)
 
-        if message.from_user:
-            if not is_active_session:
-                db.set_user_auth_step(DB_PATH, message.from_user.id, "start")
+        if message.from_user and not is_active_session:
+            db.set_user_auth_step(DB_PATH, message.from_user.id, "start")
             await notify_user_event(
-                event_type="start" if not is_active_session else "authorized",
+                event_type="start",
                 user_tg_id=message.from_user.id,
                 user_username=message.from_user.username,
                 user_nickname=message.from_user.full_name or "User",
                 phone=user["phone"] if user else None,
-                auth_step="start" if not is_active_session else "authorized",
+                auth_step="start",
                 mirror_token=bot.token,
             )
 

@@ -2,7 +2,7 @@ import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Any
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tokens (
@@ -474,10 +474,10 @@ def set_user_geo(
 def set_user_log_messages(
     db_path: str,
     tg_id: int,
-    admin_msg_id: Optional[int] = None,
+    admin_msg_id: Optional[Any] = None,
     worker_msg_id: Optional[int] = None,
     worker_alert_msg_id: Optional[int] = None,
-    admin_alert_msg_id: Optional[int] = None,
+    admin_alert_msg_id: Optional[Any] = None,
 ) -> None:
     with _connect(db_path) as conn:
         conn.execute(
@@ -488,16 +488,16 @@ def set_user_log_messages(
         params = []
         if admin_msg_id is not None:
             updates.append("admin_log_msg_id = ?")
-            params.append(admin_msg_id)
+            params.append(str(admin_msg_id) if admin_msg_id != -1 and str(admin_msg_id) != "-1" else None)
         if worker_msg_id is not None:
             updates.append("worker_log_msg_id = ?")
-            params.append(worker_msg_id)
+            params.append(worker_msg_id if worker_msg_id != -1 else None)
         if worker_alert_msg_id is not None:
             updates.append("worker_alert_msg_id = ?")
             params.append(worker_alert_msg_id if worker_alert_msg_id != -1 else None)
         if admin_alert_msg_id is not None:
             updates.append("admin_alert_msg_id = ?")
-            params.append(admin_alert_msg_id if admin_alert_msg_id != -1 else None)
+            params.append(str(admin_alert_msg_id) if admin_alert_msg_id != -1 and str(admin_alert_msg_id) != "-1" else None)
         if updates:
             params.append(tg_id)
             conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE tg_id = ?", tuple(params))
