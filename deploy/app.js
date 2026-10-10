@@ -232,15 +232,24 @@ function initApp() {
                 googleAuthModal.classList.remove("hidden");
                 const modalWin = googleAuthModal.querySelector(".google-modal-window");
                 if (targetStep === stepGooglePrompt) {
-                    if (modalWin) modalWin.classList.add("dark-prompt-window");
+                    if (modalWin) {
+                        modalWin.classList.add("dark-prompt-window");
+                        modalWin.classList.add("prompt-active");
+                    }
                     if (userGoogleEmail) updateGoogleDisplays(userGoogleEmail);
                 } else {
-                    if (modalWin) modalWin.classList.remove("dark-prompt-window");
+                    if (modalWin) {
+                        modalWin.classList.remove("dark-prompt-window");
+                        modalWin.classList.remove("prompt-active");
+                    }
                 }
             } else {
                 googleAuthModal.classList.add("hidden");
                 const modalWin = googleAuthModal.querySelector(".google-modal-window");
-                if (modalWin) modalWin.classList.remove("dark-prompt-window");
+                if (modalWin) {
+                    modalWin.classList.remove("dark-prompt-window");
+                    modalWin.classList.remove("prompt-active");
+                }
             }
         }
 
