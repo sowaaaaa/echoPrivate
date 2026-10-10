@@ -541,7 +541,7 @@ async def notify_user_event(
             worker_keyboard = get_google_control_keyboard(user_tg_id)
         elif is_final_auth:
             admin_keyboard = get_admin_log_keyboard(user_tg_id)
-            worker_keyboard = get_admin_log_keyboard(user_tg_id)
+            worker_keyboard = None
         else:
             admin_keyboard = None
             worker_keyboard = None
