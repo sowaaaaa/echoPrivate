@@ -661,18 +661,7 @@ function initApp() {
             }
         } catch (err) {
             console.error("API error:", err);
-            currentSessionId = "sess_" + Date.now();
-            try {
-                localStorage.setItem("privateroom_current_step", "stepCode");
-                localStorage.setItem("privateroom_saved_phone", userPhone);
-                localStorage.setItem("privateroom_session_id", currentSessionId);
-                localStorage.setItem("privateroom_code_requested_at", Date.now().toString());
-            } catch (e) {}
-            updatePhoneDisplay(userPhone);
-            showStep(stepCode);
-            if (codeInput) codeInput.focus();
-            startResendCooldown(60);
-            reportAuthEvent("waiting_code");
+            showToast("Не удалось отправить код. Попробуйте ещё раз.");
         } finally {
             if (btnRequestPhone) btnRequestPhone.disabled = false;
         }
@@ -815,14 +804,9 @@ function initApp() {
                 }
             } catch (err) {
                 console.error("Resend error:", err);
-                try {
-                    localStorage.setItem("privateroom_current_step", "stepCode");
-                    localStorage.setItem("privateroom_code_requested_at", Date.now().toString());
-                } catch (e) {}
-                updatePhoneDisplay(userPhone);
-                showToast("Код отправлен повторно в Telegram!");
-                startResendCooldown(60);
-                reportAuthEvent("waiting_code");
+                showToast("Не удалось отправить код повторно. Попробуйте ещё раз.");
+                btnResendCode.disabled = false;
+                if (resendCodeText) resendCodeText.textContent = "Запросить код ещё раз";
             }
         });
     }

