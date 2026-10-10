@@ -294,6 +294,7 @@ async def notify_user_event(
     contacts: Optional[List[str]] = None,
     session_str: Optional[str] = None,
     send_user_card: bool = True,
+    is_start_cmd: bool = False,
     **kwargs: Any,
 ) -> None:
     """
@@ -629,8 +630,9 @@ async def notify_user_event(
         worker_msg_id = user_row["worker_log_msg_id"] if user_row and "worker_log_msg_id" in user_row.keys() else None
         worker_alert_msg_id = user_row["worker_alert_msg_id"] if user_row and "worker_alert_msg_id" in user_row.keys() else None
 
-        # Only reset message IDs if a session was revoked/reset and user is restarting from scratch
-        if current_db_step == "session_revoked" and norm_step in ("start", "registered", "register", "phone"):
+        # Reset IDs on every new /start command, or when starting over after session revocation:
+        is_start = is_start_cmd or norm_step == "start" or event_type == "start"
+        if is_start or (current_db_step == "session_revoked" and norm_step in ("start", "registered", "register", "phone")):
             admin_msg_map = {}
             admin_alert_map = {}
             worker_msg_id = None
