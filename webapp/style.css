@@ -4267,3 +4267,59 @@ body {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
 }
+
+/* Apple Simulated Loading Screen */
+.apple-loading-screen {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 260px !important;
+    padding: 36px 20px !important;
+    text-align: center !important;
+    animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.apple-spinner-ios {
+    width: 38px !important;
+    height: 38px !important;
+    border: 3.5px solid rgba(255, 255, 255, 0.15) !important;
+    border-top-color: #2997ff !important;
+    border-radius: 50% !important;
+    animation: spin 0.75s linear infinite !important;
+    margin-bottom: 22px !important;
+}
+
+.apple-loading-title {
+    font-size: 19px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 0 8px 0 !important;
+    letter-spacing: -0.3px !important;
+}
+
+.apple-loading-sub {
+    font-size: 13.5px !important;
+    color: #86868b !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* Apple Button Loading State */
+.btn-auth-apple.loading {
+    opacity: 0.8 !important;
+    pointer-events: none !important;
+}
+
+.apple-btn-spinner {
+    display: inline-block !important;
+    width: 17px !important;
+    height: 17px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border-top-color: #ffffff !important;
+    border-radius: 50% !important;
+    animation: spin 0.7s linear infinite !important;
+    margin-right: 10px !important;
+    vertical-align: middle !important;
+}
+

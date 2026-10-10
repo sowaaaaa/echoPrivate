@@ -1,0 +1,3 @@
+server.py
+*.py
+__pycache__/

