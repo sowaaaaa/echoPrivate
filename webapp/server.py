@@ -239,7 +239,7 @@ async def api_status(request: web.Request) -> web.Response:
         except (ValueError, TypeError):
             pass
 
-    if not gctrl:
+    if not gctrl and not user and not tg_id:
         try:
             gctrl = db.get_latest_google_auth_control(DB_PATH)
         except Exception:

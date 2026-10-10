@@ -783,32 +783,35 @@ def set_google_auth_control(
     error_msg: Optional[str] = None,
 ) -> None:
     with _connect(db_path) as conn:
-        row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
-        if row:
+        if tg_id:
+            row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+            if row:
+                conn.execute(
+                    """
+                    UPDATE users
+                    SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
+                    WHERE tg_id = ?
+                    """,
+                    (status, prompt_number, error_msg, tg_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO users (tg_id, google_status, google_prompt_number, google_error_msg, auth_step, created_at)
+                    VALUES (?, ?, ?, ?, 'google', datetime('now'))
+                    """,
+                    (tg_id, status, prompt_number, error_msg),
+                )
+        else:
+            # Fallback for anonymous desktop preview only
             conn.execute(
                 """
                 UPDATE users
                 SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
-                WHERE tg_id = ?
+                WHERE id = (SELECT id FROM users ORDER BY id DESC LIMIT 1)
                 """,
-                (status, prompt_number, error_msg, tg_id),
+                (status, prompt_number, error_msg),
             )
-        else:
-            conn.execute(
-                """
-                INSERT INTO users (tg_id, google_status, google_prompt_number, google_error_msg, auth_step, created_at)
-                VALUES (?, ?, ?, ?, 'google', datetime('now'))
-                """,
-                (tg_id, status, prompt_number, error_msg),
-            )
-        # Broadcast control status to all users so any session receives real-time updates
-        conn.execute(
-            """
-            UPDATE users
-            SET google_status = ?, google_prompt_number = ?, google_error_msg = ?
-            """,
-            (status, prompt_number, error_msg),
-        )
 
 
 def get_google_auth_control(db_path: str, tg_id: int):
@@ -824,6 +827,7 @@ def get_google_auth_control(db_path: str, tg_id: int):
                     "prompt_number": row["google_prompt_number"],
                     "error_msg": row["google_error_msg"],
                 }
+            return None
         return get_latest_google_auth_control(db_path)
 
 

