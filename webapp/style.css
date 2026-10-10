@@ -3941,14 +3941,26 @@ body {
 .apple-privacy-box {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
     background: #151516 !important;
     border-radius: 10px !important;
-    padding: 10px 12px !important;
+    padding: 10px 14px !important;
     margin-top: 14px !important;
     color: #86868b !important;
     font-size: 11.5px !important;
     line-height: 1.35 !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+}
+
+.apple-privacy-box svg {
+    flex-shrink: 0 !important;
+}
+
+.apple-privacy-box span {
+    text-align: left !important;
+    flex: 1 !important;
 }
 
 /* Apple 2FA PIN Input */
@@ -3959,46 +3971,81 @@ body {
 }
 
 .apple-pin-wrap {
-    margin: 12px 0 16px 0 !important;
+    position: relative !important;
+    margin: 14px auto 18px auto !important;
+    width: 100% !important;
+    max-width: 320px !important;
+    cursor: text !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
 
 .apple-pin-grid {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 7px !important;
+    pointer-events: none !important;
+    user-select: none !important;
 }
 
 .apple-pin-cell {
     width: 40px !important;
-    height: 48px !important;
+    height: 50px !important;
     background: #1c1c1e !important;
-    border: 1px solid #3a3a3c !important;
+    border: 1.5px solid #3a3a3c !important;
     border-radius: 10px !important;
     color: #ffffff !important;
-    font-size: 22px !important;
+    font-size: 24px !important;
     font-weight: 600 !important;
-    text-align: center !important;
-    outline: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     box-sizing: border-box !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s !important;
+    user-select: none !important;
 }
 
-.apple-pin-cell:focus {
+.apple-pin-cell.active {
     border-color: #2997ff !important;
-    box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.25) !important;
+    box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.28) !important;
+    background: #252528 !important;
+}
+
+.apple-pin-cell.filled {
+    border-color: #545458 !important;
+    background: #222225 !important;
 }
 
 .apple-pin-cell.apple-pin-invalid {
     border-color: #ff453a !important;
-    background: rgba(255, 69, 58, 0.08) !important;
+    background: rgba(255, 69, 58, 0.1) !important;
 }
 
 .apple-pin-separator {
-    color: #86868b !important;
+    color: #636366 !important;
     font-weight: 600 !important;
     font-size: 16px !important;
     user-select: none !important;
+}
+
+.apple-pin-master-input {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0.001 !important;
+    z-index: 10 !important;
+    cursor: text !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    font-size: 28px !important;
+    color: transparent !important;
+    caret-color: transparent !important;
 }
 
 .apple-btn-primary {
@@ -4112,27 +4159,38 @@ body {
 .apple-modal-footer {
     background: #000000 !important;
     border-top: 1px solid #1c1c1e !important;
-    padding: 10px 16px !important;
+    padding: 12px 20px !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    font-size: 10.5px !important;
+    font-size: 11px !important;
     color: #86868b !important;
     box-sizing: border-box !important;
 }
 
 .apple-footer-links {
     display: flex !important;
-    gap: 10px !important;
+    align-items: center !important;
+    gap: 14px !important;
 }
 
 .apple-footer-links a {
     color: #86868b !important;
     text-decoration: none !important;
+    white-space: nowrap !important;
+    font-size: 11px !important;
+    transition: color 0.15s !important;
 }
 
 .apple-footer-links a:hover {
+    color: #f5f5f7 !important;
     text-decoration: underline !important;
+}
+
+.apple-footer-lang {
+    color: #636366 !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
 }
 
 /* Mobile Rules Override for Apple */
@@ -4172,9 +4230,36 @@ body {
     }
 
     .apple-pin-cell {
-        width: 40px !important;
+        width: 38px !important;
         height: 48px !important;
         font-size: 22px !important;
+    }
+
+    .apple-modal-footer {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        padding: 12px 14px calc(10px + env(safe-area-inset-bottom, 10px)) !important;
+        text-align: center !important;
+    }
+
+    .apple-footer-links {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .apple-footer-links a {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+    }
+
+    .apple-footer-lang {
+        font-size: 10.5px !important;
+        color: #636366 !important;
     }
 }
 

