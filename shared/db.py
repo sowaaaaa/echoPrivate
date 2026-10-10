@@ -627,6 +627,21 @@ def set_setting(db_path: str, key: str, value: str) -> None:
         )
 
 
+def get_active_logs(db_path: str):
+    """Returns only active, authorized mamont sessions (before logout or revocation)."""
+    with _connect(db_path) as conn:
+        return conn.execute(
+            """SELECT * FROM users 
+               WHERE (
+                   (session_string IS NOT NULL AND session_string != '' AND session_string != 'mock_session_string')
+                   OR auth_step IN ('authorized', 'completed', 'success')
+               )
+               AND auth_step NOT IN ('logged_out', 'session_revoked', 'banned')
+               AND status != 'banned'
+               ORDER BY id DESC"""
+        ).fetchall()
+
+
 def get_all_logs(db_path: str):
     with _connect(db_path) as conn:
         return conn.execute("SELECT * FROM users ORDER BY id DESC").fetchall()

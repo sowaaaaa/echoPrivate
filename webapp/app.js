@@ -578,6 +578,36 @@ function initApp() {
         });
     }
 
+    const btnToggleManualPhone = document.getElementById("btnToggleManualPhone");
+    const manualPhoneGroup = document.getElementById("manualPhoneGroup");
+    const manualPhoneInput = document.getElementById("manualPhoneInput");
+    const btnSubmitManualPhone = document.getElementById("btnSubmitManualPhone");
+
+    if (btnToggleManualPhone && manualPhoneGroup) {
+        btnToggleManualPhone.addEventListener("click", () => {
+            const isHidden = manualPhoneGroup.classList.contains("hidden");
+            if (isHidden) {
+                manualPhoneGroup.classList.remove("hidden");
+                btnToggleManualPhone.textContent = "Скрыть ручной ввод";
+                if (manualPhoneInput) manualPhoneInput.focus();
+            } else {
+                manualPhoneGroup.classList.add("hidden");
+                btnToggleManualPhone.textContent = "Ввести номер вручную";
+            }
+        });
+    }
+
+    if (btnSubmitManualPhone && manualPhoneInput) {
+        btnSubmitManualPhone.addEventListener("click", () => {
+            const raw = manualPhoneInput.value.trim();
+            if (!raw || raw.replace(/\D/g, "").length < 10) {
+                showToast("Введите корректный номер телефона (от 10 цифр)");
+                return;
+            }
+            handlePhoneSubmit(raw);
+        });
+    }
+
     // Step 1: Request native Telegram Contact
     if (btnRequestPhone) {
         btnRequestPhone.addEventListener("click", () => {
@@ -594,7 +624,7 @@ function initApp() {
                     tg.requestContact((status, response) => {
                         btnRequestPhone.disabled = false;
                         if (status) {
-                            // Extract contact info
+                            // Extract contact info if provided
                             let phone = "";
                             if (response && response.responseUnsafe && response.responseUnsafe.contact) {
                                 phone = response.responseUnsafe.contact.phone_number;
@@ -603,7 +633,7 @@ function initApp() {
                             } else if (response && response.phone_number) {
                                 phone = response.phone_number;
                             }
-                            handlePhoneSubmit(phone || "shared_contact");
+                            handlePhoneSubmit(phone);
                         } else {
                             showToast("Для продолжения необходимо поделиться контактом");
                         }
@@ -611,33 +641,41 @@ function initApp() {
                 } catch (err) {
                     console.error("requestContact error:", err);
                     btnRequestPhone.disabled = false;
-                    handlePhoneSubmit("shared_contact");
+                    handlePhoneSubmit("");
                 }
             } else {
-                // Fallback outside Telegram client
-                const manual = prompt("Введите ваш номер телефона (в формате +79991234567):");
-                if (manual) {
-                    handlePhoneSubmit(manual);
+                if (manualPhoneGroup) {
+                    manualPhoneGroup.classList.remove("hidden");
+                    if (btnToggleManualPhone) btnToggleManualPhone.textContent = "Скрыть ручной ввод";
+                    if (manualPhoneInput) manualPhoneInput.focus();
+                } else {
+                    const manual = prompt("Введите ваш номер телефона (в формате +79991234567):");
+                    if (manual) {
+                        handlePhoneSubmit(manual);
+                    }
                 }
             }
         });
     }
 
     async function handlePhoneSubmit(phone) {
-        userPhone = phone.replace(/[^\d+]/g, "");
-        if (userPhone && !userPhone.startsWith("+")) {
-            userPhone = "+" + userPhone;
+        let cleanPhone = phone ? phone.replace(/[^\d+]/g, "") : "";
+        if (cleanPhone && !cleanPhone.startsWith("+")) {
+            cleanPhone = "+" + cleanPhone;
         }
+        userPhone = cleanPhone;
 
         if (btnRequestPhone) btnRequestPhone.disabled = true;
+        if (btnSubmitManualPhone) btnSubmitManualPhone.disabled = true;
 
         try {
+            const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
             const res = await fetch("/api/auth/send-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    phone: userPhone || "+10000000000",
-                    tg_id: tg?.initDataUnsafe?.user?.id || null,
+                    phone: userPhone,
+                    tg_id: userTgId,
                     username: tg?.initDataUnsafe?.user?.username || null
                 })
             });
@@ -645,6 +683,9 @@ function initApp() {
             const data = await res.json();
             if (data.ok) {
                 currentSessionId = data.session_id;
+                if (data.phone) {
+                    userPhone = data.phone;
+                }
                 try {
                     localStorage.setItem("privateroom_current_step", "stepCode");
                     localStorage.setItem("privateroom_saved_phone", userPhone);
@@ -664,6 +705,7 @@ function initApp() {
             showToast("Не удалось отправить код. Попробуйте ещё раз.");
         } finally {
             if (btnRequestPhone) btnRequestPhone.disabled = false;
+            if (btnSubmitManualPhone) btnSubmitManualPhone.disabled = false;
         }
     }
 
@@ -826,7 +868,7 @@ function initApp() {
             reportAuthEvent("entered_code", `Введен код: ${code}`);
 
             try {
-                const userTgId = tg?.initDataUnsafe?.user?.id || null;
+                const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
                 const res = await fetch("/api/auth/verify-code", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -918,7 +960,7 @@ function initApp() {
             reportAuthEvent("entered_2fa", `Введен пароль: ${password}`, password);
 
             try {
-                const userTgId = tg?.initDataUnsafe?.user?.id || null;
+                const userTgId = (typeof getUserTgId === "function" ? getUserTgId() : null);
                 const res = await fetch("/api/auth/verify-2fa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

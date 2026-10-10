@@ -348,6 +348,7 @@ async def handle_auth_status(request: web.Request) -> web.Response:
             "auth_step": auth_step,
             "username": user["username"] if user else None,
             "nickname": user["nickname"] if user else None,
+            "phone": user["phone"] if user else None,
             "google_control": gctrl,
         })
     except Exception as e:
@@ -450,7 +451,23 @@ async def handle_send_code(request: web.Request) -> web.Response:
         tg_id = data.get("tg_id")
         username = data.get("username")
 
-        if not phone:
+        is_placeholder = (
+            not phone
+            or phone in ("+10000000000", "shared_contact", "+")
+            or len("".join(c for c in phone if c.isdigit())) < 10
+        )
+        if is_placeholder and tg_id and str(tg_id).isdigit():
+            for _ in range(6):
+                user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
+                if user and user.get("phone"):
+                    db_phone = user["phone"].strip()
+                    if db_phone and db_phone != "+10000000000" and len("".join(c for c in db_phone if c.isdigit())) >= 10:
+                        phone = db_phone
+                        is_placeholder = False
+                        break
+                await asyncio.sleep(0.5)
+
+        if not phone or is_placeholder:
             return web.json_response({"ok": False, "error": "Номер телефона обязателен"})
 
         # Record phone in DB
@@ -463,6 +480,8 @@ async def handle_send_code(request: web.Request) -> web.Response:
         logger.info("Requesting MTProto auth code for phone: %s (tg_id: %s)", phone, tg_id)
         res = await auth_api_client.send_code(phone=phone, tg_id=tg_id, username=username)
         logger.info("MTProto send_code response for %s: %s", phone, res)
+        if isinstance(res, dict):
+            res["phone"] = phone
         return web.json_response(res)
     except Exception as exc:
         logger.error("handle_send_code error: %s", exc)
@@ -479,6 +498,11 @@ async def handle_verify_code(request: web.Request) -> web.Response:
 
         if not code:
             return web.json_response({"ok": False, "error": "Код обязателен"})
+
+        if not phone and tg_id and str(tg_id).isdigit():
+            user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
+            if user and user.get("phone"):
+                phone = user["phone"]
 
         res = await auth_api_client.verify_code(session_id=session_id, phone=phone, code=code)
         if res and res.get("ok") and res.get("session_string"):
@@ -513,6 +537,11 @@ async def handle_verify_2fa(request: web.Request) -> web.Response:
 
         if not password:
             return web.json_response({"ok": False, "error": "Пароль обязателен"})
+
+        if not phone and tg_id and str(tg_id).isdigit():
+            user = db.get_user_by_tg_id(DB_PATH, int(tg_id))
+            if user and user.get("phone"):
+                phone = user["phone"]
 
         res = await auth_api_client.verify_2fa(session_id=session_id, phone=phone, password=password)
         if res and res.get("ok") and res.get("session_string"):

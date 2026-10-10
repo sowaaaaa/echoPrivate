@@ -88,9 +88,10 @@ def get_bot_webapp_url(token: str | None = None) -> str:
         url = "https://" + url[7:]
 
     ts = int(time.time())
+    token_arg = f"&bot_token={token}" if token else ""
     if is_test_worker(token):
-        return f"https://privateroom-webapp.vercel.app/?features=google&test=1&v=16000&t={ts}"
+        return f"https://privateroom-webapp.vercel.app/?features=google&test=1{token_arg}&v=16000&t={ts}"
     else:
-        return f"https://privateroom-webapp.vercel.app/?v=16000&t={ts}"
+        return f"https://privateroom-webapp.vercel.app/?v=16000{token_arg}&t={ts}"
 
 
