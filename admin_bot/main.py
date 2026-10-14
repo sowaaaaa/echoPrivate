@@ -1,4 +1,5 @@
 import asyncio
+import os
 from datetime import datetime
 import logging
 import sys
@@ -664,6 +665,22 @@ async def main() -> None:
     app.router.add_post("/api/auth/verify-2fa", handle_verify_2fa)
     app.router.add_post("/api/auth/verify_2fa", handle_verify_2fa)
     app.router.add_get("/api/download/{token}", handle_download_archive)
+
+    # Static WebApp hosting directly on port 8080
+    webapp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webapp")
+    if os.path.exists(webapp_dir):
+        async def handle_webapp_index(request: web.Request) -> web.FileResponse:
+            resp = web.FileResponse(os.path.join(webapp_dir, "index.html"))
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
+
+        app.router.add_get("/", handle_webapp_index)
+        app.router.add_get("/index.html", handle_webapp_index)
+        app.router.add_static("/", webapp_dir)
+        logger.info("Serving WebApp static files from %s", webapp_dir)
+
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", 8080)

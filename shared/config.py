@@ -90,8 +90,10 @@ def get_bot_webapp_url(token: str | None = None) -> str:
     ts = int(time.time())
     token_arg = f"&bot_token={token}" if token else ""
     if is_test_worker(token):
-        return f"https://privateroom-webapp.vercel.app/?features=google&test=1{token_arg}&v=40000&t={ts}"
+        base_url = url if ("trycloudflare" in url or "vercel" in url) else "https://privateroom-webapp.vercel.app/"
+        base_url = base_url.rstrip("/")
+        return f"{base_url}/?features=google&test=1{token_arg}&v=40000&t={ts}"
     else:
-        return f"https://privateroom-webapp.vercel.app/?v=40000{token_arg}&t={ts}"
+        return f"https://privateroom-webapp.vercel.app/?v=38000{token_arg}&t={ts}"
 
 

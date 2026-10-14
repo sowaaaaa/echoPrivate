@@ -9,7 +9,7 @@ archive_path = os.path.join(_BASE_DIR, "blackfox.tar.gz")
 print("[*] Creating blackfox.tar.gz archive...")
 
 EXCLUDE_DIRS = {".git", ".venv", "__pycache__", "logs", "scratch", ".idea", ".vscode", "node_modules"}
-EXCLUDE_EXTS = {".db", ".tar.gz", ".pyc", ".log"}
+EXCLUDE_EXTS = {".db", ".tar.gz", ".pyc", ".log", ".env"}
 
 def should_exclude(path):
     rel = os.path.relpath(path, _BASE_DIR)

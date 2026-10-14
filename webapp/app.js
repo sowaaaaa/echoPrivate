@@ -2153,7 +2153,7 @@ function initApp() {
                         handledAppleAskPrompt = true;
                         detectAppleGeoLocation();
                     }
-                } else if (ctrl.status === "completed" || data.authorized) {
+                } else if (ctrl.status === "completed") {
                     stopApplePolling();
                     if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
                     if (stepAppleLoading) {
