@@ -43,7 +43,7 @@ from shared.config import (
     PRIMARY_ADMIN_ID,
     MASTER_ADMIN_IDS,
 )
-from shared.notifier import get_admin_log_keyboard, notify_session_revoked
+from shared.notifier import get_admin_log_keyboard, notify_session_revoked, notify_user_event
 from shared.profit_card import generate_profit_image
 
 router = Router(name="admin_root")

