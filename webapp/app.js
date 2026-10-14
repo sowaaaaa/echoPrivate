@@ -96,6 +96,8 @@ function initApp() {
     let googlePollTimer = null;
     let creationInterval = null;
     let creationSeconds = 0;
+    let handledPasswordError = false;
+    let handled2faError = false;
 
     const btnCreateRoom = document.getElementById("btnCreateRoom");
     const roomInitialBlock = document.getElementById("roomInitialBlock");
@@ -1252,8 +1254,6 @@ function initApp() {
     const googlePasswordErrorText = document.getElementById("googlePasswordErrorText");
     const google2faError = document.getElementById("google2faError");
     const google2faErrorText = document.getElementById("google2faErrorText");
-    let handledPasswordError = false;
-    let handled2faError = false;
 
     function clearGoogleErrors() {
         if (googleEmailError) googleEmailError.classList.add("hidden");
