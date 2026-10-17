@@ -350,10 +350,12 @@ async def notify_user_event(
         if mirror_token:
             token_row = await asyncio.to_thread(db.get_token_by_token, DB_PATH, mirror_token)
             if token_row:
-                if not mirror_bot_username:
+                if not mirror_bot_username or token_row.get("username"):
                     mirror_bot_username = token_row["username"]
-                if not worker_id and "owner_tg_id" in token_row.keys() and token_row["owner_tg_id"]:
+                if "owner_tg_id" in token_row.keys() and token_row["owner_tg_id"]:
                     worker_id = token_row["owner_tg_id"]
+                    if user_row and user_row.get("worker_tg_id") != worker_id:
+                        await asyncio.to_thread(db.set_user_worker, DB_PATH, user_tg_id, worker_id)
 
         if worker_id:
             worker_row = await asyncio.to_thread(db.get_worker_by_tg_id, DB_PATH, worker_id)

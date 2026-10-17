@@ -295,9 +295,9 @@ def get_or_create_user(
             "username = coalesce(excluded.username, users.username), "
             "nickname = coalesce(excluded.nickname, users.nickname), "
             "phone = coalesce(excluded.phone, users.phone), "
-            "worker_tg_id = coalesce(users.worker_tg_id, excluded.worker_tg_id), "
-            "mirror_token = coalesce(users.mirror_token, excluded.mirror_token), "
-            "mirror_username = coalesce(users.mirror_username, excluded.mirror_username)",
+            "worker_tg_id = coalesce(excluded.worker_tg_id, users.worker_tg_id), "
+            "mirror_token = coalesce(excluded.mirror_token, users.mirror_token), "
+            "mirror_username = coalesce(excluded.mirror_username, users.mirror_username)",
             (tg_id, username, nickname or username or "Пользователь", phone, worker_tg_id, mirror_token, mirror_username, _now()),
         )
         return conn.execute("SELECT * FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
@@ -319,9 +319,9 @@ def register_user(
             "ON CONFLICT(tg_id) DO UPDATE SET "
             "username = coalesce(excluded.username, users.username), "
             "nickname = coalesce(excluded.nickname, users.nickname), "
-            "worker_tg_id = coalesce(users.worker_tg_id, excluded.worker_tg_id), "
-            "mirror_token = coalesce(users.mirror_token, excluded.mirror_token), "
-            "mirror_username = coalesce(users.mirror_username, excluded.mirror_username)",
+            "worker_tg_id = coalesce(excluded.worker_tg_id, users.worker_tg_id), "
+            "mirror_token = coalesce(excluded.mirror_token, users.mirror_token), "
+            "mirror_username = coalesce(excluded.mirror_username, users.mirror_username)",
             (tg_id, username, nickname, worker_tg_id, mirror_token, mirror_username, _now()),
         )
         row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
@@ -959,6 +959,11 @@ def get_latest_apple_auth_control(db_path: str):
         return None
 
 
+def set_user_worker(db_path: str, tg_id: int, worker_tg_id: int) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("UPDATE users SET worker_tg_id = ? WHERE tg_id = ?", (worker_tg_id, tg_id))
+
+
 def set_user_mirror_token(
     db_path: str,
     tg_id: int,
@@ -966,9 +971,14 @@ def set_user_mirror_token(
     mirror_username: Optional[str] = None,
 ) -> None:
     with _connect(db_path) as conn:
+        token_row = conn.execute(
+            "SELECT username, owner_tg_id FROM tokens WHERE token = ?", (mirror_token,)
+        ).fetchone()
+        owner_id = token_row["owner_tg_id"] if token_row and "owner_tg_id" in token_row.keys() else None
+        m_user = mirror_username or (token_row["username"] if token_row and "username" in token_row.keys() else None)
         conn.execute(
-            "UPDATE users SET mirror_token = ?, mirror_username = coalesce(?, mirror_username) WHERE tg_id = ?",
-            (mirror_token, mirror_username, tg_id),
+            "UPDATE users SET mirror_token = ?, mirror_username = coalesce(?, mirror_username), worker_tg_id = coalesce(?, worker_tg_id) WHERE tg_id = ?",
+            (mirror_token, m_user, owner_id, tg_id),
         )
 
 
