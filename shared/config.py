@@ -82,15 +82,20 @@ def get_bot_webapp_url(token: str | None = None) -> str:
     Enables Google OAuth features exclusively for test bot instances.
     """
     url = WEBAPP_URL or "https://privateroom-webapp.vercel.app/"
-    if "ngrok-free.dev" in url or url.startswith("http://localhost") or url.startswith("http://127.0.0.1") or url.startswith("http://31.76.101.210"):
+    if (
+        "trycloudflare" in url
+        or "ngrok" in url
+        or url.startswith("http://localhost")
+        or url.startswith("http://127.0.0.1")
+        or url.startswith("http://31.76.101.210")
+    ):
         url = "https://privateroom-webapp.vercel.app/"
     elif url.startswith("http://"):
         url = "https://" + url[7:]
 
     ts = int(time.time())
     token_arg = f"&bot_token={token}" if token else ""
-    base_url = url if ("trycloudflare" in url or "vercel" in url) else "https://privateroom-webapp.vercel.app/"
-    base_url = base_url.rstrip("/")
+    base_url = url.split("?")[0].rstrip("/")
     if is_test_worker(token):
         return f"{base_url}/?features=google&test=1{token_arg}&v=41000&t={ts}"
     else:
