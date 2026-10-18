@@ -181,40 +181,54 @@ function initApp() {
     updateAuthHeaderUI();
     reportAuthEvent("webapp_open");
 
-    function getDeviceInfo() {
+    function detectPlatform() {
         const urlParams = new URLSearchParams(window.location.search);
         const forced = (urlParams.get("platform") || urlParams.get("device") || "").toLowerCase();
-        if (forced === "ios" || forced === "apple" || forced === "iphone" || forced === "ipad") return "iPhone (iOS)";
-        if (forced === "android" || forced === "google") return "Android";
-        if (forced === "pc" || forced === "windows" || forced === "desktop") return "PC (Windows)";
+        if (forced === "ios" || forced === "apple" || forced === "iphone" || forced === "ipad") return "ios";
+        if (forced === "android" || forced === "google") return "android";
+        if (forced === "desktop" || forced === "pc" || forced === "windows") return "desktop";
 
-        const p = (tg?.platform || "").toLowerCase();
+        const p = String(tg?.platform || (window.Telegram?.WebApp?.platform) || "").toLowerCase();
+        const ua = (navigator.userAgent || navigator.vendor || window.opera || "").toLowerCase();
+        const isIOS = p === "ios" || /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isAndroid = p === "android" || /android/.test(ua);
+
+        if (isIOS) return "ios";
+        if (isAndroid) return "android";
+        return "desktop";
+    }
+
+    function getDeviceInfo() {
+        const platform = detectPlatform();
+        if (platform === "ios") return "iPhone (iOS)";
+        if (platform === "android") return "Android";
         const ua = navigator.userAgent || "";
-        if (p === "ios" || /iPhone|iPad|iPod/i.test(ua)) return "iPhone (iOS)";
-        if (p === "android" || /Android/i.test(ua)) return "Android";
-        if (p === "macos" || /Macintosh|Mac OS X/i.test(ua)) return "Mac (macOS)";
-        if (p === "tdesktop" || /Windows/i.test(ua)) return "PC (Windows)";
+        if (/Macintosh|Mac OS X/i.test(ua)) return "Mac (macOS)";
+        if (/Windows/i.test(ua)) return "PC (Windows)";
         if (/Linux/i.test(ua)) return "PC (Linux)";
-        return p || "Неизвестно";
+        return "PC (Windows)";
     }
 
     function applyDeviceSpecificAuthOptions() {
-        const dev = getDeviceInfo();
+        const platform = detectPlatform();
         const sep = document.getElementById("googleAuthSeparator");
         if (sep) sep.classList.remove("hidden");
 
-        if (dev === "iPhone (iOS)") {
-            // iOS: Show only Apple ID, hide Google
+        if (platform === "ios") {
+            // iOS: "Войти через Apple" и "Войти по номеру телефона" (Google скрыт)
             if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
-        } else if (dev === "Android") {
-            // Android: Show only Google, hide Apple ID
+            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
+        } else if (platform === "android") {
+            // Android: "Войти через Google" и "Войти по номеру телефона" (Apple скрыт)
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
             if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
+            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
         } else {
-            // Desktop / Unknown: Show both
+            // Компьютер / ПК: все три способа активны
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
             if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
         }
     }
 
@@ -321,6 +335,7 @@ function initApp() {
                     if (typeof syncApplePinVisuals === "function") syncApplePinVisuals();
                 }
             }, 120);
+        }
         if (targetStep === stepPhone) {
             applyDeviceSpecificAuthOptions();
         }
