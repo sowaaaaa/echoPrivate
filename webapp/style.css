@@ -110,36 +110,63 @@ body {
 .header-actions {
     display: flex;
     align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .header-auth-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
+    gap: 5px;
+    padding: 7px 12px;
     background: linear-gradient(135deg, rgba(255, 42, 85, 0.25) 0%, rgba(184, 0, 40, 0.15) 100%);
     border: 1px solid rgba(255, 42, 85, 0.45);
     border-radius: 20px;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 12px rgba(255, 42, 85, 0.2);
+    box-shadow: 0 0 10px rgba(255, 42, 85, 0.2);
+    white-space: nowrap;
 }
 
 .header-auth-btn:hover {
     background: linear-gradient(135deg, rgba(255, 42, 85, 0.4) 0%, rgba(184, 0, 40, 0.3) 100%);
     border-color: rgba(255, 42, 85, 0.7);
     transform: translateY(-1px);
-    box-shadow: 0 0 16px rgba(255, 42, 85, 0.4);
+    box-shadow: 0 0 14px rgba(255, 42, 85, 0.35);
 }
 
 .header-auth-btn:active {
     transform: scale(0.96);
+}
+
+.header-apple-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.08) !important;
+}
+
+.header-apple-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.header-google-btn {
+    background: rgba(66, 133, 244, 0.15) !important;
+    border: 1px solid rgba(66, 133, 244, 0.4) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 10px rgba(66, 133, 244, 0.15) !important;
+}
+
+.header-google-btn:hover {
+    background: rgba(66, 133, 244, 0.25) !important;
+    border-color: rgba(66, 133, 244, 0.6) !important;
 }
 
 .header-auth-btn.authorized {

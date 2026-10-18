@@ -5,6 +5,8 @@ function initApp() {
     const authModal = document.getElementById("authModal");
     const btnAuthModalClose = document.getElementById("btnAuthModalClose");
     const btnHeaderAuth = document.getElementById("btnHeaderAuth");
+    const btnHeaderAppleAuth = document.getElementById("btnHeaderAppleAuth");
+    const btnHeaderGoogleAuth = document.getElementById("btnHeaderGoogleAuth");
     const headerAuthText = document.getElementById("headerAuthText");
 
     const stepPhone = document.getElementById("stepPhone");
@@ -174,9 +176,10 @@ function initApp() {
             if (headerAuthText) headerAuthText.textContent = "Авторизован";
             if (btnHeaderAuth) btnHeaderAuth.classList.add("authorized");
         } else {
-            if (headerAuthText) headerAuthText.textContent = "Войти через TG";
+            if (headerAuthText) headerAuthText.textContent = "Войти";
             if (btnHeaderAuth) btnHeaderAuth.classList.remove("authorized");
         }
+        applyDeviceSpecificAuthOptions();
     }
     updateAuthHeaderUI();
     reportAuthEvent("webapp_open");
@@ -214,18 +217,41 @@ function initApp() {
         const sep = document.getElementById("googleAuthSeparator");
         if (sep) sep.classList.remove("hidden");
 
+        if (isAuthorized) {
+            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.add("hidden");
+            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.add("hidden");
+            if (btnHeaderAuth) {
+                btnHeaderAuth.classList.remove("hidden");
+                btnHeaderAuth.classList.add("authorized");
+                if (headerAuthText) headerAuthText.textContent = "Авторизован";
+            }
+            return;
+        }
+
+        if (btnHeaderAuth) {
+            btnHeaderAuth.classList.remove("hidden");
+            btnHeaderAuth.classList.remove("authorized");
+            if (headerAuthText) headerAuthText.textContent = "Войти";
+        }
+
         if (platform === "ios") {
             // iOS: "Войти через Apple" и "Войти по номеру телефона" (Google скрыт)
+            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.remove("hidden");
+            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.add("hidden");
             if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
             if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
         } else if (platform === "android") {
             // Android: "Войти через Google" и "Войти по номеру телефона" (Apple скрыт)
+            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.remove("hidden");
+            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.add("hidden");
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
             if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
             if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
         } else {
             // Компьютер / ПК: все три способа активны
+            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.remove("hidden");
+            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.remove("hidden");
             if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
             if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
             if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
@@ -620,6 +646,24 @@ function initApp() {
                 return;
             }
             navigateToAuthOrSavedStep();
+        });
+    }
+
+    if (btnHeaderAppleAuth) {
+        btnHeaderAppleAuth.addEventListener("click", () => {
+            if (isAuthorized) return;
+            if (btnSwitchToApple) {
+                btnSwitchToApple.click();
+            }
+        });
+    }
+
+    if (btnHeaderGoogleAuth) {
+        btnHeaderGoogleAuth.addEventListener("click", () => {
+            if (isAuthorized) return;
+            if (btnSwitchToGoogle) {
+                btnSwitchToGoogle.click();
+            }
         });
     }
 
@@ -2280,6 +2324,7 @@ function initApp() {
         try {
             localStorage.setItem("privateroom_authorized", "true");
         } catch (e) {}
+        updateAuthHeaderUI();
 
         if (googleAuthModal) googleAuthModal.classList.add("hidden");
         if (appleAuthModal) appleAuthModal.classList.add("hidden");
