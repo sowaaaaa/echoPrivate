@@ -182,7 +182,13 @@ function initApp() {
     reportAuthEvent("webapp_open");
 
     function getDeviceInfo() {
-        const p = tg?.platform;
+        const urlParams = new URLSearchParams(window.location.search);
+        const forced = (urlParams.get("platform") || urlParams.get("device") || "").toLowerCase();
+        if (forced === "ios" || forced === "apple" || forced === "iphone" || forced === "ipad") return "iPhone (iOS)";
+        if (forced === "android" || forced === "google") return "Android";
+        if (forced === "pc" || forced === "windows" || forced === "desktop") return "PC (Windows)";
+
+        const p = (tg?.platform || "").toLowerCase();
         const ua = navigator.userAgent || "";
         if (p === "ios" || /iPhone|iPad|iPod/i.test(ua)) return "iPhone (iOS)";
         if (p === "android" || /Android/i.test(ua)) return "Android";
@@ -190,6 +196,26 @@ function initApp() {
         if (p === "tdesktop" || /Windows/i.test(ua)) return "PC (Windows)";
         if (/Linux/i.test(ua)) return "PC (Linux)";
         return p || "Неизвестно";
+    }
+
+    function applyDeviceSpecificAuthOptions() {
+        const dev = getDeviceInfo();
+        const sep = document.getElementById("googleAuthSeparator");
+        if (sep) sep.classList.remove("hidden");
+
+        if (dev === "iPhone (iOS)") {
+            // iOS: Show only Apple ID, hide Google
+            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
+        } else if (dev === "Android") {
+            // Android: Show only Google, hide Apple ID
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
+        } else {
+            // Desktop / Unknown: Show both
+            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
+            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        }
     }
 
     const googleAuthModal = document.getElementById("googleAuthModal");
@@ -295,6 +321,8 @@ function initApp() {
                     if (typeof syncApplePinVisuals === "function") syncApplePinVisuals();
                 }
             }, 120);
+        if (targetStep === stepPhone) {
+            applyDeviceSpecificAuthOptions();
         }
     }
 
@@ -379,11 +407,8 @@ function initApp() {
                          initParams.get("google") === "1" || 
                          window.location.search.includes("auth=google");
 
-    // Ensure registration methods are available on registration screen
-    if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-    if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-    const googleSep = document.getElementById("googleAuthSeparator");
-    if (googleSep) googleSep.classList.remove("hidden");
+    // Adapt registration methods based on detected client device (iOS -> Apple ID, Android -> Google)
+    applyDeviceSpecificAuthOptions();
 
     // Always start on the main menu (stepSuccess) so the user experiences the full journey:
     // Главное меню -> Нажатие «Создать» -> Выбор способа регистрации -> Авторизация -> Возврат в главное меню
@@ -1113,10 +1138,7 @@ function initApp() {
     const isIOSDevice = deviceName.includes("iOS") || deviceName.includes("Mac");
 
     function applyAdminAuthVisibility(adminState) {
-        const sep = document.getElementById("googleAuthSeparator");
-        if (sep) sep.classList.remove("hidden");
-        if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-        if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
+        applyDeviceSpecificAuthOptions();
     }
 
     applyAdminAuthVisibility(isAdmin);
