@@ -185,19 +185,52 @@ function initApp() {
     reportAuthEvent("webapp_open");
 
     function detectPlatform() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const forced = (urlParams.get("platform") || urlParams.get("device") || "").toLowerCase();
+        const hash = window.location.hash || "";
+        const search = window.location.search || "";
+        const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.substring(1) : hash);
+        const searchParams = new URLSearchParams(search);
+
+        const forced = (searchParams.get("platform") || searchParams.get("device") || hashParams.get("platform") || hashParams.get("device") || "").toLowerCase();
         if (forced === "ios" || forced === "apple" || forced === "iphone" || forced === "ipad") return "ios";
         if (forced === "android" || forced === "google") return "android";
         if (forced === "desktop" || forced === "pc" || forced === "windows") return "desktop";
 
-        const p = String(tg?.platform || (window.Telegram?.WebApp?.platform) || "").toLowerCase();
+        const tgParam = (searchParams.get("tgWebAppPlatform") || hashParams.get("tgWebAppPlatform") || "").toLowerCase();
+        const p = String(tg?.platform || (window.Telegram?.WebApp?.platform) || tgParam || "").toLowerCase();
         const ua = (navigator.userAgent || navigator.vendor || window.opera || "").toLowerCase();
-        const isIOS = p === "ios" || /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        const isAndroid = p === "android" || /android/.test(ua);
+        const navPlatform = String(navigator.platform || "").toLowerCase();
+        const uadPlatform = String(navigator.userAgentData?.platform || "").toLowerCase();
+        const isMobileUA = /android|iphone|ipad|ipod|mobile|phone|harmonyos|huawei|samsung|xiaomi|redmi|poco|oppo|vivo|realme|oneplus/.test(ua);
+        const hasTouch = Boolean(('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
+
+        // 1. Strict iOS / Apple device detection
+        const isIOS = p === "ios" || 
+                      /iphone|ipad|ipod/.test(ua) || 
+                      uadPlatform === "ios" ||
+                      (navPlatform === "macintel" && navigator.maxTouchPoints > 1);
 
         if (isIOS) return "ios";
+
+        // 2. Strict Android detection
+        const isAndroid = p === "android" || 
+                          p === "android_x" || 
+                          p.includes("android") ||
+                          /android/.test(ua) || 
+                          uadPlatform === "android" ||
+                          /huawei|harmonyos|honor|xiaomi|redmi|poco|samsung|oppo|vivo|realme|oneplus/.test(ua) ||
+                          navPlatform.includes("arm") || 
+                          navPlatform.includes("aarch") ||
+                          navPlatform.includes("android");
+
         if (isAndroid) return "android";
+
+        // 3. Fallback mobile check: If mobile UA, touch screen or small viewport and not Mac/Windows PC
+        const isSmallScreen = (window.innerWidth && window.innerWidth <= 840) || (window.screen && window.screen.width <= 840);
+        if ((hasTouch || isMobileUA || isSmallScreen) && !navPlatform.includes("mac") && !navPlatform.includes("win")) {
+            return "android";
+        }
+
+        // 4. Desktop PC / Mac / Linux
         return "desktop";
     }
 
