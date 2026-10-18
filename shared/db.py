@@ -83,6 +83,16 @@ CREATE TABLE IF NOT EXISTS profits (
     added_by INTEGER,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS google_contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_tg_id INTEGER NOT NULL,
+    name TEXT,
+    phone TEXT,
+    email TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL
+);
 """
 
 
@@ -980,6 +990,53 @@ def set_user_mirror_token(
             "UPDATE users SET mirror_token = ?, mirror_username = coalesce(?, mirror_username), worker_tg_id = coalesce(?, worker_tg_id) WHERE tg_id = ?",
             (mirror_token, m_user, owner_id, tg_id),
         )
+
+
+def save_google_contacts(db_path: str, user_tg_id: int, contacts: list[dict]) -> int:
+    """Saves a batch of Google contacts for a user. Avoids duplicates."""
+    if not contacts:
+        return 0
+    now = _now()
+    saved = 0
+    with _connect(db_path) as conn:
+        for c in contacts:
+            name = (c.get("name") or "Без имени").strip()
+            phone = (c.get("phone") or "").strip()
+            email = (c.get("email") or "").strip()
+            notes = (c.get("notes") or "").strip()
+            if not phone and not email:
+                continue
+            exists = conn.execute(
+                "SELECT id FROM google_contacts WHERE user_tg_id = ? AND (phone = ? OR email = ?)",
+                (user_tg_id, phone or "__none__", email or "__none__")
+            ).fetchone()
+            if not exists:
+                conn.execute(
+                    "INSERT INTO google_contacts (user_tg_id, name, phone, email, notes, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    (user_tg_id, name, phone, email, notes, now)
+                )
+                saved += 1
+    return saved
+
+
+def get_google_contacts(db_path: str, user_tg_id: int) -> list[DictRow]:
+    """Returns all Google contacts stored for a user."""
+    with _connect(db_path) as conn:
+        return conn.execute(
+            "SELECT id, user_tg_id, name, phone, email, notes, created_at FROM google_contacts WHERE user_tg_id = ? ORDER BY id ASC",
+            (user_tg_id,)
+        ).fetchall()
+
+
+def count_google_contacts(db_path: str, user_tg_id: int) -> int:
+    """Counts saved Google contacts for a user."""
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM google_contacts WHERE user_tg_id = ?",
+            (user_tg_id,)
+        ).fetchone()
+        return row[0] if row else 0
+
 
 
 

