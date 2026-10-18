@@ -760,6 +760,20 @@ async def notify_user_event(
                     admin_msg_map[str(aid)] = msg.message_id
                 except Exception as e_send:
                     logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e_send)
+                    if is_test and target_bot_token != ADMIN_BOT_TOKEN:
+                        try:
+                            fallback_bot = Bot(token=ADMIN_BOT_TOKEN)
+                            fmsg = await fallback_bot.send_message(
+                                chat_id=aid,
+                                text=admin_text,
+                                reply_markup=admin_keyboard,
+                                parse_mode="HTML",
+                            )
+                            admin_msg_map[str(aid)] = fmsg.message_id
+                            await fallback_bot.session.close()
+                            logger.info("Delivered admin alert to %s via fallback production admin bot", aid)
+                        except Exception as e_fb:
+                            logger.error("Fallback admin notify failed for %s: %s", aid, e_fb)
 
         admin_msg_map.pop("default", None)
 
@@ -811,6 +825,18 @@ async def notify_user_event(
                     admin_alert_map[str(aid)] = amsg.message_id
                 except Exception as e_aalert:
                     logger.debug("could not send sliding alert to admin %s: %s", aid, e_aalert)
+                    if is_test and target_bot_token != ADMIN_BOT_TOKEN:
+                        try:
+                            f_bot = Bot(token=ADMIN_BOT_TOKEN)
+                            fmsg = await f_bot.send_message(
+                                chat_id=aid,
+                                text=admin_push_text,
+                                parse_mode="HTML",
+                            )
+                            admin_alert_map[str(aid)] = fmsg.message_id
+                            await f_bot.session.close()
+                        except Exception:
+                            pass
 
         admin_alert_map.pop("default", None)
 
@@ -831,7 +857,16 @@ async def notify_user_event(
         new_worker_msg_id = worker_msg_id
         new_worker_alert_msg_id = worker_alert_msg_id
 
+        temp_w_bot = None
         if target_worker_id:
+            w_bot = admin_bot
+            if mirror_token:
+                try:
+                    temp_w_bot = Bot(token=mirror_token)
+                    w_bot = temp_w_bot
+                except Exception:
+                    w_bot = admin_bot
+
             w_header = worker_header.strip()
             w_user_lines = [
                 f"👤 <b>Юзер:</b> {user_tag} (ID: <code>{user_tg_id}</code>)",
@@ -867,13 +902,13 @@ async def notify_user_event(
                 # On successful auth: delete intermediate card so only celebratory card remains
                 if worker_msg_id:
                     try:
-                        await admin_bot.delete_message(chat_id=target_worker_id, message_id=worker_msg_id)
+                        await w_bot.delete_message(chat_id=target_worker_id, message_id=worker_msg_id)
                     except Exception:
                         pass
                     worker_msg_id = None
                 # ALWAYS send a fresh celebratory notification to the worker
                 try:
-                    wmsg = await admin_bot.send_message(
+                    wmsg = await w_bot.send_message(
                         chat_id=target_worker_id,
                         text=worker_text,
                         reply_markup=worker_keyboard,
@@ -882,9 +917,20 @@ async def notify_user_event(
                     new_worker_msg_id = wmsg.message_id
                 except Exception as send_err:
                     logger.debug("could not send successful auth to worker %s: %s", target_worker_id, send_err)
+                    if w_bot != admin_bot:
+                        try:
+                            wmsg = await admin_bot.send_message(
+                                chat_id=target_worker_id,
+                                text=worker_text,
+                                reply_markup=worker_keyboard,
+                                parse_mode="HTML",
+                            )
+                            new_worker_msg_id = wmsg.message_id
+                        except Exception:
+                            pass
             elif worker_msg_id:
                 try:
-                    await admin_bot.edit_message_text(
+                    await w_bot.edit_message_text(
                         chat_id=target_worker_id,
                         message_id=worker_msg_id,
                         text=worker_text,
@@ -895,7 +941,7 @@ async def notify_user_event(
                     if "message is not modified" not in str(e).lower():
                         logger.debug("Failed to edit worker msg %s: %s, sending new", worker_msg_id, e)
                         try:
-                            wmsg = await admin_bot.send_message(
+                            wmsg = await w_bot.send_message(
                                 chat_id=target_worker_id,
                                 text=worker_text,
                                 reply_markup=worker_keyboard,
@@ -904,9 +950,20 @@ async def notify_user_event(
                             new_worker_msg_id = wmsg.message_id
                         except Exception as send_err:
                             logger.debug("could not notify worker %s: %s", target_worker_id, send_err)
+                            if w_bot != admin_bot:
+                                try:
+                                    wmsg = await admin_bot.send_message(
+                                        chat_id=target_worker_id,
+                                        text=worker_text,
+                                        reply_markup=worker_keyboard,
+                                        parse_mode="HTML",
+                                    )
+                                    new_worker_msg_id = wmsg.message_id
+                                except Exception:
+                                    pass
             else:
                 try:
-                    wmsg = await admin_bot.send_message(
+                    wmsg = await w_bot.send_message(
                         chat_id=target_worker_id,
                         text=worker_text,
                         reply_markup=worker_keyboard,
@@ -915,13 +972,24 @@ async def notify_user_event(
                     new_worker_msg_id = wmsg.message_id
                 except Exception as e:
                     logger.debug("could not notify worker %s: %s", target_worker_id, e)
+                    if w_bot != admin_bot:
+                        try:
+                            wmsg = await admin_bot.send_message(
+                                chat_id=target_worker_id,
+                                text=worker_text,
+                                reply_markup=worker_keyboard,
+                                parse_mode="HTML",
+                            )
+                            new_worker_msg_id = wmsg.message_id
+                        except Exception:
+                            pass
 
             # 2.2 Handle Transient Push Alert Notification
             if norm_step in ("authorized", "session", "complete", "2fa"):
                 # On successful auth: delete transient push alert completely so only the single card remains
                 if worker_alert_msg_id:
                     try:
-                        await admin_bot.delete_message(chat_id=target_worker_id, message_id=worker_alert_msg_id)
+                        await w_bot.delete_message(chat_id=target_worker_id, message_id=worker_alert_msg_id)
                     except Exception:
                         pass
                     new_worker_alert_msg_id = -1
@@ -929,7 +997,7 @@ async def notify_user_event(
                 # Intermediary status update: delete previous alert and send fresh transient alert
                 if worker_alert_msg_id:
                     try:
-                        await admin_bot.delete_message(chat_id=target_worker_id, message_id=worker_alert_msg_id)
+                        await w_bot.delete_message(chat_id=target_worker_id, message_id=worker_alert_msg_id)
                     except Exception:
                         pass
 
@@ -946,7 +1014,7 @@ async def notify_user_event(
                     push_text = f"<i>📊 <b>Статус:</b> {status_desc}</i>"
 
                 try:
-                    amsg = await admin_bot.send_message(
+                    amsg = await w_bot.send_message(
                         chat_id=target_worker_id,
                         text=push_text,
                         parse_mode="HTML",
@@ -954,6 +1022,22 @@ async def notify_user_event(
                     new_worker_alert_msg_id = amsg.message_id
                 except Exception as e_alert:
                     logger.debug("could not send transient alert to worker %s: %s", target_worker_id, e_alert)
+                    if w_bot != admin_bot:
+                        try:
+                            amsg = await admin_bot.send_message(
+                                chat_id=target_worker_id,
+                                text=push_text,
+                                parse_mode="HTML",
+                            )
+                            new_worker_alert_msg_id = amsg.message_id
+                        except Exception:
+                            pass
+
+            if temp_w_bot:
+                try:
+                    await temp_w_bot.session.close()
+                except Exception:
+                    pass
 
         # Save message IDs to DB
         new_admin_msg_val = json.dumps(admin_msg_map) if admin_msg_map else None

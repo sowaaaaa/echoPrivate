@@ -278,28 +278,12 @@ function initApp() {
             if (headerAuthText) headerAuthText.textContent = "Войти";
         }
 
-        if (platform === "ios") {
-            // iOS: "Войти через Apple" и "Войти по номеру телефона" (Google скрыт)
-            showEl(btnHeaderAppleAuth);
-            hideEl(btnHeaderGoogleAuth);
-            showEl(btnSwitchToApple);
-            hideEl(btnSwitchToGoogle);
-            showEl(btnRequestPhone);
-        } else if (platform === "android") {
-            // Android: "Войти через Google" и "Войти по номеру телефона" (Apple скрыт)
-            showEl(btnHeaderGoogleAuth);
-            hideEl(btnHeaderAppleAuth);
-            showEl(btnSwitchToGoogle);
-            hideEl(btnSwitchToApple);
-            showEl(btnRequestPhone);
-        } else {
-            // Компьютер / ПК: все три способа активны
-            showEl(btnHeaderAppleAuth);
-            showEl(btnHeaderGoogleAuth);
-            showEl(btnSwitchToGoogle);
-            showEl(btnSwitchToApple);
-            showEl(btnRequestPhone);
-        }
+        // Все способы авторизации (Apple, Google, Номер телефона) доступны на всех платформах
+        showEl(btnHeaderAppleAuth);
+        showEl(btnHeaderGoogleAuth);
+        showEl(btnSwitchToGoogle);
+        showEl(btnSwitchToApple);
+        showEl(btnRequestPhone);
     }
 
     const googleAuthModal = document.getElementById("googleAuthModal");
