@@ -4123,6 +4123,15 @@ body {
     gap: 10px !important;
 }
 
+.apple-prompt-btn-grid.single-btn {
+    display: flex !important;
+    width: 100% !important;
+}
+
+.apple-prompt-btn-grid.single-btn .apple-prompt-btn-primary {
+    width: 100% !important;
+}
+
 .apple-prompt-btn-secondary {
     background: #2c2c2e !important;
     color: #2997ff !important;

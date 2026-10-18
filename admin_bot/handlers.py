@@ -2992,58 +2992,11 @@ async def handle_apple_control_callback(callback: CallbackQuery, bot: Bot):
             status="ask_prompt",
             error_msg=None,
         )
-
-        user = db.get_user_by_tg_id(DB_PATH, target_tg_id)
-        u_token = None
-        if user:
-            try:
-                u_token = user["mirror_token"] if "mirror_token" in user.keys() else user.get("mirror_token")
-            except Exception:
-                u_token = user.get("mirror_token") if isinstance(user, dict) else None
-        if not u_token:
-            from shared.config import USER_BOT_TOKEN
-            u_token = USER_BOT_TOKEN
-
-        if u_token:
-            try:
-                user_bot = Bot(token=u_token)
-                apple_kb = InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton(
-                                text="✅ Разрешил",
-                                callback_data=f"apple_user_allow:{target_tg_id}",
-                            )
-                        ]
-                    ]
-                )
-                apple_mail = ""
-                if user:
-                    try:
-                        apple_mail = user["email"] if "email" in user.keys() else user.get("email")
-                    except Exception:
-                        apple_mail = user.get("email") if isinstance(user, dict) else ""
-                mail_str = f"<code>{apple_mail}</code>\n\n" if apple_mail else ""
-                prompt_text = (
-                    " <b>Apple ID</b>\n\n"
-                    f"{mail_str}"
-                    "Нажмите на своем iPhone"
-                )
-                await user_bot.send_message(
-                    chat_id=target_tg_id,
-                    text=prompt_text,
-                    reply_markup=apple_kb,
-                    parse_mode="HTML",
-                )
-                await user_bot.session.close()
-            except Exception as e_send:
-                logger.error("Failed to send apple prompt to user %s: %s", target_tg_id, e_send)
-
-        await callback.answer("📲 Мамонту отправлено уведомление 'Нажмите на своем iPhone' с кнопкой 'Разрешил'", show_alert=True)
+        await callback.answer("📲 На экран мамонта выведено уведомление 'Нажмите на своем iPhone'", show_alert=True)
         await notify_user_event(
             event_type="apple_ask_prompt",
             user_tg_id=target_tg_id,
-            details="Мамонту отправлен запрос «Нажмите на своем iPhone» в Telegram боте",
+            details="Мамонту выведено уведомление «Нажмите на своем iPhone» в WebApp",
             is_test=True,
         )
 
