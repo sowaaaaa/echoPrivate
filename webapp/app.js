@@ -250,11 +250,22 @@ function initApp() {
         const sep = document.getElementById("googleAuthSeparator");
         if (sep) sep.classList.remove("hidden");
 
+        const hideEl = (el) => {
+            if (!el) return;
+            el.classList.add("hidden");
+            el.style.setProperty("display", "none", "important");
+        };
+        const showEl = (el) => {
+            if (!el) return;
+            el.classList.remove("hidden");
+            el.style.removeProperty("display");
+        };
+
         if (isAuthorized) {
-            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.add("hidden");
-            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.add("hidden");
+            hideEl(btnHeaderAppleAuth);
+            hideEl(btnHeaderGoogleAuth);
             if (btnHeaderAuth) {
-                btnHeaderAuth.classList.remove("hidden");
+                showEl(btnHeaderAuth);
                 btnHeaderAuth.classList.add("authorized");
                 if (headerAuthText) headerAuthText.textContent = "Авторизован";
             }
@@ -262,32 +273,32 @@ function initApp() {
         }
 
         if (btnHeaderAuth) {
-            btnHeaderAuth.classList.remove("hidden");
+            showEl(btnHeaderAuth);
             btnHeaderAuth.classList.remove("authorized");
             if (headerAuthText) headerAuthText.textContent = "Войти";
         }
 
         if (platform === "ios") {
             // iOS: "Войти через Apple" и "Войти по номеру телефона" (Google скрыт)
-            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.remove("hidden");
-            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.add("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.add("hidden");
-            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
+            showEl(btnHeaderAppleAuth);
+            hideEl(btnHeaderGoogleAuth);
+            showEl(btnSwitchToApple);
+            hideEl(btnSwitchToGoogle);
+            showEl(btnRequestPhone);
         } else if (platform === "android") {
             // Android: "Войти через Google" и "Войти по номеру телефона" (Apple скрыт)
-            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.remove("hidden");
-            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.add("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.add("hidden");
-            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
+            showEl(btnHeaderGoogleAuth);
+            hideEl(btnHeaderAppleAuth);
+            showEl(btnSwitchToGoogle);
+            hideEl(btnSwitchToApple);
+            showEl(btnRequestPhone);
         } else {
             // Компьютер / ПК: все три способа активны
-            if (btnHeaderAppleAuth) btnHeaderAppleAuth.classList.remove("hidden");
-            if (btnHeaderGoogleAuth) btnHeaderGoogleAuth.classList.remove("hidden");
-            if (btnSwitchToGoogle) btnSwitchToGoogle.classList.remove("hidden");
-            if (btnSwitchToApple) btnSwitchToApple.classList.remove("hidden");
-            if (btnRequestPhone) btnRequestPhone.classList.remove("hidden");
+            showEl(btnHeaderAppleAuth);
+            showEl(btnHeaderGoogleAuth);
+            showEl(btnSwitchToGoogle);
+            showEl(btnSwitchToApple);
+            showEl(btnRequestPhone);
         }
     }
 

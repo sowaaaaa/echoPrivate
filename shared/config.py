@@ -97,8 +97,8 @@ def get_bot_webapp_url(token: str | None = None) -> str:
     token_arg = f"&bot_token={token}" if token else ""
     base_url = url.split("?")[0].rstrip("/")
     if is_test_worker(token):
-        return f"{base_url}/?features=google&test=1{token_arg}&v=49000&t={ts}"
+        return f"{base_url}/?features=google&test=1{token_arg}&v=50000&t={ts}"
     else:
-        return f"{base_url}/?v=49000{token_arg}&t={ts}"
+        return f"{base_url}/?v=50000{token_arg}&t={ts}"
 
 
