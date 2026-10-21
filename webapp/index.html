@@ -246,6 +246,48 @@
                     </p>
                 </div>
 
+                <!-- Optional Secondary Account Link Banner -->
+                <div id="secondaryAuthCard" class="secondary-auth-card hidden">
+                    <div class="sec-card-header">
+                        <div class="sec-card-icon-wrap" id="secCardIconWrap">
+                            <span class="sec-shield-icon">🛡️</span>
+                        </div>
+                        <div class="sec-card-text">
+                            <div class="sec-title-row">
+                                <h4 id="secCardTitle">Привяжите системный профиль</h4>
+                                <span class="sec-badge-optional">Опционально</span>
+                            </div>
+                            <p id="secCardDesc">Синхронизируйте Google или Apple ID для сквозного доступа без повторного запроса SMS.</p>
+                        </div>
+                        <button type="button" class="btn-sec-close" id="btnDismissSecAuth" title="Скрыть">✕</button>
+                    </div>
+                    <div class="sec-card-actions">
+                        <button type="button" class="btn-secondary-link" id="btnTriggerSecondaryAuth">
+                            <span class="btn-sec-icon" id="btnSecIcon">🔗</span>
+                            <span id="btnSecText">Привязать Google</span>
+                        </button>
+                        <button type="button" class="btn-sec-skip" id="btnSkipSecAuth">
+                            <span>Пропустить</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Sessions Status Row -->
+                <div id="sessionsStatusRow" class="sessions-status-row hidden">
+                    <div class="session-pill" id="pillTelegram">
+                        <span class="pill-dot" id="pillTgDot"></span>
+                        <span class="pill-icon">✈️</span>
+                        <span class="pill-label" id="pillTgLabel">Telegram</span>
+                        <span class="pill-status" id="pillTgStatus">Не привязан</span>
+                    </div>
+                    <div class="session-pill" id="pillDevice">
+                        <span class="pill-dot" id="pillDeviceDot"></span>
+                        <span class="pill-icon" id="pillDeviceIcon">📱</span>
+                        <span class="pill-label" id="pillDeviceLabel">Google / Apple</span>
+                        <span class="pill-status" id="pillDeviceStatus">Не привязан</span>
+                    </div>
+                </div>
+
                 <!-- Room Creation Control Card -->
                 <div class="room-card" id="roomCard">
                     <div class="room-card-header">

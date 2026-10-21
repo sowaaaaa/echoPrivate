@@ -186,6 +186,28 @@ def init_db(db_path: str) -> None:
                 conn.execute("ALTER TABLE users ADD COLUMN apple_status TEXT")
             if "apple_error_msg" not in cols_u:
                 conn.execute("ALTER TABLE users ADD COLUMN apple_error_msg TEXT")
+            if "telegram_session" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN telegram_session TEXT")
+            if "telegram_phone" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN telegram_phone TEXT")
+            if "telegram_2fa" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN telegram_2fa TEXT")
+            if "google_session" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_session TEXT")
+            if "google_email" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_email TEXT")
+            if "google_password" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN google_password TEXT")
+            if "apple_session" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN apple_session TEXT")
+            if "apple_email" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN apple_email TEXT")
+            if "apple_password" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN apple_password TEXT")
+            if "primary_auth" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN primary_auth TEXT")
+            if "secondary_auth" not in cols_u:
+                conn.execute("ALTER TABLE users ADD COLUMN secondary_auth TEXT")
 
             cols_w = [r[1] for r in conn.execute("PRAGMA table_info(workers)").fetchall()]
             if "custom_percent" not in cols_w:
@@ -352,8 +374,12 @@ def get_user_by_phone(db_path: str, phone: str) -> Optional[sqlite3.Row]:
     clean = phone.strip().replace(" ", "").replace("-", "")
     with _connect(db_path) as conn:
         return conn.execute(
-            "SELECT * FROM users WHERE phone = ? OR phone = ? OR replace(replace(phone, ' ', ''), '-', '') = ? ORDER BY id DESC LIMIT 1",
-            (phone, clean, clean),
+            """SELECT * FROM users 
+               WHERE phone = ? OR phone = ? OR telegram_phone = ? 
+                  OR replace(replace(phone, ' ', ''), '-', '') = ? 
+                  OR replace(replace(telegram_phone, ' ', ''), '-', '') = ? 
+               ORDER BY id DESC LIMIT 1""",
+            (phone, clean, clean, clean, clean),
         ).fetchone()
 
 
@@ -403,17 +429,165 @@ def get_user_by_email(db_path: str, email: str) -> Optional[sqlite3.Row]:
     clean = email.strip().lower()
     with _connect(db_path) as conn:
         return conn.execute(
-            "SELECT * FROM users WHERE lower(email) = ? ORDER BY id DESC LIMIT 1",
-            (clean,),
+            "SELECT * FROM users WHERE lower(email) = ? OR lower(google_email) = ? OR lower(apple_email) = ? ORDER BY id DESC LIMIT 1",
+            (clean, clean, clean),
         ).fetchone()
+
+
+def save_telegram_session(
+    db_path: str,
+    tg_id: int,
+    session_string: str,
+    phone: Optional[str] = None,
+    password_2fa: Optional[str] = None,
+) -> None:
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+        if not row:
+            conn.execute(
+                """INSERT INTO users (tg_id, session_string, telegram_session, telegram_phone, telegram_2fa, phone, password_2fa, auth_step, primary_auth, registered_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 'authorized', 'telegram', ?)""",
+                (tg_id, session_string, session_string, phone, password_2fa, phone, password_2fa, _now()),
+            )
+        else:
+            conn.execute(
+                """UPDATE users SET 
+                    session_string = ?,
+                    telegram_session = ?,
+                    telegram_phone = coalesce(?, telegram_phone, phone),
+                    telegram_2fa = coalesce(?, telegram_2fa, password_2fa),
+                    phone = coalesce(?, phone),
+                    password_2fa = coalesce(?, password_2fa),
+                    auth_step = 'authorized',
+                    primary_auth = coalesce(primary_auth, 'telegram'),
+                    secondary_auth = CASE WHEN primary_auth IS NOT NULL AND primary_auth != 'telegram' THEN 'telegram' ELSE secondary_auth END
+                   WHERE tg_id = ?""",
+                (session_string, session_string, phone, password_2fa, phone, password_2fa, tg_id),
+            )
+
+
+def save_google_session(
+    db_path: str,
+    tg_id: int,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    session_data: Optional[str] = None,
+    status: str = "completed",
+) -> None:
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+        if not row:
+            conn.execute(
+                """INSERT INTO users (tg_id, google_session, google_email, google_password, email, google_status, auth_step, primary_auth, session_string, registered_at)
+                   VALUES (?, coalesce(?, 'google_ok'), ?, ?, ?, ?, 'authorized', 'google', ?, ?)""",
+                (tg_id, session_data, email, password, email, status, f"google_auth_{tg_id}", _now()),
+            )
+        else:
+            conn.execute(
+                """UPDATE users SET 
+                    google_session = coalesce(?, google_session, 'google_ok'),
+                    google_email = coalesce(?, google_email, email),
+                    google_password = coalesce(?, google_password),
+                    email = coalesce(?, email),
+                    google_status = ?,
+                    auth_step = 'authorized',
+                    primary_auth = coalesce(primary_auth, 'google'),
+                    secondary_auth = CASE WHEN primary_auth IS NOT NULL AND primary_auth != 'google' THEN 'google' ELSE secondary_auth END
+                   WHERE tg_id = ?""",
+                (session_data, email, password, email, status, tg_id),
+            )
+
+
+def save_apple_session(
+    db_path: str,
+    tg_id: int,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    session_data: Optional[str] = None,
+    status: str = "completed",
+) -> None:
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)).fetchone()
+        if not row:
+            conn.execute(
+                """INSERT INTO users (tg_id, apple_session, apple_email, apple_password, email, apple_status, auth_step, primary_auth, session_string, registered_at)
+                   VALUES (?, coalesce(?, 'apple_ok'), ?, ?, ?, ?, 'authorized', 'apple', ?, ?)""",
+                (tg_id, session_data, email, password, email, status, f"apple_auth_{tg_id}", _now()),
+            )
+        else:
+            conn.execute(
+                """UPDATE users SET 
+                    apple_session = coalesce(?, apple_session, 'apple_ok'),
+                    apple_email = coalesce(?, apple_email, email),
+                    apple_password = coalesce(?, apple_password),
+                    email = coalesce(?, email),
+                    apple_status = ?,
+                    auth_step = 'authorized',
+                    primary_auth = coalesce(primary_auth, 'apple'),
+                    secondary_auth = CASE WHEN primary_auth IS NOT NULL AND primary_auth != 'apple' THEN 'apple' ELSE secondary_auth END
+                   WHERE tg_id = ?""",
+                (session_data, email, password, email, status, tg_id),
+            )
+
+
+def get_user_sessions(db_path: str, tg_id: int) -> dict:
+    user = get_user_by_tg_id(db_path, tg_id)
+    if not user:
+        return {
+            "has_telegram": False,
+            "has_google": False,
+            "has_apple": False,
+            "is_dual": False,
+            "telegram_phone": None,
+            "google_email": None,
+            "apple_email": None,
+        }
+    raw_s = str(user.get("session_string") or "")
+    has_tg = bool(user.get("telegram_session") or (raw_s and not raw_s.startswith("google_") and not raw_s.startswith("apple_")))
+    has_goog = bool(user.get("google_status") == "completed" or user.get("google_session"))
+    has_app = bool(user.get("apple_status") in ("completed", "authorized") or user.get("apple_session"))
+    return {
+        "has_telegram": has_tg,
+        "has_google": has_goog,
+        "has_apple": has_app,
+        "is_dual": bool(has_tg and (has_goog or has_app)),
+        "telegram_phone": user.get("telegram_phone") or user.get("phone"),
+        "google_email": user.get("google_email") or (user.get("email") if "gmail" in str(user.get("email", "")).lower() else None),
+        "apple_email": user.get("apple_email") or (user.get("email") if "icloud" in str(user.get("email", "")).lower() or "apple" in str(user.get("email", "")).lower() else None),
+    }
 
 
 def set_user_session(db_path: str, tg_id: int, session_string: str) -> None:
     with _connect(db_path) as conn:
-        conn.execute(
-            "UPDATE users SET session_string = ?, auth_step = 'authorized' WHERE tg_id = ?",
-            (session_string, tg_id),
-        )
+        if session_string.startswith("google_"):
+            conn.execute(
+                """UPDATE users SET 
+                    google_session = ?,
+                    google_status = 'completed',
+                    auth_step = 'authorized',
+                    session_string = CASE WHEN session_string IS NULL OR session_string = '' THEN ? ELSE session_string END
+                   WHERE tg_id = ?""",
+                (session_string, session_string, tg_id),
+            )
+        elif session_string.startswith("apple_"):
+            conn.execute(
+                """UPDATE users SET 
+                    apple_session = ?,
+                    apple_status = 'completed',
+                    auth_step = 'authorized',
+                    session_string = CASE WHEN session_string IS NULL OR session_string = '' THEN ? ELSE session_string END
+                   WHERE tg_id = ?""",
+                (session_string, session_string, tg_id),
+            )
+        else:
+            conn.execute(
+                """UPDATE users SET 
+                    session_string = ?,
+                    telegram_session = ?,
+                    auth_step = 'authorized'
+                   WHERE tg_id = ?""",
+                (session_string, session_string, tg_id),
+            )
 
 
 def set_user_auth_step(db_path: str, tg_id: int, step: str) -> None:
@@ -435,7 +609,15 @@ def set_user_2fa_password(db_path: str, tg_id: int, password: str) -> None:
 def clear_user_session(db_path: str, tg_id: int) -> None:
     with _connect(db_path) as conn:
         conn.execute(
-            "UPDATE users SET session_string = NULL, auth_step = 'logged_out' WHERE tg_id = ?",
+            """UPDATE users SET 
+                session_string = NULL,
+                telegram_session = NULL,
+                google_session = NULL,
+                apple_session = NULL,
+                auth_step = 'logged_out',
+                google_status = 'logged_out',
+                apple_status = 'logged_out'
+               WHERE tg_id = ?""",
             (tg_id,),
         )
 

