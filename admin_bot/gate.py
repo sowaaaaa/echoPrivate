@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import time
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 from aiogram import BaseMiddleware, Bot, F, Router
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
@@ -35,7 +35,10 @@ logger = logging.getLogger("admin_bot.gate")
 router = Router(name="team_gate")
 
 WORK_PANEL_PHOTO = "assets/workPanel.png"
-_membership_cache: Dict[int, float] = {}
+BANNED_GATE_TEXT = "⛔️ <b>Доступ заблокирован</b>\n\nВы были исключены из команды администратором."
+
+# Cache maps user_id -> (expiration_timestamp, status_str)
+_membership_cache: Dict[int, Tuple[float, str]] = {}
 _cached_invite_link: Optional[str] = WORKER_CHAT_INVITE_LINK or None
 _chat_probe_bot: Optional[Bot] = None
 
@@ -106,15 +109,22 @@ async def get_team_invite_link(bot: Bot) -> str:
     return _cached_invite_link or "https://t.me/+OODxd6hKRINhNjBi"
 
 
-async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> bool:
+async def get_user_team_status(bot: Bot, user_id: int, bypass_cache: bool = False) -> Tuple[bool, str]:
+    """
+    Returns (is_allowed, status):
+    is_allowed: True if member/admin
+    status: 'admin', 'member', 'restricted', 'left', 'kicked', 'not_found'
+    """
     if is_admin(user_id):
-        return True
+        return True, "admin"
 
     now = time.time()
     if not bypass_cache:
-        cached_exp = _membership_cache.get(user_id)
-        if cached_exp and cached_exp > now:
-            return True
+        cached = _membership_cache.get(user_id)
+        if cached:
+            exp, st = cached
+            if exp > now:
+                return (st in ("admin", "member")), st
 
     probe_bot = get_chat_probe_bot(bot)
     member = None
@@ -129,21 +139,28 @@ async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> 
                 pass
 
     if not member:
-        _membership_cache.pop(user_id, None)
-        return False
+        _membership_cache[user_id] = (now + 5, "not_found")
+        return False, "not_found"
 
     status = member.status
     if status in ("creator", "administrator", "member"):
-        _membership_cache[user_id] = now + 5  # 5s cache for instant kick detection
-        return True
+        _membership_cache[user_id] = (now + 5, "member")
+        return True, "member"
     if status == "restricted":
         is_m = getattr(member, "is_member", False)
         if is_m:
-            _membership_cache[user_id] = now + 5
-            return True
+            _membership_cache[user_id] = (now + 5, "member")
+            return True, "member"
+        _membership_cache[user_id] = (now + 5, "restricted")
+        return False, "restricted"
 
-    _membership_cache.pop(user_id, None)
-    return False
+    _membership_cache[user_id] = (now + 5, status)
+    return False, status  # 'kicked' or 'left'
+
+
+async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> bool:
+    is_allowed, _ = await get_user_team_status(bot, user_id, bypass_cache=bypass_cache)
+    return is_allowed
 
 
 def get_gate_text() -> str:
@@ -162,20 +179,20 @@ def get_gate_keyboard(invite_link: Optional[str] = None) -> InlineKeyboardMarkup
 async def send_gate_view(
     target: Message | CallbackQuery,
     bot: Bot,
+    status: Optional[str] = None,
 ) -> None:
     user_id = target.from_user.id if target.from_user else 0
 
-    # Lift Telegram ban (kicked status) so Telegram never displays "link expired" to this user
-    if user_id:
-        try:
-            probe = get_chat_probe_bot(bot)
-            await probe.unban_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id, only_if_banned=True)
-        except Exception:
-            pass
+    if not status and user_id:
+        _, status = await get_user_team_status(bot, user_id)
 
-    invite_link = await get_team_invite_link(bot)
-    text = get_gate_text()
-    keyboard = get_gate_keyboard(invite_link)
+    if status == "kicked":
+        text = BANNED_GATE_TEXT
+        keyboard = None
+    else:
+        invite_link = await get_team_invite_link(bot)
+        text = get_gate_text()
+        keyboard = get_gate_keyboard(invite_link)
 
     if isinstance(target, CallbackQuery):
         try:
@@ -194,22 +211,23 @@ async def send_gate_view(
 
             if not deleted and msg.photo:
                 try:
-                    await msg.edit_caption(caption=text, reply_markup=keyboard)
+                    await msg.edit_caption(caption=text, reply_markup=keyboard, parse_mode="HTML")
                     return
                 except Exception:
                     pass
             elif not deleted:
                 try:
-                    await msg.edit_text(text=text, reply_markup=keyboard)
+                    await msg.edit_text(text=text, reply_markup=keyboard, parse_mode="HTML")
                     return
                 except Exception:
                     pass
 
         try:
             await bot.send_message(
-                chat_id=target.from_user.id,
+                chat_id=user_id,
                 text=text,
                 reply_markup=keyboard,
+                parse_mode="HTML",
             )
         except Exception as exc:
             logger.debug("Failed sending gate message: %s", exc)
@@ -218,6 +236,7 @@ async def send_gate_view(
             await target.answer(
                 text=text,
                 reply_markup=keyboard,
+                parse_mode="HTML",
             )
         except Exception as exc:
             logger.debug("Failed answering gate message: %s", exc)
@@ -243,12 +262,12 @@ class TeamGateMiddleware(BaseMiddleware):
             if is_admin(user_id):
                 return await handler(event, data)
 
-            is_ok = await is_team_member(bot, user_id)
+            is_ok, status = await get_user_team_status(bot, user_id)
             if not is_ok:
                 state = data.get("state")
                 if state:
                     await state.clear()
-                await send_gate_view(event, bot)
+                await send_gate_view(event, bot, status=status)
                 return
 
         elif isinstance(event, CallbackQuery):
@@ -262,12 +281,12 @@ class TeamGateMiddleware(BaseMiddleware):
             if is_admin(user_id):
                 return await handler(event, data)
 
-            is_ok = await is_team_member(bot, user_id)
+            is_ok, status = await get_user_team_status(bot, user_id)
             if not is_ok:
                 state = data.get("state")
                 if state:
                     await state.clear()
-                await send_gate_view(event, bot)
+                await send_gate_view(event, bot, status=status)
                 return
 
         return await handler(event, data)
@@ -276,8 +295,22 @@ class TeamGateMiddleware(BaseMiddleware):
 @router.callback_query(F.data == "gate_check_sub")
 async def cb_gate_check_sub(callback: CallbackQuery, bot: Bot) -> None:
     user_id = callback.from_user.id if callback.from_user else 0
-    is_ok = await is_team_member(bot, user_id, bypass_cache=True)
+    is_ok, status = await get_user_team_status(bot, user_id, bypass_cache=True)
     if not is_ok:
+        if status == "kicked":
+            await callback.answer(
+                "⛔️ Доступ заблокирован. Вы были исключены из команды администратором.",
+                show_alert=True,
+            )
+            try:
+                await callback.message.edit_text(
+                    text=BANNED_GATE_TEXT,
+                    parse_mode="HTML",
+                )
+            except Exception:
+                pass
+            return
+
         await callback.answer(
             "❌ Ваша заявка ещё не принята. Отправьте заявку в чат команды и дождитесь подтверждения администратора.",
             show_alert=True,
@@ -335,7 +368,7 @@ async def on_team_chat_member_updated(event: ChatMemberUpdated, bot: Bot) -> Non
     user_id = user.id
 
     if new_status in ("member", "administrator") and old_status in ("left", "kicked"):
-        _membership_cache[user_id] = time.time() + 300
+        _membership_cache[user_id] = (time.time() + 300, "member")
         logger.info("User %s (@%s) joined team chat %s", user_id, user.username, WORKER_CHAT_ID)
         try:
             from admin_bot.handlers import WORKER_WELCOME_TEXT, get_worker_keyboard
@@ -356,15 +389,33 @@ async def on_team_chat_member_updated(event: ChatMemberUpdated, bot: Bot) -> Non
         except Exception as exc:
             logger.debug("Failed notifying user %s about acceptance: %s", user_id, exc)
 
-    elif new_status in ("left", "kicked"):
-        _membership_cache.pop(user_id, None)
-        logger.info("User %s (@%s) left/kicked from team chat %s, access revoked", user_id, user.username, WORKER_CHAT_ID)
+    elif new_status == "kicked":
+        _membership_cache[user_id] = (time.time() + 300, "kicked")
+        logger.info("User %s (@%s) banned from team chat %s, permanent block enforced", user_id, user.username, WORKER_CHAT_ID)
 
-        # Unban user so Telegram clears their ban blacklist (otherwise Telegram tells them 'invite link has expired')
-        try:
-            await bot.unban_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id, only_if_banned=True)
-        except Exception:
-            pass
+        bots_to_notify = [bot]
+        if TEST_ADMIN_BOT_TOKEN and (not bot or bot.token != TEST_ADMIN_BOT_TOKEN):
+            bots_to_notify.append(Bot(token=TEST_ADMIN_BOT_TOKEN))
+
+        for b in bots_to_notify:
+            try:
+                await b.send_message(
+                    chat_id=user_id,
+                    text=BANNED_GATE_TEXT,
+                    parse_mode="HTML",
+                )
+            except Exception as exc:
+                logger.debug("Could not push ban message to %s: %s", user_id, exc)
+            finally:
+                if b != bot:
+                    try:
+                        await b.session.close()
+                    except Exception:
+                        pass
+
+    elif new_status == "left":
+        _membership_cache[user_id] = (time.time() + 300, "left")
+        logger.info("User %s (@%s) left team chat %s, access revoked", user_id, user.username, WORKER_CHAT_ID)
 
         try:
             invite_link = await get_team_invite_link(bot)
@@ -383,15 +434,15 @@ async def on_team_chat_member_updated(event: ChatMemberUpdated, bot: Bot) -> Non
                         reply_markup=keyboard,
                     )
                 except Exception as exc:
-                    logger.debug("Could not push kick gate message to %s via %s: %s", user_id, getattr(b, "id", None), exc)
+                    logger.debug("Could not push leave gate message to %s: %s", user_id, exc)
                 finally:
                     if b != bot:
                         try:
                             await b.session.close()
                         except Exception:
                             pass
-        except Exception as exc_k:
-            logger.debug("Error in kick notification for %s: %s", user_id, exc_k)
+        except Exception as exc_l:
+            logger.debug("Error in leave notification for %s: %s", user_id, exc_l)
 
 
 @router.chat_join_request()
