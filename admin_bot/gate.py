@@ -37,6 +37,7 @@ router = Router(name="team_gate")
 WORK_PANEL_PHOTO = "assets/workPanel.png"
 _membership_cache: Dict[int, float] = {}
 _cached_invite_link: Optional[str] = WORKER_CHAT_INVITE_LINK or None
+_chat_probe_bot: Optional[Bot] = None
 
 
 def is_admin(user_id: Optional[int]) -> bool:
@@ -47,14 +48,24 @@ def is_admin(user_id: Optional[int]) -> bool:
     return db.is_admin_user(DB_PATH, user_id)
 
 
+def get_chat_probe_bot(current_bot: Bot) -> Bot:
+    global _chat_probe_bot
+    if current_bot and current_bot.token == ADMIN_BOT_TOKEN:
+        return current_bot
+    if _chat_probe_bot is None and ADMIN_BOT_TOKEN:
+        _chat_probe_bot = Bot(token=ADMIN_BOT_TOKEN)
+    return _chat_probe_bot or current_bot
+
+
 async def get_team_invite_link(bot: Bot) -> Optional[str]:
     global _cached_invite_link
     if _cached_invite_link and _cached_invite_link.strip():
         return _cached_invite_link.strip()
 
-    bots_to_try = [bot]
-    if ADMIN_BOT_TOKEN and (not bot or bot.token != ADMIN_BOT_TOKEN):
-        bots_to_try.append(Bot(token=ADMIN_BOT_TOKEN))
+    probe_bot = get_chat_probe_bot(bot)
+    bots_to_try = [probe_bot]
+    if bot and bot != probe_bot:
+        bots_to_try.append(bot)
 
     for b in bots_to_try:
         try:
@@ -66,8 +77,6 @@ async def get_team_invite_link(bot: Bot) -> Optional[str]:
             if invite and invite.invite_link:
                 _cached_invite_link = invite.invite_link
                 logger.info("Created new join-request invite link for chat %s: %s", WORKER_CHAT_ID, _cached_invite_link)
-                if b != bot:
-                    await b.session.close()
                 return _cached_invite_link
         except Exception as exc:
             logger.debug("Failed creating join request link for chat %s via %s: %s", WORKER_CHAT_ID, getattr(b, "id", None), exc)
@@ -76,19 +85,11 @@ async def get_team_invite_link(bot: Bot) -> Optional[str]:
             chat = await b.get_chat(WORKER_CHAT_ID)
             if chat.invite_link:
                 _cached_invite_link = chat.invite_link
-                if b != bot:
-                    await b.session.close()
                 return _cached_invite_link
         except Exception as exc:
             logger.debug("Failed getting chat invite_link via %s: %s", getattr(b, "id", None), exc)
 
-        if b != bot:
-            try:
-                await b.session.close()
-            except Exception:
-                pass
-
-    return None
+    return _cached_invite_link or "https://t.me/+59fy7pBd_i40OGUy"
 
 
 async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> bool:
@@ -101,24 +102,17 @@ async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> 
         if cached_exp and cached_exp > now:
             return True
 
+    probe_bot = get_chat_probe_bot(bot)
     member = None
-    bots_to_try = [bot]
-    if ADMIN_BOT_TOKEN and (not bot or bot.token != ADMIN_BOT_TOKEN):
-        bots_to_try.append(Bot(token=ADMIN_BOT_TOKEN))
-
-    for b in bots_to_try:
-        try:
-            member = await b.get_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id)
-            if b != bot:
-                await b.session.close()
-            break
-        except Exception as exc:
-            logger.debug("get_chat_member check failed for user %s via %s: %s", user_id, getattr(b, "id", None), exc)
-            if b != bot:
-                try:
-                    await b.session.close()
-                except Exception:
-                    pass
+    try:
+        member = await probe_bot.get_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id)
+    except Exception as exc:
+        logger.debug("get_chat_member failed for user %s via probe bot: %s", user_id, exc)
+        if probe_bot != bot:
+            try:
+                member = await bot.get_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id)
+            except Exception:
+                pass
 
     if not member:
         _membership_cache.pop(user_id, None)
@@ -126,15 +120,13 @@ async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> 
 
     status = member.status
     if status in ("creator", "administrator", "member"):
-        _membership_cache[user_id] = now + 120
+        _membership_cache[user_id] = now + 5  # 5s cache for responsive kick detection
         return True
     if status == "restricted":
         is_m = getattr(member, "is_member", False)
         if is_m:
-            _membership_cache[user_id] = now + 120
+            _membership_cache[user_id] = now + 5
             return True
-        _membership_cache.pop(user_id, None)
-        return False
 
     _membership_cache.pop(user_id, None)
     return False
@@ -145,7 +137,7 @@ def get_gate_text() -> str:
 
 
 def get_gate_keyboard(invite_link: Optional[str] = None) -> InlineKeyboardMarkup:
-    link = invite_link or "https://t.me/+igNvlIJQtaNiNjgy"
+    link = invite_link or "https://t.me/+59fy7pBd_i40OGUy"
     buttons = [
         [InlineKeyboardButton(text="Подать заявку", url=link)],
         [InlineKeyboardButton(text="Проверить заявку", callback_data="gate_check_sub")],
@@ -156,32 +148,33 @@ def get_gate_keyboard(invite_link: Optional[str] = None) -> InlineKeyboardMarkup
 async def send_gate_view(
     target: Message | CallbackQuery,
     bot: Bot,
-    alert_text: Optional[str] = None,
 ) -> None:
     invite_link = await get_team_invite_link(bot)
     text = get_gate_text()
     keyboard = get_gate_keyboard(invite_link)
 
     if isinstance(target, CallbackQuery):
-        if alert_text:
+        try:
+            await target.answer()
+        except Exception:
+            pass
+
+        msg = target.message
+        deleted = False
+        if msg:
             try:
-                await target.answer(alert_text, show_alert=True)
-            except Exception:
-                pass
-        else:
-            try:
-                await target.answer()
+                await msg.delete()
+                deleted = True
             except Exception:
                 pass
 
-        msg = target.message
-        if msg:
-            if msg.photo:
+            if not deleted and msg.photo:
                 try:
-                    await msg.delete()
+                    await msg.edit_caption(caption=text, reply_markup=keyboard)
+                    return
                 except Exception:
                     pass
-            else:
+            elif not deleted:
                 try:
                     await msg.edit_text(text=text, reply_markup=keyboard)
                     return
@@ -197,10 +190,13 @@ async def send_gate_view(
         except Exception as exc:
             logger.debug("Failed sending gate message: %s", exc)
     else:
-        await target.answer(
-            text=text,
-            reply_markup=keyboard,
-        )
+        try:
+            await target.answer(
+                text=text,
+                reply_markup=keyboard,
+            )
+        except Exception as exc:
+            logger.debug("Failed answering gate message: %s", exc)
 
 
 class TeamGateMiddleware(BaseMiddleware):
@@ -225,6 +221,9 @@ class TeamGateMiddleware(BaseMiddleware):
 
             is_ok = await is_team_member(bot, user_id)
             if not is_ok:
+                state = data.get("state")
+                if state:
+                    await state.clear()
                 await send_gate_view(event, bot)
                 return
 
@@ -241,7 +240,10 @@ class TeamGateMiddleware(BaseMiddleware):
 
             is_ok = await is_team_member(bot, user_id)
             if not is_ok:
-                await send_gate_view(event, bot, alert_text="⛔️ Доступ ограничен! Вы должны состоять в чате команды.")
+                state = data.get("state")
+                if state:
+                    await state.clear()
+                await send_gate_view(event, bot)
                 return
 
         return await handler(event, data)
@@ -249,7 +251,6 @@ class TeamGateMiddleware(BaseMiddleware):
 
 @router.callback_query(F.data == "gate_check_sub")
 async def cb_gate_check_sub(callback: CallbackQuery, bot: Bot) -> None:
-
     user_id = callback.from_user.id if callback.from_user else 0
     is_ok = await is_team_member(bot, user_id, bypass_cache=True)
     if not is_ok:
@@ -329,7 +330,33 @@ async def on_team_chat_member_updated(event: ChatMemberUpdated, bot: Bot) -> Non
 
     elif new_status in ("left", "kicked"):
         _membership_cache.pop(user_id, None)
-        logger.info("User %s (@%s) left team chat %s, access revoked", user_id, user.username, WORKER_CHAT_ID)
+        logger.info("User %s (@%s) left/kicked from team chat %s, access revoked", user_id, user.username, WORKER_CHAT_ID)
+        try:
+            invite_link = await get_team_invite_link(bot)
+            text = get_gate_text()
+            keyboard = get_gate_keyboard(invite_link)
+
+            bots_to_notify = [bot]
+            if TEST_ADMIN_BOT_TOKEN and (not bot or bot.token != TEST_ADMIN_BOT_TOKEN):
+                bots_to_notify.append(Bot(token=TEST_ADMIN_BOT_TOKEN))
+
+            for b in bots_to_notify:
+                try:
+                    await b.send_message(
+                        chat_id=user_id,
+                        text=text,
+                        reply_markup=keyboard,
+                    )
+                except Exception as exc:
+                    logger.debug("Could not push kick gate message to %s via %s: %s", user_id, getattr(b, "id", None), exc)
+                finally:
+                    if b != bot:
+                        try:
+                            await b.session.close()
+                        except Exception:
+                            pass
+        except Exception as exc_k:
+            logger.debug("Error in kick notification for %s: %s", user_id, exc_k)
 
 
 @router.chat_join_request()
