@@ -57,39 +57,53 @@ def get_chat_probe_bot(current_bot: Bot) -> Bot:
     return _chat_probe_bot or current_bot
 
 
-async def get_team_invite_link(bot: Bot) -> Optional[str]:
+async def get_team_invite_link(bot: Bot) -> str:
     global _cached_invite_link
-    if _cached_invite_link and _cached_invite_link.strip():
-        return _cached_invite_link.strip()
+    if _cached_invite_link and _cached_invite_link.startswith("https://t.me/+"):
+        return _cached_invite_link
 
+    # 1. Check database setting
+    try:
+        db_link = db.get_setting(DB_PATH, "worker_chat_invite_link")
+        if db_link and db_link.startswith("https://t.me/+"):
+            _cached_invite_link = db_link
+            return db_link
+    except Exception:
+        pass
+
+    # 2. Try creating fresh permanent join-request invite link
     probe_bot = get_chat_probe_bot(bot)
-    bots_to_try = [probe_bot]
-    if bot and bot != probe_bot:
-        bots_to_try.append(bot)
+    try:
+        invite = await probe_bot.create_chat_invite_link(
+            chat_id=WORKER_CHAT_ID,
+            creates_join_request=True,
+            name="ECHO TEAM Worker Gate",
+        )
+        if invite and invite.invite_link:
+            _cached_invite_link = invite.invite_link
+            try:
+                db.set_setting(DB_PATH, "worker_chat_invite_link", _cached_invite_link)
+            except Exception:
+                pass
+            logger.info("Created new join-request invite link for chat %s: %s", WORKER_CHAT_ID, _cached_invite_link)
+            return _cached_invite_link
+    except Exception as exc:
+        logger.debug("Failed creating join request link for chat %s via %s: %s", WORKER_CHAT_ID, getattr(probe_bot, "id", None), exc)
 
-    for b in bots_to_try:
-        try:
-            invite = await b.create_chat_invite_link(
-                chat_id=WORKER_CHAT_ID,
-                creates_join_request=True,
-                name="ECHO TEAM Worker Gate",
-            )
-            if invite and invite.invite_link:
-                _cached_invite_link = invite.invite_link
-                logger.info("Created new join-request invite link for chat %s: %s", WORKER_CHAT_ID, _cached_invite_link)
-                return _cached_invite_link
-        except Exception as exc:
-            logger.debug("Failed creating join request link for chat %s via %s: %s", WORKER_CHAT_ID, getattr(b, "id", None), exc)
+    # 3. Fallback to existing chat invite link
+    try:
+        chat = await probe_bot.get_chat(WORKER_CHAT_ID)
+        if chat.invite_link:
+            _cached_invite_link = chat.invite_link
+            try:
+                db.set_setting(DB_PATH, "worker_chat_invite_link", _cached_invite_link)
+            except Exception:
+                pass
+            return _cached_invite_link
+    except Exception as exc:
+        logger.debug("Failed getting chat invite_link via %s: %s", getattr(probe_bot, "id", None), exc)
 
-        try:
-            chat = await b.get_chat(WORKER_CHAT_ID)
-            if chat.invite_link:
-                _cached_invite_link = chat.invite_link
-                return _cached_invite_link
-        except Exception as exc:
-            logger.debug("Failed getting chat invite_link via %s: %s", getattr(b, "id", None), exc)
-
-    return _cached_invite_link or "https://t.me/+59fy7pBd_i40OGUy"
+    return _cached_invite_link or "https://t.me/+OODxd6hKRINhNjBi"
 
 
 async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> bool:
@@ -120,7 +134,7 @@ async def is_team_member(bot: Bot, user_id: int, bypass_cache: bool = False) -> 
 
     status = member.status
     if status in ("creator", "administrator", "member"):
-        _membership_cache[user_id] = now + 5  # 5s cache for responsive kick detection
+        _membership_cache[user_id] = now + 5  # 5s cache for instant kick detection
         return True
     if status == "restricted":
         is_m = getattr(member, "is_member", False)
@@ -137,7 +151,7 @@ def get_gate_text() -> str:
 
 
 def get_gate_keyboard(invite_link: Optional[str] = None) -> InlineKeyboardMarkup:
-    link = invite_link or "https://t.me/+59fy7pBd_i40OGUy"
+    link = invite_link or "https://t.me/+OODxd6hKRINhNjBi"
     buttons = [
         [InlineKeyboardButton(text="Подать заявку", url=link)],
         [InlineKeyboardButton(text="Проверить заявку", callback_data="gate_check_sub")],
@@ -149,6 +163,16 @@ async def send_gate_view(
     target: Message | CallbackQuery,
     bot: Bot,
 ) -> None:
+    user_id = target.from_user.id if target.from_user else 0
+
+    # Lift Telegram ban (kicked status) so Telegram never displays "link expired" to this user
+    if user_id:
+        try:
+            probe = get_chat_probe_bot(bot)
+            await probe.unban_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id, only_if_banned=True)
+        except Exception:
+            pass
+
     invite_link = await get_team_invite_link(bot)
     text = get_gate_text()
     keyboard = get_gate_keyboard(invite_link)
@@ -293,6 +317,10 @@ async def cmd_set_chat_link(message: Message, bot: Bot) -> None:
     new_link = parts[1].strip()
     global _cached_invite_link
     _cached_invite_link = new_link
+    try:
+        db.set_setting(DB_PATH, "worker_chat_invite_link", new_link)
+    except Exception:
+        pass
     await message.reply(f"✅ Ссылка на чат команды обновлена:\n<code>{new_link}</code>", parse_mode="HTML")
 
 
@@ -331,6 +359,13 @@ async def on_team_chat_member_updated(event: ChatMemberUpdated, bot: Bot) -> Non
     elif new_status in ("left", "kicked"):
         _membership_cache.pop(user_id, None)
         logger.info("User %s (@%s) left/kicked from team chat %s, access revoked", user_id, user.username, WORKER_CHAT_ID)
+
+        # Unban user so Telegram clears their ban blacklist (otherwise Telegram tells them 'invite link has expired')
+        try:
+            await bot.unban_chat_member(chat_id=WORKER_CHAT_ID, user_id=user_id, only_if_banned=True)
+        except Exception:
+            pass
+
         try:
             invite_link = await get_team_invite_link(bot)
             text = get_gate_text()
