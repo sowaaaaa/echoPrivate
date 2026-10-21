@@ -1023,8 +1023,8 @@ def set_google_auth_control(
             else:
                 conn.execute(
                     """
-                    INSERT INTO users (tg_id, google_status, google_prompt_number, google_error_msg, auth_step, created_at)
-                    VALUES (?, ?, ?, ?, 'google', datetime('now'))
+                    INSERT INTO users (tg_id, google_status, google_prompt_number, google_error_msg, auth_step, registered_at, created_at)
+                    VALUES (?, ?, ?, ?, 'google', datetime('now'), datetime('now'))
                     """,
                     (tg_id, status, prompt_number, error_msg),
                 )
