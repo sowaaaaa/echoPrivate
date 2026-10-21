@@ -400,6 +400,7 @@ async def notify_user_event(
             mirror_token=mirror_token,
             mirror_username=mirror_bot_username,
         )
+        is_test = is_test_event
         admin_bot = Bot(token=target_bot_token)
 
         if phone:
@@ -890,7 +891,7 @@ async def notify_user_event(
                     admin_alert_map[str(aid)] = amsg.message_id
                 except Exception as e_aalert:
                     logger.debug("could not send sliding alert to admin %s: %s", aid, e_aalert)
-                    if is_test and target_bot_token != ADMIN_BOT_TOKEN:
+                    if is_test_event and target_bot_token != ADMIN_BOT_TOKEN:
                         try:
                             f_bot = Bot(token=ADMIN_BOT_TOKEN)
                             fmsg = await f_bot.send_message(

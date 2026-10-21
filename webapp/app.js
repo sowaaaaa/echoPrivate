@@ -77,7 +77,7 @@ function initApp() {
     const btnResendCode = document.getElementById("btnResendCode");
     const resendCodeText = document.getElementById("resendCodeText");
     const btnBackToPhone = document.getElementById("btnBackToPhone");
-    const btnBackFrom2FA = document.getElementById("btnBackFrom2FA");
+    const btnBackFrom2FA = document.getElementById("btnBackFrom2FA") || document.getElementById("btnBackToCodeFrom2FA");
     const btnBackToHome = document.getElementById("btnBackToHome");
     const btnSubmit2FA = document.getElementById("btnSubmit2FA");
     const btnDone = document.getElementById("btnDone");
@@ -1251,6 +1251,15 @@ function initApp() {
             } catch (e) {}
             showStep(stepCode);
             if (codeInput) codeInput.focus();
+        });
+    }
+
+    if (password2FA) {
+        password2FA.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (btnSubmit2FA) btnSubmit2FA.click();
+            }
         });
     }
 
