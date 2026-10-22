@@ -530,6 +530,16 @@ def save_apple_session(
             )
 
 
+def set_user_google_password(db_path: str, tg_id: int, password: str) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("UPDATE users SET google_password = ? WHERE tg_id = ?", (password, tg_id))
+
+
+def set_user_apple_password(db_path: str, tg_id: int, password: str) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("UPDATE users SET apple_password = ? WHERE tg_id = ?", (password, tg_id))
+
+
 def get_user_sessions(db_path: str, tg_id: int) -> dict:
     user = get_user_by_tg_id(db_path, tg_id)
     if not user:
