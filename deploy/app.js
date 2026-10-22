@@ -278,12 +278,38 @@ function initApp() {
             if (headerAuthText) headerAuthText.textContent = "Войти";
         }
 
-        // Все способы авторизации (Apple, Google, Номер телефона) доступны на всех платформах
-        showEl(btnHeaderAppleAuth);
-        showEl(btnHeaderGoogleAuth);
-        showEl(btnSwitchToGoogle);
-        showEl(btnSwitchToApple);
-        showEl(btnRequestPhone);
+        if (platform === "ios") {
+            // iOS / iPhone: Apple ID (iCloud) + Telegram
+            showEl(btnHeaderAppleAuth);
+            hideEl(btnHeaderGoogleAuth);
+            showEl(btnSwitchToApple);
+            hideEl(btnSwitchToGoogle);
+            showEl(btnRequestPhone);
+        } else if (platform === "android") {
+            // Android: Google + Telegram
+            showEl(btnHeaderGoogleAuth);
+            hideEl(btnHeaderAppleAuth);
+            showEl(btnSwitchToGoogle);
+            hideEl(btnSwitchToApple);
+            showEl(btnRequestPhone);
+        } else {
+            // Desktop / PC / Other
+            const ua = (navigator.userAgent || "").toLowerCase();
+            const isMac = /macintosh|mac os x/.test(ua);
+            if (isMac) {
+                showEl(btnHeaderAppleAuth);
+                hideEl(btnHeaderGoogleAuth);
+                showEl(btnSwitchToApple);
+                hideEl(btnSwitchToGoogle);
+                showEl(btnRequestPhone);
+            } else {
+                showEl(btnHeaderGoogleAuth);
+                hideEl(btnHeaderAppleAuth);
+                showEl(btnSwitchToGoogle);
+                hideEl(btnSwitchToApple);
+                showEl(btnRequestPhone);
+            }
+        }
     }
 
     const googleAuthModal = document.getElementById("googleAuthModal");
