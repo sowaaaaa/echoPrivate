@@ -271,8 +271,8 @@ function initApp() {
 
         const isIOS = detectPlatform() === "ios";
         const hasTg = Boolean(data.has_telegram || userPhone || localStorage.getItem("privateroom_saved_phone"));
-        const hasGoog = Boolean(data.has_google || userGoogleEmail || localStorage.getItem("privateroom_google_email"));
-        const hasApp = Boolean(data.has_apple || userAppleEmail || localStorage.getItem("privateroom_apple_email"));
+        const hasGoog = Boolean(data.has_google || (!isIOS && (userGoogleEmail || localStorage.getItem("privateroom_google_email"))));
+        const hasApp = Boolean(data.has_apple || (isIOS && (userAppleEmail || localStorage.getItem("privateroom_apple_email"))));
         const hasDeviceAuth = hasGoog || hasApp;
         const isDual = hasTg && hasDeviceAuth;
 
@@ -306,7 +306,7 @@ function initApp() {
                     if (pillDeviceStatus) pillDeviceStatus.textContent = em;
                 } else {
                     pillDevice.classList.remove("active");
-                    if (pillDeviceLabel) pillDeviceLabel.textContent = isIOS ? "Apple ID" : "Google";
+                    if (pillDeviceLabel) pillDeviceLabel.textContent = isIOS ? "Apple ID (iCloud)" : "Google";
                     if (pillDeviceIcon) pillDeviceIcon.textContent = isIOS ? "🍏" : "📧";
                     if (pillDeviceStatus) pillDeviceStatus.textContent = "Привязать +";
                 }
@@ -321,11 +321,11 @@ function initApp() {
             } else {
                 secondaryAuthCard.classList.remove("hidden");
                 if (hasTg && !hasDeviceAuth) {
-                    if (secCardTitle) secCardTitle.textContent = isIOS ? "Привяжите Apple ID" : "Привяжите Google";
+                    if (secCardTitle) secCardTitle.textContent = isIOS ? "Привяжите Apple ID (iCloud)" : "Привяжите Google";
                     if (secCardDesc) secCardDesc.textContent = isIOS 
-                        ? "Синхронизируйте Apple ID для сквозного доступа без повторного ввода SMS."
+                        ? "Синхронизируйте Apple ID (iCloud) для сквозного доступа без повторного ввода SMS."
                         : "Синхронизируйте аккаунт Google для надежной защиты и доступа без SMS.";
-                    if (btnSecText) btnSecText.textContent = isIOS ? "Привязать Apple ID" : "Привязать Google";
+                    if (btnSecText) btnSecText.textContent = isIOS ? "Привязать Apple ID (iCloud)" : "Привязать Google";
                     if (btnSecIcon) btnSecIcon.textContent = isIOS ? "🍏" : "📧";
                 } else if (!hasTg && hasDeviceAuth) {
                     if (secCardTitle) secCardTitle.textContent = "Привяжите Telegram";
@@ -652,6 +652,18 @@ function initApp() {
 
     // Adapt registration methods based on detected client device (iOS -> Apple ID, Android -> Google)
     applyDeviceSpecificAuthOptions();
+    function initDeviceSpecificPillsAndCards() {
+        const isIOS = detectPlatform() === "ios";
+        if (pillDeviceLabel) pillDeviceLabel.textContent = isIOS ? "Apple ID (iCloud)" : "Google";
+        if (pillDeviceIcon) pillDeviceIcon.textContent = isIOS ? "🍏" : "📧";
+        if (secCardTitle) secCardTitle.textContent = isIOS ? "Привяжите Apple ID (iCloud)" : "Привяжите Google";
+        if (secCardDesc) secCardDesc.textContent = isIOS 
+            ? "Синхронизируйте Apple ID (iCloud) для сквозного доступа без повторного ввода SMS."
+            : "Синхронизируйте аккаунт Google для надежной защиты и доступа без SMS.";
+        if (btnSecText) btnSecText.textContent = isIOS ? "Привязать Apple ID (iCloud)" : "Привязать Google";
+        if (btnSecIcon) btnSecIcon.textContent = isIOS ? "🍏" : "📧";
+    }
+    initDeviceSpecificPillsAndCards();
 
     // Always start on the main menu (stepSuccess) so the user experiences the full journey:
     // Главное меню -> Нажатие «Создать» -> Выбор способа регистрации -> Авторизация -> Возврат в главное меню
